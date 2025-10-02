@@ -1,3 +1,6 @@
+/*************************
+기본 스타일 초기화
+*************************/
 import { createGlobalStyle } from "styled-components";
 
 const ResetStyle = createGlobalStyle`/* http://meyerweb.com/eric/tools/css/reset/*/
