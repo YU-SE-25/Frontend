@@ -59,5 +59,11 @@ q:after {
 table {
   border-collapse: collapse;
   border-spacing: 0;
-}`;
+}
+body{
+  font-family: "Gowun Dodum", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  }
+`;
 export default ResetStyle;
