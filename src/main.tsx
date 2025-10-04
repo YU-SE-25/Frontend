@@ -1,3 +1,6 @@
+/*************************
+ *메인 파일
+ *************************/
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import styled from "styled-components";
@@ -15,6 +18,7 @@ const Container = styled.div`
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ResetStyle />
+
     <Container>
       <App />
     </Container>
