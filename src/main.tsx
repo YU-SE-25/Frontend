@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import styled from "styled-components";
 import App from "./App.tsx";
 import ResetStyle from "./ResetStyle.tsx";
+import Topbar from "./components/Topbar.tsx";
 
 const Container = styled.div`
   display: flex;
@@ -20,6 +21,7 @@ createRoot(document.getElementById("root")!).render(
     <ResetStyle />
 
     <Container>
+      <Topbar />
       <App />
     </Container>
   </StrictMode>
