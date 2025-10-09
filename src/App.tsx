@@ -1,12 +1,31 @@
-import styled from "styled-components";
-const Cat = styled.img`
-  width: auto;
-  height: auto;
-`;
-function App() {
+//import React from "react";
+import { Routes, Route } from "react-router-dom";
+
+//import styled from "styled-components";
+
+import Home from "./components/Home";
+import Login from "./components/Login";
+import Register from "./components/Register";
+import Mypage from "./components/Mypage";
+import Problems from "./components/Problem";
+import Board from "./components/Board";
+import Studygroup from "./components/Studygroup";
+
+export default function App() {
   return (
-    <Cat src="https://camo.githubusercontent.com/89946a1fdbfdf5c66275e9d78ccf6191cddfee5afd3578d22bcc14002deea052/68747470733a2f2f632e74656e6f722e636f6d2f42543849356233356f4d5141414141432f6f61746d65616c2d6d656d652e676966" />
+    <Routes>
+      <Route path="/" element={<Home />} />
+
+      <Route path="/problems" element={<Problems />} />
+      <Route path="/board" element={<Board />} />
+      <Route path="/studygroup" element={<Studygroup />} />
+
+      {/* Topbar의 우측 인증/마이페이지 항목 */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      {/* Mypage 컴포넌트 연결 */}
+      <Route path="/mypage" element={<Mypage />} />
+    </Routes>
   );
 }
-
-export default App;

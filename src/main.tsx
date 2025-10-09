@@ -7,6 +7,7 @@ import styled from "styled-components";
 import App from "./App.tsx";
 import ResetStyle from "./ResetStyle.tsx";
 import Topbar from "./components/Topbar.tsx";
+import { BrowserRouter } from "react-router-dom";
 
 const Container = styled.div`
   display: flex;
@@ -20,9 +21,11 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ResetStyle />
 
-    <Container>
-      <Topbar />
-      <App />
-    </Container>
+    <BrowserRouter>
+      <Container>
+        <Topbar />
+        <App />
+      </Container>
+    </BrowserRouter>
   </StrictMode>
 );
