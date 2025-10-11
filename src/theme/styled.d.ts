@@ -6,7 +6,8 @@ declare module "styled-components" {
     focusColor: string;
     logoColor: string;
     headerBgColor: string;
-    authFocusBgColor: string;
-    authFocusTextColor: string;
+    authHoverBgColor: string;
+    authHoverTextColor: string;
+    authActiveBgColor: string;
   }
 }

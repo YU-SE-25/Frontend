@@ -15,6 +15,7 @@ const Container = styled.div`
 export default function App() {
   return (
     <>
+      {/* 테마설정 */}
       <ThemeProvider theme={lightTheme}>
         <Topbar />
         <Container>
