@@ -2,7 +2,6 @@ import { Link, NavLink } from "react-router-dom";
 import styled from "styled-components";
 
 type TopbarProps = { isLoggedIn?: boolean };
-
 const HEADER_H = 50;
 
 const TopbarContainer = styled.header`
@@ -12,8 +11,8 @@ const TopbarContainer = styled.header`
   left: 0;
   right: 0;
   z-index: 100;
-  background: teal;
-  color: white;
+  background-color: ${(props) => props.theme.headerBgColor};
+  color: ${(props) => props.theme.textColor};
   display: flex;
   align-items: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -25,7 +24,7 @@ const TopbarContent = styled.nav`
   margin: 0 auto;
   padding: 0 20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-evenly;
   align-items: center;
 `;
 
@@ -36,7 +35,7 @@ const Logo = styled(Link)`
   text-decoration: none;
   outline: none;
   &:focus-visible {
-    outline: 2px solid #ffd700;
+    outline: 2px solid ${(props) => props.theme.focusColor};
     outline-offset: 2px;
   }
 `;
@@ -54,17 +53,17 @@ const Menu = styled.ul`
 
 const MenuLink = styled(NavLink)`
   font-size: 16px;
-  color: white;
+  color: ${(props) => props.theme.textColor};
   text-decoration: none;
   outline: none;
   &:hover {
-    color: #ffd700;
+    color: ${(props) => props.theme.focusColor};
   }
   &.active {
     text-decoration: underline;
   }
   &:focus-visible {
-    outline: 2px solid #ffd700;
+    outline: 2px solid ${(props) => props.theme.focusColor};
     outline-offset: 2px;
   }
 `;
@@ -76,16 +75,23 @@ const Auth = styled.div`
 
 const AuthLink = styled(Link)`
   font-size: 14px;
-  color: white;
+  color: ${(props) => props.theme.textColor};
   text-decoration: none;
   padding: 6px 10px;
   border-radius: 10px;
   outline: none;
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: ${(props) => props.theme.authHoverBgColor};
+    color: ${(props) => props.theme.authHoverTextColor};
+    transform: scale(1.05);
+  }
+  &:active {
+    background: ${(props) => props.theme.authActiveBgColor};
+    color: ${(props) => props.theme.authHoverTextColor};
+    transform: scale(0.95);
   }
   &:focus-visible {
-    outline: 2px solid #ffd700;
+    outline: 2px solid ${(props) => props.theme.focusColor};
     outline-offset: 2px;
   }
 `;
@@ -96,7 +102,13 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
   return (
     <TopbarContainer>
       <TopbarContent aria-label="Top navigation">
-        <Logo to="/">[LOGO]</Logo>
+        <Logo to="/">
+          <img
+            src="../res/Logo.png"
+            alt="Logo"
+            style={{ height: "50px", verticalAlign: "middle" }}
+          />
+        </Logo>
         <Menu>
           <li>
             <MenuLink to="/problems">문제</MenuLink>
@@ -110,11 +122,13 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
         </Menu>
         <Auth>
           {isLoggedIn ? (
-            <AuthLink to="/mypage">마이페이지</AuthLink>
+            <AuthLink to="/mypage">마이페이지</AuthLink> //추후 프로필 사진으로 변경
           ) : (
             <>
               <AuthLink to="/login">로그인</AuthLink>
               <AuthLink to="/register">회원가입</AuthLink>
+
+              <AuthLink to="/mypage">삭제예정 - 마이페이지</AuthLink>
             </>
           )}
         </Auth>
