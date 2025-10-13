@@ -4,6 +4,7 @@ import App from "./App";
 import Home from "./screens/Home";
 import Login from "./screens/Login";
 import Register from "./screens/Register";
+import RegisterCheck from "./screens/RegisterCheck";
 import Mypage from "./screens/Mypage";
 import Problems from "./screens/Problem";
 import Board from "./screens/Board";
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
       { path: "studygroup", element: <Studygroup /> },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
+      { path: "register-check", element: <RegisterCheck /> },
       { path: "mypage", element: <Mypage /> },
     ],
   },
