@@ -99,6 +99,7 @@ const AuthLink = styled(Link)`
 export const TOPBAR_HEIGHT = HEADER_H;
 
 export default function Topbar({ isLoggedIn = false }: TopbarProps) {
+  //여기부분 isloggedIn는 추후 리덕스나 jotai같은걸루 바꿀예정
   return (
     <TopbarContainer>
       <TopbarContent aria-label="Top navigation">

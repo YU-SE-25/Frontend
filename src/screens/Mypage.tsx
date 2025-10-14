@@ -1,8 +1,23 @@
-//import React from "react";
-//import styled from "styled-components";
+import styled from "styled-components";
 
-//페이지 잘 넘어가지나 보기 위해서 그냥 친 코드
+const Container = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
 
+const Avatar = styled.img`
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+`;
 export default function Mypage() {
-  return <h1>마이페이지</h1>;
+  return (
+    <Container>
+      <Avatar
+        src="https://avatars.githubusercontent.com/u/122136634?v=4"
+        alt="User Avatar"
+      />
+    </Container>
+  );
 }
