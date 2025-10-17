@@ -1,21 +1,23 @@
 import styled from "styled-components";
 
 export const RegisterPageWrapper = styled.div`
-  padding-top: 50px;
+  height: 100%;
+  width: 100%;
   display: flex;
   justify-content: center;
-  min-height: 100vh;
+  align-items: center;
   background-color: ${(props) => props.theme.bgColor};
 `;
 export const RegisterBox = styled.div`
-  width: 700px;
+  width: 600px;
   margin-top: 50px;
   margin-bottom: 50px;
-  padding: 40px;
+  padding: 30px;
   background-color: ${(props) => props.theme.headerBgColor};
   border-radius: 5px;
   color: ${(props) => props.theme.textColor};
   border: 2px solid ${(props) => props.theme.focusColor};
+  position: relative;
 `;
 export const Title = styled.h2`
   font-size: 28px;
@@ -114,4 +116,16 @@ export const CloseButton = styled.button`
   background: none;
   font-size: 20px;
   cursor: pointer;
+`;
+
+//뒤로가기
+export const BackButton = styled.button`
+  position: absolute;
+  top: 70px;
+  left: 30px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10;
 `;
