@@ -14,6 +14,7 @@ import {
   ModalContentBox,
   CloseButton,
   ModalBackdrop,
+  BackButton,
 } from "../theme/Register.Style.ts";
 
 //type UserType = "student";
@@ -41,6 +42,11 @@ export default function Register() {
   const [modalContent, setModalContent] = useState<"terms" | "privacy" | null>(
     null
   );
+
+  //뒤로가기
+  const handleGoBack = () => {
+    navigate(-1);
+  };
 
   //가입 버튼 활성화
   const isFormValid = useMemo(() => {
@@ -168,7 +174,7 @@ export default function Register() {
       console.log("6. 이메일 인증 링크 발송 요청...");
       // await axios.post(`${API_BASE}/auth/email/send-link`, { email });
 
-      navigate("/register-check");
+      navigate("/register-success");
     } catch (error) {
       alert("서버 오류");
     }
@@ -176,6 +182,7 @@ export default function Register() {
 
   return (
     <RegisterPageWrapper>
+      <BackButton onClick={handleGoBack}>&larr; {/* 왼쪽 화살표 */}</BackButton>
       <RegisterBox>
         <Title>회원가입</Title>
 
