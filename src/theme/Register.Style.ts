@@ -84,3 +84,34 @@ export const CheckboxLabel = styled.label`
   margin-bottom: 10px;
   cursor: pointer;
 `;
+
+//약관
+export const ModalBackdrop = styled.div`
+  /* 💡 필수: 화면 전체에 고정 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000; /* 💡 매우 높게 설정하여 모든 요소 위에 표시 */
+`;
+export const ModalContentBox = styled.div`
+  background-color: white; /* 모달 내용 상자 */
+  padding: 30px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+  max-height: 80%;
+  overflow-y: auto; /* 내용이 길면 스크롤 가능 */
+`;
+export const CloseButton = styled.button`
+  float: right;
+  border: none;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+`;

@@ -11,6 +11,9 @@ import {
   ErrorMessage,
   TermsGroup,
   CheckboxLabel,
+  ModalContentBox,
+  CloseButton,
+  ModalBackdrop,
 } from "../theme/Register.Style.ts";
 
 //type UserType = "student";
@@ -32,7 +35,12 @@ export default function Register() {
 
   const isValidEmailFormat = email.includes("@") && email.includes(".");
   const passwordsMatch = password === passwordConfirm;
-  const isValidPhone = phoneNumber.replace(/[^0-9]/g, "").length >= 10;
+  const isValidPhone = phoneNumber.replace(/[^0-9]/g, "").length === 11;
+  const isValidNicknameLength = nickname.length >= 2 && nickname.length < 10;
+
+  const [modalContent, setModalContent] = useState<"terms" | "privacy" | null>(
+    null
+  );
 
   //가입 버튼 활성화
   const isFormValid = useMemo(() => {
@@ -42,7 +50,8 @@ export default function Register() {
       passwordsMatch &&
       password.length >= 8 &&
       isValidEmailFormat &&
-      isValidPhone
+      isValidPhone &&
+      isValidNicknameLength
     );
   }, [
     isTermsChecked,
@@ -51,12 +60,32 @@ export default function Register() {
     password.length,
     isValidEmailFormat,
     isValidPhone,
+    isValidNicknameLength,
   ]);
 
+  //전화번호
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // 💡 입력 시 하이픈 제거하고 숫자만 저장 (DB 관리를 위해)
-    const numericValue = e.target.value.replace(/[^0-9]/g, "");
-    setPhoneNumber(numericValue);
+    const cleaned = e.target.value.replace(/[^0-9]/g, "").slice(0, 11); // 숫자 11개까지만 허용
+
+    let formattedNumber = cleaned;
+
+    if (cleaned.length > 3 && cleaned.length <= 7) {
+      formattedNumber = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    } else if (cleaned.length > 7) {
+      formattedNumber = `${cleaned.slice(0, 3)}-${cleaned.slice(
+        3,
+        7
+      )}-${cleaned.slice(7, 11)}`;
+    }
+    setPhoneNumber(formattedNumber);
+  };
+
+  //약관동의
+  const handleOpenTerms = (type: "terms" | "privacy") => {
+    setModalContent(type);
+  };
+  const handleCloseModal = () => {
+    setModalContent(null);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -67,15 +96,29 @@ export default function Register() {
     //가입 신청 완료 페이지 만들어서 넘어갈 것
 
     //API 호출 및 중복 체크 시작
-    const API_BASE = "/api/v1"; // 임시 API 베이스 주소 설정
+    //const API_BASE = "/api/v1"; // 임시 API 베이스 주소 설정
+
+    //0. 블랙리스트 : 해당 이메일 혹은 전화번호가 등록되어 있을 경우
+    try {
+      console.log("0. 블랙리스트 체크 시작...");
+      //Api 적힌대로 함
+      // const response = await axios.post(`${API_BASE}/auth/check/blacklist`, { name, email, phone: phoneNumber });
+      if (response.data.isBlacklisted) {
+        alert("회원가입이 제한된 사용자입니다.");
+        return;
+      }
+    } catch (error) {
+      alert("블랙리스트 확인 중 오류가 발생했습니다.");
+      return;
+    }
 
     //1.이메일 중복(/auth/check/email)
     try {
       console.log("1. 이메일 중복 체크 시작...");
       // await axios.post(`${API_BASE}/auth/check/email`, { email });
     } catch (error) {
-      // alert("이미 사용 중인 이메일입니다.");
-      // return;
+      alert("이미 사용 중인 이메일입니다. 1인 1계정만 생성 가능합니다.");
+      return;
     }
 
     //2.닉네임 중복(/auth/check/nickname)
@@ -83,17 +126,25 @@ export default function Register() {
       console.log("2. 닉네임 중복 체크 시작...");
       // await axios.post(`${API_BASE}/auth/check/nickname`, { nickname });
     } catch (error) {
-      // alert("이미 사용 중인 닉네임입니다.");
-      // return;
+      alert("이미 사용 중인 닉네임입니다.");
+      return;
+    }
+    // 3. 전화번호 중복 체크 (/auth/check/phone)
+    try {
+      console.log("3. 전화번호 중복 체크 시작...");
+      // await axios.post(`${API_BASE}/auth/check/phone`, { phone: phoneNumber });
+    } catch (error) {
+      alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
+      return;
     }
 
-    //3.동일 인물(/auth/check/duplicate-account)
+    //4.동일 인물(/auth/check/duplicate-account)
     try {
-      console.log("3. 동일 인물 계정 확인 시작...");
+      console.log("4. 동일 인물 계정 확인 시작...");
       // await axios.post(`${API_BASE}/auth/check/duplicate-account`, { name, phoneNumber });
     } catch (error) {
-      // alert("이미 계정이 존재합니다. 1인 1계정만 생성할 수 있습니다.");
-      // return;
+      alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
+      return;
     }
 
     //최종 회원가입
@@ -103,18 +154,18 @@ export default function Register() {
       password: password,
       name: name,
       nickname: nickname,
+      phone: phoneNumber,
       role: "LEARNER",
       agreedToTerms: isTermsChecked && isPrivacyChecked,
-      emailVerified: false,
     };
 
     try {
       //회원가입 요청 (/auth/register)
-      console.log("4. 최종 회원가입 요청 전송...");
+      console.log("5. 최종 회원가입 요청 전송...");
       // await axios.post(`${API_BASE}/auth/register`, registrationData);
 
       //이메일 인증 링크 발송 (/auth/email/send-link)
-      console.log("5. 이메일 인증 링크 발송 요청...");
+      console.log("6. 이메일 인증 링크 발송 요청...");
       // await axios.post(`${API_BASE}/auth/email/send-link`, { email });
 
       navigate("/register-check");
@@ -167,7 +218,8 @@ export default function Register() {
               type="tel"
               value={phoneNumber}
               onChange={handlePhoneChange}
-              placeholder="하이픈 없이 숫자만 입력"
+              placeholder="010-XXXX-XXXX 형식으로 자동 입력"
+              maxLength={13}
             />
           </InputGroup>
 
@@ -185,6 +237,8 @@ export default function Register() {
               type="text"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
+              maxLength={9}
+              placeholder="2글자 이상, 10글자 미만"
             />
           </InputGroup>
 
@@ -195,7 +249,13 @@ export default function Register() {
                 checked={isTermsChecked}
                 onChange={(e) => setIsTermsChecked(e.target.checked)}
               />
-              사용자의 약관 동의 및 개인정보 처리방침 동의 (필수)
+              <span
+                onClick={() => handleOpenTerms("terms")}
+                style={{ cursor: "pointer", textDecoration: "underline" }}
+              >
+                사용자의 약관 동의 및 개인정보 처리방침 동의
+              </span>
+              (필수)
             </CheckboxLabel>
             <CheckboxLabel>
               <input
@@ -203,7 +263,13 @@ export default function Register() {
                 checked={isPrivacyChecked}
                 onChange={(e) => setIsPrivacyChecked(e.target.checked)}
               />
-              개인정보 수집 및 이용 동의 (필수)
+              <span
+                onClick={() => handleOpenTerms("privacy")}
+                style={{ cursor: "pointer", textDecoration: "underline" }}
+              >
+                개인정보 수집 및 이용 동의
+              </span>
+              (필수)
             </CheckboxLabel>
           </TermsGroup>
 
@@ -212,6 +278,22 @@ export default function Register() {
           </FullWidthButton>
         </form>
       </RegisterBox>
+      {modalContent && (
+        <ModalBackdrop onClick={handleCloseModal}>
+          <ModalContentBox onClick={(e) => e.stopPropagation()}>
+            {/* 모달 박스 클릭 시 배경 닫힘 방지 */}
+            <CloseButton onClick={handleCloseModal}>&times;</CloseButton>
+            <h3>
+              {modalContent === "terms" ? "이용 약관" : "개인정보 처리방침"}
+            </h3>
+            <p style={{ whiteSpace: "pre-wrap" }}>
+              {modalContent === "terms"
+                ? `\n 내용 추가 예정`
+                : `\n 내용 추가 예정`}
+            </p>
+          </ModalContentBox>
+        </ModalBackdrop>
+      )}
     </RegisterPageWrapper>
   );
 }

@@ -27,7 +27,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    //이미 잠긴 계정인지 확인 -> 방식?
+    //이미 잠긴 계정인지 확인 : 백엔드 api 필요
     /*
     if (failCount >= 5) {
       alert("이미 잠긴 계정입니다.");
