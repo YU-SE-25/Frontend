@@ -99,16 +99,16 @@ export const ModalBackdrop = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000; /* 💡 매우 높게 설정하여 모든 요소 위에 표시 */
+  z-index: 10000;
 `;
 export const ModalContentBox = styled.div`
-  background-color: white; /* 모달 내용 상자 */
+  background-color: white;
   padding: 30px;
   border-radius: 8px;
   width: 80%;
   max-width: 600px;
   max-height: 80%;
-  overflow-y: auto; /* 내용이 길면 스크롤 가능 */
+  overflow-y: auto;
 `;
 export const CloseButton = styled.button`
   float: right;

@@ -116,7 +116,7 @@ export default function Login() {
         </form>
 
         <SubLinks>
-          <SubLink to="/reset-password">비밀번호 재설정</SubLink>
+          <SubLink to="/forget-password">비밀번호 재설정</SubLink>
           <SubLink to="/register">계정이 없으신가요?</SubLink>
         </SubLinks>
 
