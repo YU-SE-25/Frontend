@@ -14,6 +14,7 @@ import {
   ModalContentBox,
   CloseButton,
   ModalBackdrop,
+  BackButton,
 } from "../theme/Register.Style.ts";
 
 //type UserType = "student";
@@ -34,6 +35,7 @@ export default function Register() {
   const [isPrivacyChecked, setIsPrivacyChecked] = useState(false);
 
   const isValidEmailFormat = email.includes("@") && email.includes(".");
+  const passwordValidationResult = validatePassword(password);
   const passwordsMatch = password === passwordConfirm;
   const isValidPhone = phoneNumber.replace(/[^0-9]/g, "").length === 11;
   const isValidNicknameLength = nickname.length >= 2 && nickname.length < 10;
@@ -42,6 +44,11 @@ export default function Register() {
     null
   );
 
+  //뒤로가기
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   //가입 버튼 활성화
   const isFormValid = useMemo(() => {
     return (
@@ -49,6 +56,7 @@ export default function Register() {
       isPrivacyChecked &&
       passwordsMatch &&
       password.length >= 8 &&
+      passwordValidationResult.isValid &&
       isValidEmailFormat &&
       isValidPhone &&
       isValidNicknameLength
@@ -58,10 +66,32 @@ export default function Register() {
     isPrivacyChecked,
     passwordsMatch,
     password.length,
+    passwordValidationResult.isValid,
     isValidEmailFormat,
     isValidPhone,
     isValidNicknameLength,
   ]);
+
+  //비밀번호
+  const validatePassword = (password: string) => {
+    //최소 8자, 대문자(A-Z), 소문자(a-z), 숫자(0-9) 각각 1개 이상 포함
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+    const isValid = regex.test(password);
+
+    let message = "";
+    if (password.length < 8) {
+      message = "최소 8자 이상이어야 합니다.";
+    } else if (!/(?=.*[a-z])/.test(password)) {
+      message = "소문자를 포함해야 합니다.";
+    } else if (!/(?=.*[A-Z])/.test(password)) {
+      message = "대문자를 포함해야 합니다.";
+    } else if (!/(?=.*\d)/.test(password)) {
+      message = "숫자를 포함해야 합니다.";
+    }
+
+    return { isValid, message };
+  };
 
   //전화번호
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,7 +198,7 @@ export default function Register() {
       console.log("6. 이메일 인증 링크 발송 요청...");
       // await axios.post(`${API_BASE}/auth/email/send-link`, { email });
 
-      navigate("/register-check");
+      navigate("/register-success");
     } catch (error) {
       alert("서버 오류");
     }
@@ -176,6 +206,7 @@ export default function Register() {
 
   return (
     <RegisterPageWrapper>
+      <BackButton onClick={handleGoBack}>&larr; {/* 왼쪽 화살표 */}</BackButton>
       <RegisterBox>
         <Title>회원가입</Title>
 
@@ -201,6 +232,9 @@ export default function Register() {
               placeholder="최소 8자, 대/소문자 숫자 포함"
             />
           </InputGroup>
+          {password.length > 0 && !passwordValidationResult.isValid && (
+            <ErrorMessage>비밀번호 규정을 따라주세요.</ErrorMessage>
+          )}
           <InputGroup>
             <Label>비밀번호 확인 :</Label>
             <StyledInput

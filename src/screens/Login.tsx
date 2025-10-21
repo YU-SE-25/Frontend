@@ -12,6 +12,7 @@ import {
   SubLink,
   SocialLoginGroup,
   SocialButton,
+  BackButton,
 } from "../theme/Login.Style";
 
 //코드
@@ -19,9 +20,14 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepLogin, setKeepLogin] = useState(false);
-  const [failCount, setFailCount] = useState(0);
+  //const [failCount, setFailCount] = useState(0);
 
   const navigate = useNavigate();
+
+  //뒤로가기
+  const handleGoBack = () => {
+    navigate(-1);
+  };
 
   //로그인 검사
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,6 +88,7 @@ export default function Login() {
 
   return (
     <LoginPageWrapper>
+      <BackButton onClick={handleGoBack}>&larr; {/* 왼쪽 화살표 */}</BackButton>
       <LoginBox>
         <LoginTitle>로그인</LoginTitle>
         <form onSubmit={handleSubmit}>
@@ -109,7 +116,7 @@ export default function Login() {
         </form>
 
         <SubLinks>
-          <SubLink to="/reset-password">비밀번호 재설정</SubLink>
+          <SubLink to="/forget-password">비밀번호 재설정</SubLink>
           <SubLink to="/register">계정이 없으신가요?</SubLink>
         </SubLinks>
 

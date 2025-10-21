@@ -1,21 +1,23 @@
 import styled from "styled-components";
 
 export const RegisterPageWrapper = styled.div`
-  padding-top: 50px;
+  height: 100%;
+  width: 100%;
   display: flex;
   justify-content: center;
-  min-height: 100vh;
+  align-items: center;
   background-color: ${(props) => props.theme.bgColor};
 `;
 export const RegisterBox = styled.div`
-  width: 700px;
+  width: 600px;
   margin-top: 50px;
   margin-bottom: 50px;
-  padding: 40px;
+  padding: 30px;
   background-color: ${(props) => props.theme.headerBgColor};
   border-radius: 5px;
   color: ${(props) => props.theme.textColor};
   border: 2px solid ${(props) => props.theme.focusColor};
+  position: relative;
 `;
 export const Title = styled.h2`
   font-size: 28px;
@@ -97,16 +99,16 @@ export const ModalBackdrop = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000; /* 💡 매우 높게 설정하여 모든 요소 위에 표시 */
+  z-index: 10000;
 `;
 export const ModalContentBox = styled.div`
-  background-color: white; /* 모달 내용 상자 */
+  background-color: white;
   padding: 30px;
   border-radius: 8px;
   width: 80%;
   max-width: 600px;
   max-height: 80%;
-  overflow-y: auto; /* 내용이 길면 스크롤 가능 */
+  overflow-y: auto;
 `;
 export const CloseButton = styled.button`
   float: right;
@@ -114,4 +116,16 @@ export const CloseButton = styled.button`
   background: none;
   font-size: 20px;
   cursor: pointer;
+`;
+
+//뒤로가기
+export const BackButton = styled.button`
+  position: absolute;
+  top: 70px;
+  left: 30px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10;
 `;

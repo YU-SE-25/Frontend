@@ -3,13 +3,11 @@ import Topbar, { TOPBAR_HEIGHT } from "./components/Topbar";
 import styled, { ThemeProvider } from "styled-components";
 import { darkTheme, lightTheme } from "./theme/theme";
 const Container = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  width: 100%;
-  background-color: ${(props) => props.theme.bgColor};
   margin-top: ${TOPBAR_HEIGHT}px;
+  height: calc(100vh - ${TOPBAR_HEIGHT}px);
+  width: 100%;
+  background-color: ${(props) => props.theme.bgColor} !important;
+  display: flex;
 `;
 
 export default function App() {

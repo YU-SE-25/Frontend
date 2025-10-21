@@ -2,8 +2,10 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 
 export const LoginPageWrapper = styled.div`
+  height: 100%;
+  width: 100%;
   display: flex;
-  justify-content: center; /* 수평 중앙 정렬 */
+  justify-content: center;
   align-items: center;
   background-color: ${(props) => props.theme.bgColor};
 `;
@@ -14,6 +16,7 @@ export const LoginBox = styled.div`
   border-radius: 5px;
   color: ${(props) => props.theme.textColor};
   border: 2px solid ${(props) => props.theme.focusColor};
+  position: relative;
 `;
 
 //'로그인'
@@ -131,4 +134,16 @@ export const SocialButton = styled.button<SocialButtonProps>`
   background-color: ${(props) =>
     props.platform === "google" ? "#db4437" : "#333"};
   color: white;
+`;
+
+//뒤로가기
+export const BackButton = styled.button`
+  position: absolute;
+  top: 70px;
+  left: 30px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 10;
 `;

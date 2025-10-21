@@ -1,5 +1,16 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import styled from "styled-components";
+//import axios from "axios"; -> 전역관리용 추후 결정예정
+
+//전역 상태 관리 (Zustand/Jotai를 위한 Placeholder)
+//실제 프로젝트에서는 이 부분을 useAuthStore.ts 등에서 import 해야 합니다.
+const useAuthStore = () => ({
+  // isLoggedin 상태를 가져오거나 set 하는 함수 (실제 스토어 사용 시 구현 필요)
+  logout: () => {
+    console.log("Global Auth State Reset initiated.");
+    // 예: set((state) => ({ isLoggedIn: false, user: null }))
+  },
+});
 
 type TopbarProps = { isLoggedIn?: boolean };
 const HEADER_H = 50;
@@ -99,7 +110,38 @@ const AuthLink = styled(Link)`
 export const TOPBAR_HEIGHT = HEADER_H;
 
 export default function Topbar({ isLoggedIn = false }: TopbarProps) {
-  //여기부분 isloggedIn는 추후 리덕스나 jotai같은걸루 바꿀예정
+  const navigate = useNavigate();
+  const authStore = useAuthStore();
+
+  // 💡 [로그아웃 처리 함수]
+  const handleLogout = async () => {
+    // 1. Local Storage에서 Refresh Token 가져오기
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    // 2. Refresh Token 무효화 API 호출 (서버 세션 종료)
+    if (refreshToken) {
+      try {
+        // 백엔드에서 요구한 JSON 형식으로 전송
+        await axios.post("/api/auth/logout", {
+          refreshToken: refreshToken,
+        });
+      } catch (error) {
+        // API 호출 실패해도 클라이언트 측 로그아웃은 진행 (세션 불일치 방지)
+        console.error(
+          "Logout API call failed, proceeding with client-side logout:",
+          error
+        );
+      }
+    }
+
+    // 3. 클라이언트 측 상태 초기화 (LocalStorage와 전역 상태)
+    localStorage.removeItem("refreshToken"); // Local Storage에서 토큰 삭제
+    authStore.logout(); // 전역 인증 상태 초기화
+
+    // 4. 메인으로 복귀
+    navigate("/");
+  };
+
   return (
     <TopbarContainer>
       <TopbarContent aria-label="Top navigation">
@@ -128,8 +170,9 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
             <>
               <AuthLink to="/login">로그인</AuthLink>
               <AuthLink to="/register">회원가입</AuthLink>
-
+              {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
               <AuthLink to="/mypage/:userName">삭제예정 - 마이페이지</AuthLink>
+              <AuthLink to="/mypage">로그아웃</AuthLink>
             </>
           )}
         </Auth>

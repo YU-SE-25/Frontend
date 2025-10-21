@@ -3,8 +3,11 @@ import App from "./App";
 
 import Home from "./screens/Home";
 import Login from "./screens/Login";
+import ForgetPassword from "./screens/ForgetPassword";
+import ResetPassword from "./screens/ResetPassword";
 import Register from "./screens/Register";
-import RegisterCheck from "./screens/RegisterCheck";
+import RegisterSuccess from "./screens/RegisterSuccess";
+import VerifySuccess from "./screens/VerifySuccess";
 import Mypage from "./screens/Mypage";
 import Problems from "./screens/Problem";
 import Board from "./screens/Board";
@@ -20,8 +23,11 @@ const router = createBrowserRouter([
       { path: "board", element: <Board /> },
       { path: "studygroup", element: <Studygroup /> },
       { path: "login", element: <Login /> },
+      { path: "forget-password", element: <ForgetPassword /> },
+      { path: "reset-password", element: <ResetPassword /> },
       { path: "register", element: <Register /> },
-      { path: "register-check", element: <RegisterCheck /> },
+      { path: "register-success", element: <RegisterSuccess /> },
+      { path: "verify-success", element: <VerifySuccess /> },
       { path: "mypage/:userName", element: <Mypage /> },
     ],
   },
