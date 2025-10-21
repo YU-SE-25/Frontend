@@ -123,13 +123,13 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
         </Menu>
         <Auth>
           {isLoggedIn ? (
-            <AuthLink to="/mypage">마이페이지</AuthLink> //추후 프로필 사진으로 변경
+            <AuthLink to="/mypage/:userName">마이페이지</AuthLink> //추후 프로필 사진으로 변경. username도 리덕스나 jotai같은걸루 바꿀예정
           ) : (
             <>
               <AuthLink to="/login">로그인</AuthLink>
               <AuthLink to="/register">회원가입</AuthLink>
 
-              <AuthLink to="/mypage">삭제예정 - 마이페이지</AuthLink>
+              <AuthLink to="/mypage/:userName">삭제예정 - 마이페이지</AuthLink>
             </>
           )}
         </Auth>
