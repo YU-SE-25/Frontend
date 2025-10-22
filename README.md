@@ -10,3 +10,38 @@
 |문서|	코드 편집X, 관련 문서 업로드 할 때
 |테스트|	테스트 코드 작업 시
 |환경|	빌드, 설정 파일 등 수정, DB 연결 작업
+
+---
+
+## ⚙️ 개발 환경 정보 (Environment)
+
+| 항목          | 버전                      | 비고                               |
+| ----------- | ----------------------- | -------------------------------- |
+| **프레임워크**   | React + Vite            | SPA 환경 구성                        |
+| **언어**      | TypeScript              | 필요 시 TSX 사용                      |
+| **스타일**     | Styled-Components       | CSS-in-JS 방식                     |
+| **라우팅**     | (미정) |    |
+| **패키지 매니저** | npm 또는 yarn             | package.json  |
+
+---
+
+## 💻 실행 방법
+
+```bash
+# 1. 레포지토리 복사
+git clone https://github.com/YU-SE-25/Frontend.git
+
+# 2. 프로젝트 폴더로 이동
+cd Frontend
+
+# 3. 의존성 다운로드 및 빌드
+
+# 핵심 라이브러리 및 API 통신, 스타일링 패키지 설치
+npm install axios styled-components
+
+# 개발 의존성 (TypeScript 타입 정의 파일) 설치
+# styled-components와 axios를 TS 환경에서 사용하기 위한 타입 정의 파일입니다.
+npm install -D @types/styled-components @types/axios
+
+# 4. 서버 실행
+npm run dev
