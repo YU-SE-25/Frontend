@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-//import axios from "axios"; -> 전역관리용 추후 결정예정
+import axios from "axios"; //-> 전역관리용 추후 결정예정
 
 //전역 상태 관리 (Zustand/Jotai를 위한 Placeholder)
 //실제 프로젝트에서는 이 부분을 useAuthStore.ts 등에서 import 해야 합니다.
@@ -165,13 +165,13 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
         </Menu>
         <Auth>
           {isLoggedIn ? (
-            <AuthLink to="/mypage">마이페이지</AuthLink> //추후 프로필 사진으로 변경
+            <AuthLink to="/mypage/:userName">마이페이지</AuthLink> //추후 프로필 사진으로 변경. username도 리덕스나 jotai같은걸루 바꿀예정
           ) : (
             <>
               <AuthLink to="/login">로그인</AuthLink>
               <AuthLink to="/register">회원가입</AuthLink>
               {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
-              <AuthLink to="/mypage">마이페이지</AuthLink>
+              <AuthLink to="/mypage/:userName">마이페이지</AuthLink>
               <AuthLink to="/mypage">로그아웃</AuthLink>
             </>
           )}
