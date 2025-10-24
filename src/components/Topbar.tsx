@@ -154,7 +154,7 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
         </Logo>
         <Menu>
           <li>
-            <MenuLink to="/problems">문제</MenuLink>
+            <MenuLink to="/problem-list">문제</MenuLink>
           </li>
           <li>
             <MenuLink to="/board">게시판</MenuLink>

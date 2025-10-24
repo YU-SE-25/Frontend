@@ -9,7 +9,7 @@ import Register from "./screens/Register";
 import RegisterSuccess from "./screens/RegisterSuccess";
 import VerifySuccess from "./screens/VerifySuccess";
 import Mypage from "./screens/Mypage";
-import Problems from "./screens/Problem";
+import ProblemList from "./problem/ProblemList";
 import Board from "./screens/Board";
 import Studygroup from "./screens/Studygroup";
 
@@ -19,9 +19,10 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       { index: true, element: <Home /> },
-      { path: "problems", element: <Problems /> },
+      { path: "problem-list", element: <ProblemList /> },
       { path: "board", element: <Board /> },
       { path: "studygroup", element: <Studygroup /> },
+
       { path: "login", element: <Login /> },
       { path: "forget-password", element: <ForgetPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
