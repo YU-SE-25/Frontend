@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-//import axios from "axios"; -> 전역관리용 추후 결정예정
+import axios from "axios";
 
 //전역 상태 관리 (Zustand/Jotai를 위한 Placeholder)
 //실제 프로젝트에서는 이 부분을 useAuthStore.ts 등에서 import 해야 합니다.

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
+//전역 로그인 상태 import
 import {
   ProblemListWrapper,
   PageTitle,
@@ -17,14 +17,14 @@ import {
   EmptyCell,
   TitleCell,
   ProblemLink,
-  Pagination,
   ExpandButton,
   SummaryRow,
   SummaryBox,
   TitleContainer,
   StatusIndicator,
-  InfoActionCell,
   ActionInSummaryButton,
+  PaginationContainer,
+  PageLink,
 } from "../theme/ProblemList.Style";
 
 import type {
@@ -47,7 +47,7 @@ interface Problem {
 // 더미 데이터
 const DUMMY_PROBLEMS: Problem[] = [
   {
-    id: 1001,
+    id: 1,
     title: "두 수의 합",
     difficulty: "하",
     views: 50,
@@ -58,7 +58,7 @@ const DUMMY_PROBLEMS: Problem[] = [
     userStatus: "solved",
   },
   {
-    id: 1002,
+    id: 2,
     title: "정렬된 배열...",
     difficulty: "중",
     views: 120,
@@ -69,7 +69,7 @@ const DUMMY_PROBLEMS: Problem[] = [
     userStatus: "attempted",
   },
   {
-    id: 1003,
+    id: 3,
     title: "가장 긴 팰린드롬",
     difficulty: "상",
     views: 80,
@@ -85,18 +85,66 @@ export default function ProblemList() {
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortType, setSortType] = useState("latest"); // 정렬 기준
+  const [sortType, setSortType] = useState("latest"); //정렬 기준
   const [expandedProblemId, setExpandedProblemId] = useState<number | null>(
     null
   ); // 아코디언 상태
+  const [currentPage, setCurrentPage] = useState(1); //현재 페이지 (기본 1)
+  const itemsPerPage = 10; //페이지당 문제 수
 
-  const filteredProblems = DUMMY_PROBLEMS.filter(
+  //백엔드에서 들고 올 것들
+  const [problems, setProblems] = useState<Problem[]>([]); //실제 문제 목록 상태
+  const [loading, setLoading] = useState(true); //로딩 상태
+  const [error, setError] = useState<string | null>(null); //에러 상태
+
+  //전역 로그인 상태
+  //const isLoggedIn = useAuthStore((state) => state.isLoggedIn); //로그인 여부 확인
+  const isLoggedIn = true; //임시용
+  //API 호출 로직
+  useEffect(() => {
+    const fetchProblems = async () => {
+      setLoading(true); // 로딩 시작
+      setError(null); // 에러 초기화
+      try {
+        // 💡 API 호출: 정렬 기준(sortType)을 파라미터로 넘김
+        // const response = await axios.get(`~~`, {
+        //     params: { ~~~ } // 검색어도 함께 보낼 수 있음
+        // });
+
+        //더미 데이터 & 로그인 상태 로직 (API 연동 전 임시)
+        console.log("Fetching problems with sort:", sortType);
+        let fetchedProblems = DUMMY_PROBLEMS; // 일단 더미 사용
+
+        //로그인 안 했으면 userStatus를 'none'으로 강제 설정
+        if (!isLoggedIn) {
+          fetchedProblems = fetchedProblems.map((p) => ({
+            ...p,
+            userStatus: "none",
+          }));
+        }
+        // --- (임시 로직 끝) ---
+
+        setProblems(fetchedProblems); // 상태 업데이트
+      } catch (err) {
+        setError("문제 목록을 불러오는 데 실패했습니다.");
+        console.error(err);
+      } finally {
+        setLoading(false); // 로딩 종료
+      }
+    };
+
+    fetchProblems(); // 컴포넌트 마운트 또는 sortType 변경 시 함수 실행
+  }, [sortType, isLoggedIn]); //sortType이나 로그인 상태가 바뀌면 다시 호출
+
+  //필터링
+  const filteredProblems = problems.filter(
     (p) =>
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.id.toString().includes(searchTerm)
   );
 
-  //검색 버튼 -> 꼭 필요할까? 의논필요
+  //검색 버튼 -> 지금 더미데이터로 하는거라 치자마자 검색이 되는데
+  //백엔드에서 fetch하는 걸로 바꾸면 버튼 눌러야 검색됩니다...아마도
   const handleSearch = () => {
     if (searchTerm.trim().length === 0) {
       alert("검색어를 입력해 주세요.");
@@ -135,6 +183,26 @@ export default function ProblemList() {
     }
   };
 
+  //현재 페이지에 보여줄 문제 계산
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  //filteredProblems에서 현재 페이지 문제만
+  const currentProblems = filteredProblems.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  //총 페이지 수 계산
+  const totalPages = Math.ceil(filteredProblems.length / itemsPerPage);
+
+  //페이지 변경
+  const handlePageChange = (pageNumber: number) => {
+    // 페이지 번호가 유효한 범위 내에 있을 때만 변경
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
   return (
     <ProblemListWrapper>
       <PageTitle>문제 목록</PageTitle>
@@ -166,6 +234,9 @@ export default function ProblemList() {
           <option value="language">선호 언어 (미구현)</option>
         </SortSelect>
       </ControlBar>
+
+      {loading && <p>문제 목록을 불러오는 중...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {/* 문제 목록 테이블 */}
       <ProblemTable>
@@ -210,7 +281,6 @@ export default function ProblemList() {
                 {/* 아코디언 내용 행 */}
                 {expandedProblemId === problem.id && (
                   <SummaryRow>
-                    \
                     <TableCell colSpan={6}>
                       <SummaryBox>
                         {/* 왼쪽 텍스트 영역 */}
@@ -249,7 +319,35 @@ export default function ProblemList() {
         </tbody>
       </ProblemTable>
 
-      <Pagination>페이지네이션 영역</Pagination>
+      <PaginationContainer>
+        <PageLink
+          onClick={() => handlePageChange(currentPage - 1)}
+          isDisabled={currentPage === 1} // 비활성화 조건
+          aria-disabled={currentPage === 1} // 스크린 리더용
+        >
+          &lt; 이전
+        </PageLink>
+
+        {/* 페이지 번호 텍스트 링크들 */}
+        {Array.from({ length: totalPages }, (_, index) => (
+          <PageLink
+            key={index + 1}
+            onClick={() => handlePageChange(index + 1)}
+            isActive={currentPage === index + 1} // 현재 페이지면 활성
+          >
+            {index + 1}
+          </PageLink>
+        ))}
+
+        {/* 다음 텍스트 링크 */}
+        <PageLink
+          onClick={() => handlePageChange(currentPage + 1)}
+          isDisabled={currentPage === totalPages} // 비활성화 조건
+          aria-disabled={currentPage === totalPages} // 스크린 리더용
+        >
+          다음 &gt;
+        </PageLink>
+      </PaginationContainer>
     </ProblemListWrapper>
   );
 }
