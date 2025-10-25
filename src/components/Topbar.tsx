@@ -171,7 +171,7 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
               <AuthLink to="/login">로그인</AuthLink>
               <AuthLink to="/register">회원가입</AuthLink>
               {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
-              <AuthLink to="/mypage/:userName">마이페이지</AuthLink>
+              <AuthLink to="/mypage">마이페이지</AuthLink>
               <AuthLink to="/mypage">로그아웃</AuthLink>
             </>
           )}
