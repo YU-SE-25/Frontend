@@ -37,10 +37,11 @@ export const ControlBar = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 3px;
 `;
 export const SearchContainer = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 10px;
 `;
 export const SearchInput = styled.input`
   padding: 8px 12px;
@@ -58,10 +59,6 @@ export const SearchButton = styled.button`
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-
-  &:hover {
-    background-color: ${(props) => props.theme.focusColor};
-  }
 `;
 export const SortSelect = styled.select`
   padding: 8px 12px;
@@ -82,8 +79,7 @@ export const ProblemTable = styled.table`
   overflow: hidden;
 `;
 export const TableHead = styled.thead`
-  background-color: ${(props) => props.theme.authHoverBgColor};
-  border-bottom: 2px solid ${(props) => props.theme.authActiveBgColor};
+  background-color: ${(props) => props.theme.logoColor};
 `;
 export const HeaderCell = styled.th<HeaderCellProps>`
   width: ${(props) => props.width};
@@ -94,20 +90,12 @@ export const HeaderCell = styled.th<HeaderCellProps>`
 `;
 export const TableRow = styled.tr<StatusProps>`
   border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
-  &:hover {
-    background-color: ${(props) => props.theme.authActiveBgColor};
-  }
 `;
 export const TableCell = styled.td`
   padding: 15px;
   color: ${(props) => props.theme.textColor};
   font-size: 14px;
   vertical-align: middle;
-`;
-export const InfoActionCell = styled(TableCell)`
-  display: flex;
-  align-items: center;
-  gap: 15px; /* 항목 간 간격 */
 `;
 export const EmptyCell = styled(TableCell)`
   text-align: center;
@@ -214,10 +202,44 @@ export const ActionInSummaryButton = styled.button`
   }
 `;
 
-//페이지네이션(임시)
+//페이지네이션
+export const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px; /* 버튼 사이 간격 */
+  margin-top: 30px; /* 테이블과의 간격 */
+`;
 
-export const Pagination = styled.div`
-  text-align: center;
-  padding: 20px 0;
+export const PageLink = styled.span<{
+  isActive?: boolean;
+  isDisabled?: boolean;
+}>`
+  /* 기본 텍스트 스타일 */
   color: ${(props) => props.theme.textColor};
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px; /* 클릭 영역 확보 */
+  text-decoration: none;
+  transition: color 0.2s;
+
+  /* 현재 페이지 강조 (굵게) */
+  font-weight: ${(props) => (props.isActive ? "bold" : "normal")};
+  color: ${(props) =>
+    props.isActive ? props.theme.focusColor : props.theme.textColor};
+
+  /* 비활성화 상태 (클릭 불가, 흐리게) */
+  ${(props) =>
+    props.isDisabled &&
+    `
+    color: ${props.theme.authHoverBgColor}; /* 흐린 색상 */
+    cursor: not-allowed;
+    pointer-events: none; /* 클릭 이벤트 자체를 막음 */
+  `}
+
+  /* 호버 효과 (비활성화 아닐 때만) */
+  &:not([aria-disabled="true"]):hover {
+    color: ${(props) => props.theme.focusColor};
+    text-decoration: underline;
+  }
 `;
