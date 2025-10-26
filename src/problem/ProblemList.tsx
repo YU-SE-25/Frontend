@@ -260,7 +260,7 @@ export default function ProblemList() {
                   <TitleCell>
                     <TitleContainer>
                       <StatusIndicator $userStatus={problem.userStatus} />
-                      <ProblemLink to={`/problems/${problem.id}`}>
+                      <ProblemLink to={`/problem-detail/${problem.id}`}>
                         {problem.title}
                       </ProblemLink>
                       {/* ExpandButton은 TitleContainer 밖으로 이동 */}
