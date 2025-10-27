@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import axios from "axios"; //-> 전역관리용 추후 결정예정
+import axios from "axios";
+import React, { useState } from "react"; // useState는 Theme Toggle 시뮬레이션용으로 사용
 
 //전역 상태 관리 (Zustand/Jotai를 위한 Placeholder)
 //실제 프로젝트에서는 이 부분을 useAuthStore.ts 등에서 import 해야 합니다.
@@ -11,6 +12,12 @@ const useAuthStore = () => ({
     // 예: set((state) => ({ isLoggedIn: false, user: null }))
   },
 });
+//테마 관리 PLACEHOLDER -> 얘도 임시입니당
+const useThemeStore = () => {
+  const [isDark, setIsDark] = useState(false); // 로컬에서 임시로 다크 모드 상태 관리
+  const toggleTheme = () => setIsDark((prev) => !prev);
+  return { isDark, toggleTheme };
+};
 
 type TopbarProps = { isLoggedIn?: boolean };
 const HEADER_H = 50;
@@ -107,11 +114,51 @@ const AuthLink = styled(Link)`
   }
 `;
 
+// **********************************************
+//라이트.다크모드 변경 버튼(추후에 뺄수도 있음, css확인용)
+const ThemeToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: 20px;
+  cursor: pointer;
+  span {
+    font-size: 14px;
+    margin-right: 8px;
+    color: ${(props) => props.theme.textColor};
+    white-space: nowrap;
+  }
+`;
+// 실제 스위치 영역 (막대)
+const ToggleSwitch = styled.div<{ $isDark: boolean }>`
+  width: 44px; /* 스위치 막대 너비 */
+  height: 24px; /* 스위치 막대 높이 */
+  background-color: ${(props) =>
+    props.$isDark ? props.theme.focusColor : props.theme.authHoverBgColor};
+  border-radius: 12px;
+  position: relative;
+  transition: background-color 0.3s;
+`;
+// 스위치 핸들 (동그란 부분)
+const ToggleHandle = styled.div<{ $isDark: boolean }>`
+  width: 18px;
+  height: 18px;
+  background-color: ${(props) => props.theme.bgColor}; /* 항상 밝은 색 */
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  /* Dark 모드일 때 오른쪽으로 이동 */
+  left: ${(props) => (props.$isDark ? "23px" : "3px")};
+  transition: left 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+`;
+// **********************************************
+
 export const TOPBAR_HEIGHT = HEADER_H;
 
 export default function Topbar({ isLoggedIn = false }: TopbarProps) {
   const navigate = useNavigate();
   const authStore = useAuthStore();
+  const { isDark, toggleTheme } = useThemeStore(); // 테마 토글 상태 가져오기
 
   // 💡 [로그아웃 처리 함수]
   const handleLogout = async () => {
@@ -154,7 +201,7 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
         </Logo>
         <Menu>
           <li>
-            <MenuLink to="/problems">문제</MenuLink>
+            <MenuLink to="/problem-list">문제</MenuLink>
           </li>
           <li>
             <MenuLink to="/board">게시판</MenuLink>
@@ -163,6 +210,12 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
             <MenuLink to="/studygroup">스터디 그룹</MenuLink>
           </li>
         </Menu>
+        <ThemeToggleContainer onClick={toggleTheme}>
+          <span>{isDark ? "Dark" : "Light"}</span>
+          <ToggleSwitch $isDark={isDark}>
+            <ToggleHandle $isDark={isDark} />
+          </ToggleSwitch>
+        </ThemeToggleContainer>
         <Auth>
           {isLoggedIn ? (
             <AuthLink to="/mypage/:userName">마이페이지</AuthLink> //추후 프로필 사진으로 변경. username도 리덕스나 jotai같은걸루 바꿀예정
