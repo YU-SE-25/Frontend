@@ -20,7 +20,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepLogin, setKeepLogin] = useState(false);
-  //const [failCount, setFailCount] = useState(0);
+  const [failCount, setFailCount] = useState(0);
 
   const navigate = useNavigate();
 
