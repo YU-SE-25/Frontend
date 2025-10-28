@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { TOPBAR_HEIGHT } from "../components/Topbar";
 
 //Type Definitions (TypeScript)
 export interface StatusProps {
@@ -21,6 +22,7 @@ export const ProblemListWrapper = styled.div`
   width: 80%;
   margin: 0 auto;
   display: flex;
+  padding-top: ${TOPBAR_HEIGHT + 10}px;
   justify-content: center;
   align-items: center;
   flex-direction: column;
@@ -184,6 +186,11 @@ export const SummaryBox = styled.div`
     margin-bottom: 8px;
   }
 `;
+export const ButtonContainer = styled.div`
+  display: flex;
+  gap: 10px; /* 버튼 사이 간격 */
+  flex-shrink: 0; /* 버튼 영역 줄어들지 않게 */
+`;
 //코드 바로 작성 버튼
 export const ActionInSummaryButton = styled.button`
   padding: 6px 12px; /* SearchButton보다 살짝 작게 */
@@ -199,6 +206,24 @@ export const ActionInSummaryButton = styled.button`
 
   &:hover {
     background-color: ${(props) => props.theme.focusColor};
+  }
+`;
+//문제 상세보기 버튼
+export const DetailsButton = styled.button`
+  padding: 6px 12px;
+  /* 다른 색상 사용 (예: 회색 계열) */
+  background-color: ${(props) => props.theme.authHoverBgColor};
+  color: ${(props) => props.theme.textColor};
+  border: 1px solid ${(props) => props.theme.authActiveBgColor};
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: normal; /* 일반 굵기 */
+  transition: background-color 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: ${(props) => props.theme.authActiveBgColor};
   }
 `;
 
@@ -219,14 +244,13 @@ export const PageLink = styled.span<{
   color: ${(props) => props.theme.textColor};
   font-size: 16px;
   cursor: pointer;
-  padding: 5px; /* 클릭 영역 확보 */
+  padding: 5px;
   text-decoration: none;
   transition: color 0.2s;
 
   /* 현재 페이지 강조 (굵게) */
   font-weight: ${(props) => (props.isActive ? "bold" : "normal")};
-  color: ${(props) =>
-    props.isActive ? props.theme.focusColor : props.theme.textColor};
+  color: ${(props) => (props.isActive ? "#ff3838" : props.theme.textColor)};
 
   /* 비활성화 상태 (클릭 불가, 흐리게) */
   ${(props) =>
