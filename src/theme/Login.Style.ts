@@ -7,7 +7,7 @@ export const LoginPageWrapper = styled.div`
   height: 100%;
   width: 80%;
   display: flex;
-  justify-content: center;-
+  justify-content: center;
   align-items: center;
   background-color: ${(props) => props.theme.bgColor};
 `;
