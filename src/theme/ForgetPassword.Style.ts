@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { TOPBAR_HEIGHT } from "../components/Topbar";
 
 interface ActionButtonProps {
   $main?: boolean;
@@ -11,20 +12,17 @@ export const ResetPageWrapper = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
+  padding-top: ${TOPBAR_HEIGHT + 50}px;
   background-color: ${(props) => props.theme.bgColor};
 `;
 export const LoginBox = styled.div`
   position: relative;
   width: 800px;
   padding: 40px;
+  margin-top: 50px;
   background-color: ${(props) => props.theme.headerBgColor};
-  border-radius: 5px;
-  color: ${(props) => props.theme.textColor};
 
-  /* 노란색 focusColor 그림자 효과 */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
-    0 0 0 4px ${(props) => props.theme.focusColor};
+  color: ${(props) => props.theme.textColor};
 `;
 
 export const ResetTitle = styled.h2`
