@@ -1,11 +1,13 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { TOPBAR_HEIGHT } from "../components/Topbar";
 
 export const LoginPageWrapper = styled.div`
+  margin-top: ${TOPBAR_HEIGHT}px;
   height: 100%;
-  width: 100%;
+  width: 80%;
   display: flex;
-  justify-content: center;
+  justify-content: center;-
   align-items: center;
   background-color: ${(props) => props.theme.bgColor};
 `;

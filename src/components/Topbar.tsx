@@ -29,6 +29,8 @@ const TopbarContainer = styled.header`
   left: 0;
   right: 0;
   z-index: 100;
+  justify-content: space-between;
+
   background-color: ${(props) => props.theme.headerBgColor};
   color: ${(props) => props.theme.textColor};
   display: flex;
@@ -38,12 +40,17 @@ const TopbarContainer = styled.header`
 
 const TopbarContent = styled.nav`
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
   display: flex;
   justify-content: space-evenly;
   align-items: center;
+`;
+//오른쪽 영역 (테마 토글 + 인증)을 묶는 컨테이너
+const RightSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px; /* 테마 토글과 인증 버튼 사이 간격 */
 `;
 
 const Logo = styled(Link)`
@@ -115,6 +122,7 @@ const AuthLink = styled(Link)`
 `;
 
 // **********************************************
+
 //라이트.다크모드 변경 버튼(추후에 뺄수도 있음, css확인용)
 const ThemeToggleContainer = styled.div`
   display: flex;
@@ -210,25 +218,28 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
             <MenuLink to="/studygroup">스터디 그룹</MenuLink>
           </li>
         </Menu>
-        <ThemeToggleContainer onClick={toggleTheme}>
-          <span>{isDark ? "Dark" : "Light"}</span>
-          <ToggleSwitch $isDark={isDark}>
-            <ToggleHandle $isDark={isDark} />
-          </ToggleSwitch>
-        </ThemeToggleContainer>
-        <Auth>
-          {isLoggedIn ? (
-            <AuthLink to="/mypage/:userName">마이페이지</AuthLink> //추후 프로필 사진으로 변경. username도 리덕스나 jotai같은걸루 바꿀예정
-          ) : (
-            <>
-              <AuthLink to="/login">로그인</AuthLink>
-              <AuthLink to="/register">회원가입</AuthLink>
-              {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
+
+        <RightSection>
+          <ThemeToggleContainer onClick={toggleTheme}>
+            <span>{isDark ? "Dark" : "Light"}</span>
+            <ToggleSwitch $isDark={isDark}>
+              <ToggleHandle $isDark={isDark} />
+            </ToggleSwitch>
+          </ThemeToggleContainer>
+          <Auth>
+            {isLoggedIn ? (
               <AuthLink to="/mypage/:userName">마이페이지</AuthLink>
-              <AuthLink to="/mypage">로그아웃</AuthLink>
-            </>
-          )}
-        </Auth>
+            ) : (
+              <>
+                <AuthLink to="/login">로그인</AuthLink>
+                <AuthLink to="/register">회원가입</AuthLink>
+                {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
+                <AuthLink to="/mypage">마이페이지</AuthLink>
+                <AuthLink to="/mypage">로그아웃</AuthLink>
+              </>
+            )}
+          </Auth>
+        </RightSection>
       </TopbarContent>
     </TopbarContainer>
   );

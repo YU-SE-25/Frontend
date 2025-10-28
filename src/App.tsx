@@ -4,10 +4,9 @@ import styled, { ThemeProvider } from "styled-components";
 import { darkTheme, lightTheme } from "./theme/theme";
 const Container = styled.div`
   margin-top: ${TOPBAR_HEIGHT}px;
-  height: calc(100vh - ${TOPBAR_HEIGHT}px);
+  min-height: calc(100vh - ${TOPBAR_HEIGHT}px);
   width: 100%;
   background-color: ${(props) => props.theme.bgColor} !important;
-  display: flex;
 `;
 
 export default function App() {
