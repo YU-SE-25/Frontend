@@ -1,0 +1,85 @@
+import styled from "styled-components";
+import { Link } from "react-router-dom";
+
+export const ResetPageWrapper = styled.div`
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: ${(props) => props.theme.bgColor};
+`;
+export const LoginBox = styled.div`
+  position: relative;
+  width: 400px;
+  padding: 40px;
+  background-color: ${(props) => props.theme.headerBgColor};
+  border-radius: 5px;
+  color: ${(props) => props.theme.textColor};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
+    0 0 0 4px ${(props) => props.theme.focusColor};
+`;
+export const ResetTitle = styled.h2`
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: ${(props) => props.theme.textColor};
+  text-align: center;
+`;
+
+//폼 및 입력 스타일
+export const InputGroup = styled.div`
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: ${(props) => props.theme.textColor};
+  display: flex;
+  align-items: center;
+`;
+export const Label = styled.label`
+  flex-shrink: 0;
+  margin-right: 15px;
+  font-weight: 600;
+  width: 120px;
+`;
+export const StyledInput = styled.input`
+  flex: 1;
+  padding: 10px;
+  border: 1px solid ${(props) => props.theme.authHoverBgColor};
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 16px;
+  color: ${(props) => props.theme.textColor};
+  background-color: ${(props) => props.theme.bgColor};
+`;
+
+//버튼 및 메시지 스타일
+export const MainButton = styled.button`
+  width: 100%;
+  padding: 12px;
+  margin-top: 20px;
+  background-color: ${(props) => props.theme.logoColor};
+  color: ${(props) => props.theme.authHoverTextColor};
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:disabled {
+    background-color: ${(props) => props.theme.authHoverBgColor};
+    cursor: not-allowed;
+    color: ${(props) => props.theme.textColor};
+  }
+
+  &:not(:disabled):hover {
+    background-color: #3cb86b; /* logoColor보다 살짝 어둡게 */
+  }
+`;
+export const ErrorMessage = styled.p`
+  color: #ff3838; /* 오류 메시지는 빨간색 */
+  font-size: 14px;
+  text-align: right;
+  margin-bottom: 10px;
+  margin-top: -10px; /* InputGroup과의 간격 조정 */
+`;
