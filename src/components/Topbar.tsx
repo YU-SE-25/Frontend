@@ -50,6 +50,7 @@ const TopbarContent = styled.nav`
 const RightSection = styled.div`
   display: flex;
   align-items: center;
+  width: 30%;
   gap: 20px; /* 테마 토글과 인증 버튼 사이 간격 */
 `;
 
@@ -221,7 +222,6 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
 
         <RightSection>
           <ThemeToggleContainer onClick={toggleTheme}>
-            <span>{isDark ? "Dark" : "Light"}</span>
             <ToggleSwitch $isDark={isDark}>
               <ToggleHandle $isDark={isDark} />
             </ToggleSwitch>
@@ -234,8 +234,8 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
                 <AuthLink to="/login">로그인</AuthLink>
                 <AuthLink to="/register">회원가입</AuthLink>
                 {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
-                <AuthLink to="/mypage/InHereUserNamePlz">마이페이지</AuthLink>
-                <AuthLink to="/mypage">로그아웃</AuthLink>
+                <AuthLink to="mypage/:userName">마이페이지</AuthLink>
+                <AuthLink to="/">로그아웃</AuthLink>
               </>
             )}
           </Auth>

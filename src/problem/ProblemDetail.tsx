@@ -166,7 +166,7 @@ export default function ProblemDetailPage() {
 
             <MetaLabel>작성자:</MetaLabel>
             <MetaValue>
-              <Link to={`/profile/${problemData.author}`}>
+              <Link to={`/mypage/:${problemData.author}`}>
                 {problemData.author}
               </Link>
             </MetaValue>

@@ -17,7 +17,6 @@ import {
   EmptyCell,
   TitleCell,
   ProblemLink,
-  ExpandButton,
   SummaryRow,
   SummaryBox,
   TitleContainer,
@@ -25,6 +24,8 @@ import {
   ActionInSummaryButton,
   PaginationContainer,
   PageLink,
+  DetailsButton,
+  ButtonContainer,
 } from "../theme/ProblemList.Style";
 
 import type {
@@ -182,6 +183,10 @@ export default function ProblemList() {
       // navigate('/login');
     }
   };
+  //상세보기 버튼, 페이지 이동
+  const handleViewDetails = (problemId: number) => {
+    navigate(`/problem-detail/${problemId}`);
+  };
 
   //현재 페이지에 보여줄 문제 계산
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -260,28 +265,25 @@ export default function ProblemList() {
                   <TitleCell>
                     <TitleContainer>
                       <StatusIndicator $userStatus={problem.userStatus} />
-                      <ProblemLink to={`/problem-detail/${problem.id}`}>
+                      <ProblemLink
+                        as="span" // 링크 대신 텍스트처럼 보이게 (선택 사항)
+                        onClick={() => handleToggleSummary(problem.id)}
+                        style={{ cursor: "pointer" }} // 클릭 가능 표시
+                      >
                         {problem.title}
                       </ProblemLink>
-                      {/* ExpandButton은 TitleContainer 밖으로 이동 */}
                     </TitleContainer>
                   </TitleCell>
                   <TableCell>{problem.difficulty}</TableCell>
                   <TableCell>{problem.views}</TableCell>
                   <TableCell>{problem.uploadDate}</TableCell>
-                  <TableCell style={{ textAlign: "center" }}>
-                    <ExpandButton
-                      onClick={() => handleToggleSummary(problem.id)}
-                    >
-                      {expandedProblemId === problem.id ? "▼" : "▶"}
-                    </ExpandButton>
-                  </TableCell>
+                  <TableCell style={{ textAlign: "center" }}></TableCell>
                 </TableRow>
 
                 {/* 아코디언 내용 행 */}
                 {expandedProblemId === problem.id && (
                   <SummaryRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={5}>
                       <SummaryBox>
                         {/* 왼쪽 텍스트 영역 */}
                         <div>
@@ -295,13 +297,18 @@ export default function ProblemList() {
                           </p>
                         </div>
                         {/* 오른쪽 버튼 영역 */}
-                        <div>
+                        <ButtonContainer>
+                          <DetailsButton
+                            onClick={() => handleViewDetails(problem.id)}
+                          >
+                            상세보기
+                          </DetailsButton>
                           <ActionInSummaryButton
                             onClick={() => handleDirectSolve(problem.id)}
                           >
                             바로 코드 작성
                           </ActionInSummaryButton>
-                        </div>
+                        </ButtonContainer>
                       </SummaryBox>
                     </TableCell>
                   </SummaryRow>
