@@ -12,7 +12,7 @@ import {
 type Submission = {
   id: number;
   problemId: number;
-  verdict: "AC" | "WA" | "TLE" | "MLE" | "RE";
+  verdict: "AC" | "WA" | "TLE" | "MLE" | "RE"; //정답,오답,시간초과,메모리초과,런타임에러
   runtimeMs?: number;
   lang?: string;
   submittedAt: string;
@@ -211,6 +211,7 @@ export default function MyPage() {
     [bookmarkedIds]
   );
 
+  // 내가 푼 문제 페이지로 이동
   const goSolved = () =>
     solvedIds.length && nav(`/problem-list?ids=${solvedIds.join(",")}`);
   const goBookmarked = () =>
