@@ -34,7 +34,7 @@ const router = createBrowserRouter([
       { path: "register", element: <Register /> },
       { path: "register-success", element: <RegisterSuccess /> },
       { path: "verify-success", element: <VerifySuccess /> },
-      { path: "mypage/:userName", element: <Mypage /> },
+      { path: "mypage/:username", element: <Mypage username="gamppe" /> },
     ],
   },
 ]);
