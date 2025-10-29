@@ -7,7 +7,7 @@ import {
   getSolvedIds,
   getBookmarkedIds,
   getRecentSubmissions,
-} from "../api/dummy/mypage.ts";
+} from "../api/dummy/mypage_dummy"; //더미 API 사용
 
 type Submission = {
   id: number;
@@ -241,7 +241,7 @@ export default function MyPage() {
           <StatValue>{bookmarkedIds.length}</StatValue>
         </Stat>
         <Stat>
-          <StatLabel>최근 제출 AC율</StatLabel>
+          <StatLabel>최근 제출 정답률</StatLabel>
           <StatValue>{acRate}%</StatValue>
         </Stat>
       </StatGrid>
