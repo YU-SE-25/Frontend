@@ -7,7 +7,7 @@ import {
   getSolvedIds,
   getBookmarkedIds,
   getRecentSubmissions,
-} from "../api/dummy/mypage.ts";
+} from "../api/dummy/mypage_dummy"; //더미 API 사용
 
 type Submission = {
   id: number;
