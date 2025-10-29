@@ -2,6 +2,8 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
 import { useState } from "react"; // useState는 Theme Toggle 시뮬레이션용으로 사용
+import { useAtom } from "jotai";
+import { isDarkAtom } from "../atoms";
 
 //전역 상태 관리 (Zustand/Jotai를 위한 Placeholder)
 //실제 프로젝트에서는 이 부분을 useAuthStore.ts 등에서 import 해야 합니다.
@@ -14,7 +16,7 @@ const useAuthStore = () => ({
 });
 //테마 관리 PLACEHOLDER -> 얘도 임시입니당
 const useThemeStore = () => {
-  const [isDark, setIsDark] = useState(false); // 로컬에서 임시로 다크 모드 상태 관리
+  const [isDark, setIsDark] = useAtom(isDarkAtom); // 로컬에서 임시로 다크 모드 상태 관리
   const toggleTheme = () => setIsDark((prev) => !prev);
   return { isDark, toggleTheme };
 };

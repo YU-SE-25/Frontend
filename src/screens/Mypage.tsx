@@ -241,7 +241,7 @@ export default function MyPage() {
           <StatValue>{bookmarkedIds.length}</StatValue>
         </Stat>
         <Stat>
-          <StatLabel>최근 제출 AC율</StatLabel>
+          <StatLabel>최근 제출 정답률</StatLabel>
           <StatValue>{acRate}%</StatValue>
         </Stat>
       </StatGrid>
