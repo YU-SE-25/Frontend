@@ -178,7 +178,6 @@ export default function Register() {
     }
 
     //최종 회원가입
-
     const registerData = {
       email: email,
       password: password,

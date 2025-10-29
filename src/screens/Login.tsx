@@ -68,16 +68,7 @@ export default function Login() {
       alert("로그인 성공!"); //최종 코드엔 뺍니다, 로그인 잘 되는지 확인용
       navigate("/"); // 메인 페이지로 이동
     } catch (error) {
-      //일단 임시로
-      const newFailCount = failCount + 1;
-      setFailCount(newFailCount);
-      const serverError = "사용자 정보가 일치하지 않거나 존재하지 않습니다.";
-      alert(`${serverError} (남은 시도 횟수: ${5 - newFailCount})`);
-
-      if (newFailCount >= 5) {
-        alert("시도 횟수 초과! 계정이 잠금 처리됩니다.");
-        navigate("/login-blocked");
-      }
+      //에러 메시지 받는 곳
     }
   };
 

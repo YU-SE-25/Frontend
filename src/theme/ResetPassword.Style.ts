@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { TOPBAR_HEIGHT } from "../components/Topbar";
 
 export const ResetPageWrapper = styled.div`
   height: 100%;
@@ -7,6 +8,7 @@ export const ResetPageWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  padding-top: ${TOPBAR_HEIGHT + 50}px;
   background-color: ${(props) => props.theme.bgColor};
 `;
 export const LoginBox = styled.div`
@@ -14,10 +16,6 @@ export const LoginBox = styled.div`
   width: 400px;
   padding: 40px;
   background-color: ${(props) => props.theme.headerBgColor};
-  border-radius: 5px;
-  color: ${(props) => props.theme.textColor};
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
-    0 0 0 4px ${(props) => props.theme.focusColor};
 `;
 export const ResetTitle = styled.h2`
   font-size: 24px;
