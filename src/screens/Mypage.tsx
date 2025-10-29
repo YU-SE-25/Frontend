@@ -1,4 +1,8 @@
-// src/pages/MyPage.tsx
+/*******************나중에 할 것*****************
+실제 API로 교체
+문세 상세 페이지로 이동 - 아이템과 칩 클릭 시
+
+*************************************************/
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -27,17 +31,20 @@ const Page = styled.div`
 `;
 
 const Head = styled.header`
+  color: ${(props) => props.theme.textColor};
   display: flex;
   align-items: baseline;
   justify-content: space-between;
 `;
 
 const Title = styled.h1`
+  color: ${(props) => props.theme.textColor};
   font-size: 24px;
   font-weight: 700;
 `;
 
 const Badge = styled.span`
+  color: ${(props) => props.theme.textColor};
   font-size: 14px;
   opacity: 0.7;
 `;
@@ -51,11 +58,12 @@ const Grid = styled.section`
   }
 `;
 
+// 카드 스타일
 const Card = styled.div`
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid ${({ theme }) => `${theme.textColor}12`};
   border-radius: 16px;
   padding: 18px;
-  background: var(--card-bg, #fff);
+  background-color: ${(props) => props.theme.headerBgColor};
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   display: grid;
   gap: 12px;
@@ -70,13 +78,15 @@ const CardTitleRow = styled.div`
 const CardTitle = styled.h2`
   font-size: 18px;
   font-weight: 600;
+  color: ${(props) => props.theme.textColor};
 `;
-
+// 동기화 상태 텍스트 스타일
 const Muted = styled.div`
+  color: ${(props) => props.theme.textColor};
   font-size: 13px;
   opacity: 0.7;
 `;
-
+// 버튼과 칩을 감싸는 행 스타일
 const Row = styled.div`
   display: flex;
   align-items: center;
@@ -90,26 +100,47 @@ const Button = styled.button<{ variant?: "primary" | "soft" | "ghost" }>`
   font-size: 14px;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: filter 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-  ${({ variant }) => {
+  transition: filter 0.15s ease, background 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease;
+
+  ${({ variant, theme }) => {
     switch (variant) {
       case "primary":
-        return `background:#111827;color:#fff;`;
+        return `
+          background: ${theme.focusColor};
+          color: ${theme.bgColor};
+          border-color: ${theme.focusColor};
+        `;
       case "soft":
-        return `background:#f3f4f6;color:#111827;border-color:rgba(0,0,0,0.08);`;
+        return `
+          background: ${theme.authHoverBgColor};
+          color: ${theme.textColor};
+          border-color: ${theme.authActiveBgColor}40; 
+        `;
       default:
-        return `background:transparent;color:#111827;border-color:rgba(0,0,0,0.12);`;
+        return `
+          background: transparent;
+          color: ${theme.textColor};
+          border-color: ${theme.textColor}20;
+        `;
     }
   }}
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+
   &:hover:not(:disabled) {
-    filter: brightness(0.98);
+    filter: brightness(0.97);
+    border-color: ${({ theme }) => theme.textColor}40;
+  }
+
+  &:active:not(:disabled) {
+    background: ${({ theme }) => theme.authActiveBgColor};
   }
 `;
-
+// 내가 푼 문제 번호
 const Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -117,12 +148,18 @@ const Chips = styled.div`
 `;
 
 const Chip = styled.span`
+  color: ${(props) => props.theme.textColor};
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid ${({ theme }) => `${theme.textColor}20`};
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 13px;
+  transition: font-weight 0.15s ease;
+  &:hover {
+    font-weight: 600;
+    cursor: pointer;
+  }
 `;
 
 const StatGrid = styled.div`
@@ -133,9 +170,9 @@ const StatGrid = styled.div`
     grid-template-columns: 1fr;
   }
 `;
-
+// 각 통계 카드 스타일
 const Stat = styled.div`
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid ${(props) => props.theme.textColor}40;
   border-radius: 14px;
   padding: 14px;
   display: grid;
@@ -143,18 +180,33 @@ const Stat = styled.div`
 `;
 
 const StatLabel = styled.div`
+  color: ${(props) => props.theme.textColor};
   font-size: 12px;
   opacity: 0.7;
 `;
 
 const StatValue = styled.div`
+  color: ${(props) => props.theme.textColor};
   font-size: 20px;
   font-weight: 700;
 `;
 
+// 최근 제출 리스트 스타일
 const List = styled.ul`
   display: grid;
   gap: 8px;
+`;
+const Strong = styled.span`
+  font-weight: 600;
+  color: ${(props) => props.theme.textColor};
+`;
+
+const SubmissionInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const Item = styled.li`
@@ -162,15 +214,21 @@ const Item = styled.li`
   grid-template-columns: 1fr auto;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid ${({ theme }) => `${theme.textColor}20`};
   border-radius: 12px;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.textColor}40;
+    cursor: pointer;
+  }
 `;
 
 const Pill = styled.span<{ tone?: "ok" | "bad" | "neutral" }>`
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid ${({ theme }) => `${theme.textColor}20`};
   ${({ tone }) =>
     tone === "ok"
       ? `background:#e6fbe6;border-color:#b7e2b7;`
@@ -317,10 +375,10 @@ export default function MyPage() {
           <List>
             {submissions.slice(0, 5).map((s) => (
               <Item key={s.id}>
-                <div>
-                  <strong>#{s.problemId}</strong> · {s.lang ?? "—"} ·{" "}
+                <SubmissionInfo>
+                  <Strong>#{s.problemId}</Strong> · {s.lang ?? "—"} ·{" "}
                   {new Date(s.submittedAt).toLocaleString()}
-                </div>
+                </SubmissionInfo>
                 <Pill
                   tone={
                     s.verdict === "AC"
