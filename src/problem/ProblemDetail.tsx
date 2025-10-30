@@ -193,7 +193,7 @@ export default function ProblemDetailPage() {
           {isLoggedIn &&
             problemData.userStatus &&
             problemData.userStatus !== "none" && (
-              <UserStatsBox userStatus={problemData.userStatus}>
+              <UserStatsBox $userStatus={problemData.userStatus}>
                 <MetaLabel>나의 도전 횟수:</MetaLabel>
                 <MetaValue>{problemData.userAttempts}</MetaValue>
                 <MetaLabel>나의 정답률:</MetaLabel>
@@ -223,12 +223,8 @@ export default function ProblemDetailPage() {
         {/* 입출력 섹션 */}
         <DescriptionSection>
           <h3>입출력</h3>
-          <p>
-            <strong>입력:</strong> {problemData.inputDescription}
-          </p>
-          <p>
-            <strong>출력:</strong> {problemData.outputDescription}
-          </p>
+          <p>입력: {problemData.inputDescription}</p>
+          <p>출력: {problemData.outputDescription}</p>
 
           {/* 예제 렌더링 */}
           <ExampleContainer>

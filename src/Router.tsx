@@ -15,6 +15,7 @@ import ProblemDetailPage from "./problem/ProblemDetail";
 
 import Board from "./screens/Board";
 import Studygroup from "./screens/Studygroup";
+import NotFound from "./screens/NotFound";
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: "verify-success", element: <VerifySuccess /> },
       { path: "mypage/:username", element: <Mypage /> },
     ],
+    errorElement: <NotFound />,
   },
 ]);
 
