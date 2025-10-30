@@ -2,10 +2,6 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { TOPBAR_HEIGHT } from "../components/Topbar";
 
-//Type Definitions (TypeScript)
-export interface StatusProps {
-  $userStatus: UserProblemStatus; // 'solved' | 'attempted' | 'none'
-}
 // HeaderCell 너비 prop 타입
 export interface HeaderCellProps {
   width: string;
@@ -15,7 +11,10 @@ export type UserProblemStatus = "solved" | "attempted" | "none";
 export interface StatusProps {
   userStatus: UserProblemStatus;
 }
-
+//Type Definitions (TypeScript)
+export interface StatusStyleProps {
+  $userStatus?: UserProblemStatus; // 'solved' | 'attempted' | 'none'
+}
 //레이아웃 및 컨트롤 스타일
 export const ProblemListWrapper = styled.div`
   height: 100%;
@@ -68,6 +67,10 @@ export const SortSelect = styled.select`
   border-radius: 4px;
   color: ${(props) => props.theme.textColor};
   background-color: ${(props) => props.theme.bgColor};
+  option {
+    color: ${(props) => props.theme.textColor};
+    background-color: ${(props) => props.theme.bgColor};
+  }
 `;
 
 //문제 목록 테이블 스타일
@@ -90,7 +93,7 @@ export const HeaderCell = styled.th<HeaderCellProps>`
   font-weight: 600;
   color: ${(props) => props.theme.textColor};
 `;
-export const TableRow = styled.tr<StatusProps>`
+export const TableRow = styled.tr<StatusStyleProps>`
   border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
 `;
 export const TableCell = styled.td`
@@ -98,11 +101,12 @@ export const TableCell = styled.td`
   color: ${(props) => props.theme.textColor};
   font-size: 14px;
   vertical-align: middle;
+  background-color: ${(props) => props.theme.headerBgColor}60;
 `;
 export const EmptyCell = styled(TableCell)`
   text-align: center;
   padding: 40px;
-  color: ${(props) => props.theme.authHoverBgColor};
+  color: ${(props) => props.theme.textColor}60;
   font-style: italic;
 `;
 
@@ -129,7 +133,7 @@ export const TitleContainer = styled.div`
 `;
 
 // 푼 문제 표시 점 스타일 (초록/빨강)
-export const StatusIndicator = styled.span<StatusProps>`
+export const StatusIndicator = styled.span<StatusStyleProps>`
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -180,10 +184,15 @@ export const SummaryBox = styled.div`
   /* 내부 요소들을 좌우로 분리 */
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* 상단 정렬 */
+  align-items: center;
 
   p {
     margin-bottom: 8px;
+  }
+  p,
+  div,
+  strong {
+    color: ${(props) => props.theme.textColor};
   }
 `;
 export const ButtonContainer = styled.div`
@@ -256,7 +265,7 @@ export const PageLink = styled.span<{
   ${(props) =>
     props.isDisabled &&
     `
-    color: ${props.theme.authHoverBgColor}; /* 흐린 색상 */
+    color: ${props.theme.textColor}60; 
     cursor: not-allowed;
     pointer-events: none; /* 클릭 이벤트 자체를 막음 */
   `}

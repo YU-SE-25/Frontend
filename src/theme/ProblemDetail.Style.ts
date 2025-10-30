@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import type { StatusStyleProps } from "./ProblemList.Style";
 
 //페이지 전체 레이아웃
 export const ProblemWrapper = styled.div`
@@ -64,7 +65,7 @@ export const MetaValue = styled.span`
   }
 `;
 //푼 문제 통계 박스
-export const UserStatsBox = styled.div<StatusProps>`
+export const UserStatsBox = styled.div<StatusStyleProps>`
   /* StatusProps 타입 필요 */
   margin-top: 15px;
   padding: 10px 15px;
@@ -72,12 +73,13 @@ export const UserStatsBox = styled.div<StatusProps>`
   font-size: 14px;
   display: flex;
   gap: 8px 20px;
+  color: ${(props) => props.theme.textColor};
 
   border: 2px solid
     ${(props) =>
-      props.userStatus === "solved"
+      props.$userStatus === "solved"
         ? props.theme.logoColor
-        : props.userStatus === "attempted"
+        : props.$userStatus === "attempted"
         ? "#ff3838"
         : "transparent"};
 
@@ -98,6 +100,7 @@ export const DescriptionSection = styled.section`
     margin-top: 30px;
     margin-bottom: 5px;
     border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
+    color: ${(props) => props.theme.textColor};
   }
 
   p,
@@ -105,6 +108,7 @@ export const DescriptionSection = styled.section`
     /* 본문과 코드 예제 스타일 */
     font-size: 16px;
     margin-bottom: 30px;
+    color: ${(props) => props.theme.textColor};
   }
 
   /*코드 블록 스타일*/
@@ -131,6 +135,7 @@ export const SectionHeader = styled.div`
     border: none;
     padding: 0;
     flex-shrink: 0; /* 제목 줄어들지 않게 */
+    color: ${(props) => props.theme.textColor};
   }
 `;
 //인라인 태그 목록 스타일
@@ -178,6 +183,7 @@ export const ExampleSection = styled.div`
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 8px;
+    color: ${(props) => props.theme.textColor};
   }
   pre {
     background-color: ${(props) => props.theme.bgColor};
@@ -188,6 +194,9 @@ export const ExampleSection = styled.div`
     white-space: pre-wrap;
     word-break: break-all;
     min-height: 50px; /* 최소 높이 확보 */
+  }
+  code {
+    color: ${(props) => props.theme.textColor};
   }
 `;
 
