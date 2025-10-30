@@ -275,6 +275,7 @@ export default function MyPage() {
   const goBookmarked = () =>
     bookmarkedIds.length && nav(`/problem-list?ids=${bookmarkedIds.join(",")}`);
   const goAll = () => nav("/problem-list");
+  const goDetail = (problemId: number) => nav(`/problem-detail/${problemId}`);
 
   const acRate = useMemo(() => {
     if (!submissions.length) return 0;
@@ -327,7 +328,9 @@ export default function MyPage() {
           </Row>
           <Chips>
             {solvedPreview.map((id) => (
-              <Chip key={id}>#{id}</Chip>
+              <Chip key={id} onClick={() => goDetail(id)}>
+                #{id}
+              </Chip>
             ))}
             {solvedIds.length > solvedPreview.length && (
               <Muted>+ {solvedIds.length - solvedPreview.length} 더보기</Muted>
@@ -353,7 +356,9 @@ export default function MyPage() {
           </Row>
           <Chips>
             {bookmarkedPreview.map((id) => (
-              <Chip key={id}>★ {id}</Chip>
+              <Chip key={id} onClick={() => goDetail(id)}>
+                ★ {id}
+              </Chip>
             ))}
             {bookmarkedIds.length > bookmarkedPreview.length && (
               <Muted>
@@ -374,7 +379,7 @@ export default function MyPage() {
         ) : (
           <List>
             {submissions.slice(0, 5).map((s) => (
-              <Item key={s.id}>
+              <Item key={s.id} onClick={() => goDetail(s.problemId)}>
                 <SubmissionInfo>
                   <Strong>#{s.problemId}</Strong> · {s.lang ?? "—"} ·{" "}
                   {new Date(s.submittedAt).toLocaleString()}
