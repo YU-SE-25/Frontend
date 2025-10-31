@@ -11,7 +11,7 @@ import VerifySuccess from "./screens/VerifySuccess";
 import Mypage from "./screens/Mypage";
 
 import ProblemList from "./problem/ProblemList";
-import ProblemDetailPage from "./problem/ProblemDetail";
+import ProblemDetail from "./problem/ProblemDetail";
 
 import Board from "./screens/Board";
 import Studygroup from "./screens/Studygroup";
@@ -24,7 +24,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "problem-list", element: <ProblemList /> },
-      { path: "problem-detail/:problemID", element: <ProblemDetailPage /> },
+      { path: "problem-detail/:problemId", element: <ProblemDetail /> },
 
       { path: "board", element: <Board /> },
       { path: "studygroup", element: <Studygroup /> },
