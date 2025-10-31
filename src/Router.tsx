@@ -3,6 +3,7 @@ import App from "./App";
 
 import Home from "./screens/Home";
 import Login from "./screens/Login";
+import OAuthCallback from "./screens/OAuthCallback";
 import ForgetPassword from "./screens/ForgetPassword";
 import ResetPassword from "./screens/ResetPassword";
 import Register from "./screens/Register";
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
       { path: "studygroup", element: <Studygroup /> },
 
       { path: "login", element: <Login /> },
+      { path: "oauth/callback", element: <OAuthCallback /> },
       { path: "forget-password", element: <ForgetPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
       { path: "register", element: <Register /> },
