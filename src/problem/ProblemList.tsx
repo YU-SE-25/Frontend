@@ -28,9 +28,9 @@ import {
 } from "../theme/ProblemList.Style";
 
 import type { UserProblemStatus } from "../theme/ProblemList.Style";
-import type { Problem } from "../api/problemlist_api";
-import { fetchProblems } from "../api/problemlist_api";
-import { fetchDummyProblems } from "../api/dummy/problemlist_dummy";
+import type { IProblem } from "../api/problem_api";
+import { fetchProblems } from "../api/problem_api";
+import { fetchDummyProblems } from "../api/dummy/problem_dummy";
 
 const USE_DUMMY = true;
 
@@ -45,7 +45,7 @@ export default function ProblemList() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const [problems, setProblems] = useState<Problem[]>([]);
+  const [problems, setProblems] = useState<IProblem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,6 +109,7 @@ export default function ProblemList() {
   };
 
   const handleViewDetails = (problemId: number) => {
+    console.log("view details", problemId); //debug
     navigate(`/problem-detail/${problemId}`);
   };
 
