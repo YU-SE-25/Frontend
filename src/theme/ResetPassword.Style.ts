@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import { Link } from "react-router-dom";
 import { TOPBAR_HEIGHT } from "../components/Topbar";
 
 export const ResetPageWrapper = styled.div`
@@ -38,6 +37,7 @@ export const Label = styled.label`
   margin-right: 15px;
   font-weight: 600;
   width: 120px;
+  color: ${(props) => props.theme.textColor};
 `;
 export const StyledInput = styled.input`
   flex: 1;
@@ -63,21 +63,11 @@ export const MainButton = styled.button`
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-
-  &:disabled {
-    background-color: ${(props) => props.theme.authHoverBgColor};
-    cursor: not-allowed;
-    color: ${(props) => props.theme.textColor};
-  }
-
-  &:not(:disabled):hover {
-    background-color: #3cb86b; /* logoColor보다 살짝 어둡게 */
-  }
 `;
 export const ErrorMessage = styled.p`
-  color: #ff3838; /* 오류 메시지는 빨간색 */
+  color: #ff3838;
   font-size: 14px;
   text-align: right;
   margin-bottom: 10px;
-  margin-top: -10px; /* InputGroup과의 간격 조정 */
+  margin-top: -10px;
 `;

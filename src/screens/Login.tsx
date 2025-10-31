@@ -15,7 +15,6 @@ import {
   SubLink,
   SocialLoginGroup,
   SocialButton,
-  BackButton,
   ErrorMessage,
   OptionsGroup,
   CheckboxLabel,
@@ -63,7 +62,7 @@ export default function Login() {
       runLoginAction(mockLoginResponse);
 
       // alert("로그인 성공!"); // 최종 코드에는 alert 제거
-      navigate("/problem-list"); // 문제 목록으로 이동 (안전한 경로)
+      navigate(-1); // 문제 목록으로 이동 (안전한 경로)
     } catch (error) {
       // 💡 [Axios 에러 처리] - TypeScript 안정성 확보를 위해 이 로직은 유지
       if (axios.isAxiosError(error) && error.response) {

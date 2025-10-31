@@ -43,6 +43,7 @@ export const Label = styled.label`
   flex-shrink: 0;
   margin-right: 15px;
   font-weight: 600;
+  color: ${(props) => props.theme.textColor};
 `;
 //텍스트 입력창
 export const StyledInput = styled.input`
@@ -70,6 +71,7 @@ export const CheckboxLabel = styled.label`
   align-items: center;
   gap: 5px;
   cursor: pointer;
+  color: ${(props) => props.theme.textColor};
 `;
 //로그인 버튼
 export const MainButton = styled.button`
@@ -91,7 +93,7 @@ export const MainButton = styled.button`
 `;
 //로그인 실패
 export const ErrorMessage = styled.p`
-  color: #ff3838; /* 오류 메시지는 눈에 띄는 빨간색 */
+  color: #ff3838;
   font-size: 14px;
   text-align: center;
   margin-bottom: 10px;
@@ -125,7 +127,7 @@ export const SocialLoginGroup = styled.div`
 `;
 //소셜버튼
 export interface SocialButtonProps {
-  platform: "google" | "github"; // platform은 이 두 값 중 하나여야 한다고 명시
+  platform: "google" | "github";
 }
 export const SocialButton = styled.button<SocialButtonProps>`
   width: 100%;
@@ -139,16 +141,4 @@ export const SocialButton = styled.button<SocialButtonProps>`
   background-color: ${(props) =>
     props.platform === "google" ? "#db4437" : "#333"};
   color: white;
-`;
-
-//뒤로가기
-export const BackButton = styled.button`
-  position: absolute;
-  top: 70px;
-  left: 30px;
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  z-index: 10;
 `;
