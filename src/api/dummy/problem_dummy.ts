@@ -302,3 +302,63 @@ const DUMMY_STORE: Record<string, IProblem> = {
     tags: ["그리디", "정렬", "우선순위 큐"],
   },
 };
+function cmpDifficulty(a: string, b: string) {
+  const order = ["하", "중", "상"];
+  return order.indexOf(a) - order.indexOf(b);
+}
+
+export async function fetchDummyProblems({
+  sortType,
+  searchTerm,
+  isLoggedIn,
+  page = 1,
+  size = 50,
+}: FetchProblemParams): Promise<IProblem[]> {
+  let list = Object.values(DUMMY_STORE);
+
+  if (searchTerm && searchTerm.trim().length >= 2) {
+    const key = searchTerm.toLowerCase();
+    list = list.filter(
+      (p) =>
+        p.title.toLowerCase().includes(key) || p.id.toString().includes(key)
+    );
+  }
+
+  switch (sortType) {
+    case "latest":
+      list.sort((a, b) => b.uploadDate.localeCompare(a.uploadDate));
+      break;
+    case "low_difficulty":
+      list.sort((a, b) => cmpDifficulty(a.difficulty, b.difficulty));
+      break;
+    case "high_difficulty":
+      list.sort((a, b) => cmpDifficulty(b.difficulty, a.difficulty));
+      break;
+    case "views":
+      list.sort((a, b) => b.views - a.views);
+      break;
+    case "id":
+      list.sort((a, b) => a.id - b.id);
+      break;
+  }
+
+  if (!isLoggedIn) {
+    list = list.map((p) => ({ ...p, userStatus: "none" }));
+  }
+
+  const start = (page - 1) * size;
+  const end = start + size;
+  return list.slice(start, end);
+}
+
+export async function getDummyProblemDetail(
+  problemId: string
+): Promise<IProblem> {
+  const data = DUMMY_STORE[problemId];
+  if (!data) throw new Error("문제를 찾을 수 없습니다.");
+  return { ...data };
+}
+
+export async function increaseDummyView(problemId: string): Promise<void> {
+  if (DUMMY_STORE[problemId]) DUMMY_STORE[problemId].views += 1;
+}
