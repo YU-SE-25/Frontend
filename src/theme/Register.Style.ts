@@ -38,6 +38,7 @@ export const Label = styled.label`
   flex-shrink: 0;
   font-weight: 600;
   margin-right: 15px;
+  color: ${(props) => props.theme.textColor};
 `;
 export const StyledInput = styled.input`
   flex: 1;
@@ -85,11 +86,11 @@ export const CheckboxLabel = styled.label`
   display: block;
   margin-bottom: 10px;
   cursor: pointer;
+  color: ${(props) => props.theme.textColor};
 `;
 
 //약관
 export const ModalBackdrop = styled.div`
-  /* 💡 필수: 화면 전체에 고정 */
   position: fixed;
   top: 0;
   left: 0;
@@ -116,16 +117,4 @@ export const CloseButton = styled.button`
   background: none;
   font-size: 20px;
   cursor: pointer;
-`;
-
-//뒤로가기
-export const BackButton = styled.button`
-  position: absolute;
-  top: 70px;
-  left: 30px;
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  z-index: 10;
 `;

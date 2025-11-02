@@ -10,17 +10,16 @@ import {
   userProfileAtom,
 } from "../atoms";
 
-export const HEADER_H = 50;
-export const TOPBAR_HEIGHT = HEADER_H;
+export const TOPBAR_HEIGHT = 50;
 
 const TopbarContainer = styled.header`
-  height: ${HEADER_H}px;
+  height: ${TOPBAR_HEIGHT}px;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  justify-content: space-between;
+  justify-content: flex-start;
 
   background-color: ${(props) => props.theme.headerBgColor};
   color: ${(props) => props.theme.textColor};
@@ -30,19 +29,19 @@ const TopbarContainer = styled.header`
 `;
 
 const TopbarContent = styled.nav`
+  position: relative;
   width: 100%;
-  margin: 0 auto;
   padding: 0 20px;
   display: flex;
-  justify-content: space-evenly;
   align-items: center;
+  justify-content: space-between;
 `;
 //오른쪽 영역 (테마 토글 + 인증)을 묶는 컨테이너
 const RightSection = styled.div`
   display: flex;
   align-items: center;
-  width: 30%;
   gap: 20px; /* 테마 토글과 인증 버튼 사이 간격 */
+  flex-shrink: 0;
 `;
 
 const Logo = styled(Link)`
@@ -58,17 +57,21 @@ const Logo = styled(Link)`
 `;
 
 const Menu = styled.ul`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   gap: 24px;
   list-style: none;
   margin: 0;
   padding: 0;
-  @media (max-width: 768px) {
+  @media (max-width: 1050px) {
     display: none;
   }
 `;
 
 const MenuLink = styled(NavLink)`
+margin: auto
   font-size: 16px;
   color: ${(props) => props.theme.textColor};
   text-decoration: none;
@@ -88,6 +91,9 @@ const MenuLink = styled(NavLink)`
 const Auth = styled.div`
   display: flex;
   gap: 12px;
+  /* 줄바꿈 금지 */
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 `;
 
 const AuthLink = styled(Link)`
@@ -97,6 +103,8 @@ const AuthLink = styled(Link)`
   padding: 6px 10px;
   border-radius: 10px;
   outline: none;
+  /* 줄바꿈 금지 */
+  white-space: nowrap;
   &:hover {
     background: ${(props) => props.theme.authHoverBgColor};
     color: ${(props) => props.theme.authHoverTextColor};
