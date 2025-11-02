@@ -71,7 +71,7 @@ const Menu = styled.ul`
 `;
 
 const MenuLink = styled(NavLink)`
-margin: auto
+  margin: auto;
   font-size: 16px;
   color: ${(props) => props.theme.textColor};
   text-decoration: none;
