@@ -214,7 +214,7 @@ export default function Topbar() {
             <MenuLink to="/board">게시판</MenuLink>
           </li>
           <li>
-            <MenuLink to="/studygroup">스터디 그룹</MenuLink>
+            <MenuLink to="/studygroup-main">스터디 그룹</MenuLink>
           </li>
         </Menu>
 
