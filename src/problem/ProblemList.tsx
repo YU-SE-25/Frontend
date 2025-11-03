@@ -25,6 +25,10 @@ import {
   PageLink,
   DetailsButton,
   ButtonContainer,
+  PageTitleContainer,
+  AddButton,
+  TagDisplayContainer,
+  TagChip,
 } from "../theme/ProblemList.Style";
 
 import type { UserProblemStatus } from "../theme/ProblemList.Style";
@@ -44,6 +48,10 @@ export default function ProblemList() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "solved" | "attempted"
+  >("all");
 
   const [problems, setProblems] = useState<IProblem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,18 +121,59 @@ export default function ProblemList() {
     navigate(`/problem-detail/${problemId}`);
   };
 
+  const filteredProblems = problems.filter((problem) => {
+    // 'all'이면 모든 문제 표시
+    if (statusFilter === "all") return true;
+
+    // 'solved'이면 'solved' 상태 문제만 표시
+    if (statusFilter === "solved") {
+      return problem.userStatus === "solved";
+    }
+
+    // 'attempted'이면 'attempted' 상태 문제만 표시 (사용자 요청: 틀림)
+    if (statusFilter === "attempted") {
+      return problem.userStatus === "attempted";
+    }
+
+    return true;
+  });
+  // 페이지네이션 계산을 필터링된 목록 기준으로 변경
+  const totalItems = filteredProblems.length;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const totalPages = Math.ceil(problems.length / itemsPerPage);
-  const currentProblems = problems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const currentProblems = filteredProblems.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
   };
 
+  const translateVerdict = (verdict: string) => {
+    switch (verdict) {
+      case "AC":
+        return "맞춤";
+      case "WA":
+        return "틀림";
+      case "TLE": // 시간 초과
+      case "MLE": // 메모리 초과
+      case "RE": // 런타임 에러
+        return "실패";
+      default:
+        return verdict;
+    }
+  };
+
   return (
     <ProblemListWrapper>
-      <PageTitle>문제 목록</PageTitle>
+      <PageTitleContainer>
+        <PageTitle>문제 목록</PageTitle>
+        <AddButton onClick={() => navigate("/problem-add")}>
+          문제 추가
+        </AddButton>
+      </PageTitleContainer>
 
       <ControlBar>
         <SearchContainer>
@@ -136,7 +185,6 @@ export default function ProblemList() {
           />
           <SearchButton onClick={handleSearch}>검색</SearchButton>
         </SearchContainer>
-
         <SortSelect
           value={sortType}
           onChange={(e) => setSortType(e.target.value)}
@@ -148,6 +196,20 @@ export default function ProblemList() {
           <option value="id">문제번호 순</option>
           <option value="language">선호 언어 (미구현)</option>
         </SortSelect>
+
+        {/*기록 필터링 Select */}
+        <SortSelect
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value as "all" | "solved" | "attempted");
+            setCurrentPage(1);
+          }}
+          style={{ marginRight: "10px" }}
+        >
+          <option value="all">기록 필터: 전체</option>
+          <option value="solved">기록 필터: 맞춤</option>
+          <option value="attempted">기록 필터: 틀림</option>
+        </SortSelect>
       </ControlBar>
 
       {loading && <p>문제 목록을 불러오는 중...</p>}
@@ -157,11 +219,12 @@ export default function ProblemList() {
         <TableHead>
           <tr>
             <HeaderCell width="8%">번호</HeaderCell>
-            <HeaderCell width="42%">문제 제목</HeaderCell>
-            <HeaderCell width="15%">난이도</HeaderCell>
-            <HeaderCell width="10%">조회수</HeaderCell>
-            <HeaderCell width="15%">등록일</HeaderCell>
-            <HeaderCell width="10%"></HeaderCell>
+            <HeaderCell width="30%">문제 제목</HeaderCell>
+            <HeaderCell width="25%">태그</HeaderCell>
+            <HeaderCell width="10%">난이도</HeaderCell>
+            <HeaderCell width="13%">조회수</HeaderCell>
+            <HeaderCell width="19%">등록일</HeaderCell>
+            <HeaderCell width="5%">기록</HeaderCell>
           </tr>
         </TableHead>
         <tbody>
@@ -172,9 +235,6 @@ export default function ProblemList() {
                   <TableCell>{problem.id}</TableCell>
                   <TitleCell>
                     <TitleContainer>
-                      <StatusIndicator
-                        $userStatus={problem.userStatus as UserProblemStatus}
-                      />
                       <ProblemLink
                         to={`/problem-detail/${problem.id}`}
                         as="span"
@@ -185,22 +245,37 @@ export default function ProblemList() {
                       </ProblemLink>
                     </TitleContainer>
                   </TitleCell>
+
+                  <TableCell>
+                    <TagDisplayContainer>
+                      {problem.tags.map((tag, idx) => (
+                        <TagChip key={idx}>{tag}</TagChip>
+                      ))}
+                    </TagDisplayContainer>
+                  </TableCell>
                   <TableCell>{problem.difficulty}</TableCell>
                   <TableCell>{problem.views}</TableCell>
                   <TableCell>{problem.uploadDate}</TableCell>
-                  <TableCell style={{ textAlign: "center" }}></TableCell>
+
+                  <TableCell style={{ textAlign: "center" }}>
+                    {problem.userStatus !== "none" && (
+                      <StatusIndicator $userStatus={problem.userStatus}>
+                        {problem.userStatus === "solved" ? "맞춤" : "시도"}
+                      </StatusIndicator>
+                    )}
+                  </TableCell>
                 </TableRow>
 
                 {expandedProblemId === problem.id && (
                   <SummaryRow>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <SummaryBox>
                         <div>
                           <p>
                             <strong>요약:</strong> {problem.summary}
                           </p>
                           <p>
-                            <strong>푼 사람:</strong> {problem.solvedCount} |{" "}
+                            <strong>푼 사람:</strong> {problem.solvedCount} |
                             <strong>정답률:</strong> {problem.successRate}
                           </p>
                         </div>
@@ -224,7 +299,7 @@ export default function ProblemList() {
             ))
           ) : (
             <TableRow>
-              <EmptyCell colSpan={6}>
+              <EmptyCell colSpan={7}>
                 {searchTerm ? "검색된 문제가 없습니다." : "문제가 없습니다."}
               </EmptyCell>
             </TableRow>

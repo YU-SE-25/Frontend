@@ -24,7 +24,7 @@ export const MainContent = styled.div`
 
 // 2. 문제 메타 정보 섹션
 export const MetaInfoSection = styled.section`
-  margin-bottom: 30px;
+  margin-bottom: 35px;
 `;
 
 export const MetaRow = styled.div`
@@ -33,7 +33,7 @@ export const MetaRow = styled.div`
   flex-wrap: wrap;
   gap: 8px 15px; /* 간격 조정 */
   margin-bottom: 12px;
-  font-size: 14px;
+  font-size: 20px;
   color: ${(props) => props.theme.textColor};
 
   &:first-child {
@@ -42,12 +42,12 @@ export const MetaRow = styled.div`
   }
 `;
 export const MetaLabel = styled.span`
-  font-weight: 400;
+  font-weight: 600;
   color: ${(props) => props.theme.textColor};
   margin-right: 5px;
 `;
 export const MetaValue = styled.span`
-  font-weight: 600;
+  font-weight: 400;
   color: ${(props) => props.theme.textColor};
   a {
     color: ${(props) => props.theme.textColor};
@@ -95,7 +95,7 @@ export const DescriptionSection = styled.section`
   line-height: 1.7;
 
   h3 {
-    font-size: 20px;
+    font-size: 30px;
     font-weight: 600;
     margin-top: 30px;
     margin-bottom: 5px;
@@ -106,7 +106,7 @@ export const DescriptionSection = styled.section`
   p,
   pre {
     /* 본문과 코드 예제 스타일 */
-    font-size: 16px;
+    font-size: 20px;
     margin-bottom: 30px;
     color: ${(props) => props.theme.textColor};
   }
@@ -141,22 +141,19 @@ export const SectionHeader = styled.div`
 //인라인 태그 목록 스타일
 export const InlineTagList = styled.div`
   display: flex;
-  gap: 8px; /* 태그 사이 간격 */
-  flex-wrap: wrap; /* 태그 많으면 줄바꿈 */
+  gap: 8px;
+  flex-wrap: wrap;
 `;
 //태그 영역
 export const TagLink = styled(Link)`
-  display: inline-block;
-  background-color: ${(props) => props.theme.authHoverBgColor};
-  color: ${(props) => props.theme.textColor};
-  padding: 3px 8px; /* 크기 살짝 줄임 */
-  border-radius: 12px;
-  font-size: 12px; /* 크기 살짝 줄임 */
-  text-decoration: none;
-  transition: background-color 0.2s;
-  &:hover {
-    background-color: ${(props) => props.theme.logoColor};
-    color: ${(props) => props.theme.bgColor};
+  display: inline-flex;
+  align-items: center;
+  background-color: ${(props) => props.theme.focusColor};
+  color: ${(props) => props.theme.bgColor};
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: 500;
   }
 `;
 

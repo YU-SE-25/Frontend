@@ -100,7 +100,6 @@ export default function Login() {
               />
               로그인 상태 유지
             </CheckboxLabel>
-            <SubLink to="/forget-password">비밀번호 재설정</SubLink>
           </OptionsGroup>
 
           <MainButton type="submit">로그인</MainButton>
