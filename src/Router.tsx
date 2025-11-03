@@ -17,7 +17,8 @@ import ProblemAdd from "./problem/ProblemAdd";
 
 import Board from "./screens/Board";
 
-import Studygroup from "./screens/Studygroup";
+import StudyGroupMain from "./studygroup/StudyGroupMain";
+import StudyGroupDetail from "./studygroup/StudyGroupDetail";
 
 import NotFound from "./screens/NotFound";
 
@@ -33,7 +34,8 @@ const router = createBrowserRouter([
 
       { path: "board", element: <Board /> },
 
-      { path: "studygroup", element: <Studygroup /> },
+      { path: "studygroup-main", element: <StudyGroupMain /> },
+      { path: "studygroup/:groupId", element: <StudyGroupDetail /> },
 
       { path: "login", element: <Login /> },
       { path: "oauth/callback", element: <OAuthCallback /> },
