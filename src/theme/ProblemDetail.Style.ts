@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import type { StatusStyleProps } from "./ProblemList.Style";
 
 //페이지 전체 레이아웃
 export const ProblemWrapper = styled.div`
@@ -23,7 +24,7 @@ export const MainContent = styled.div`
 
 // 2. 문제 메타 정보 섹션
 export const MetaInfoSection = styled.section`
-  margin-bottom: 30px;
+  margin-bottom: 35px;
 `;
 
 export const MetaRow = styled.div`
@@ -32,7 +33,7 @@ export const MetaRow = styled.div`
   flex-wrap: wrap;
   gap: 8px 15px; /* 간격 조정 */
   margin-bottom: 12px;
-  font-size: 14px;
+  font-size: 20px;
   color: ${(props) => props.theme.textColor};
 
   &:first-child {
@@ -41,12 +42,12 @@ export const MetaRow = styled.div`
   }
 `;
 export const MetaLabel = styled.span`
-  font-weight: 400;
+  font-weight: 600;
   color: ${(props) => props.theme.textColor};
   margin-right: 5px;
 `;
 export const MetaValue = styled.span`
-  font-weight: 600;
+  font-weight: 400;
   color: ${(props) => props.theme.textColor};
   a {
     color: ${(props) => props.theme.textColor};
@@ -64,7 +65,7 @@ export const MetaValue = styled.span`
   }
 `;
 //푼 문제 통계 박스
-export const UserStatsBox = styled.div<StatusProps>`
+export const UserStatsBox = styled.div<StatusStyleProps>`
   /* StatusProps 타입 필요 */
   margin-top: 15px;
   padding: 10px 15px;
@@ -72,12 +73,13 @@ export const UserStatsBox = styled.div<StatusProps>`
   font-size: 14px;
   display: flex;
   gap: 8px 20px;
+  color: ${(props) => props.theme.textColor};
 
   border: 2px solid
     ${(props) =>
-      props.userStatus === "solved"
+      props.$userStatus === "solved"
         ? props.theme.logoColor
-        : props.userStatus === "attempted"
+        : props.$userStatus === "attempted"
         ? "#ff3838"
         : "transparent"};
 
@@ -93,18 +95,20 @@ export const DescriptionSection = styled.section`
   line-height: 1.7;
 
   h3 {
-    font-size: 20px;
+    font-size: 30px;
     font-weight: 600;
     margin-top: 30px;
     margin-bottom: 5px;
     border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
+    color: ${(props) => props.theme.textColor};
   }
 
   p,
   pre {
     /* 본문과 코드 예제 스타일 */
-    font-size: 16px;
+    font-size: 20px;
     margin-bottom: 30px;
+    color: ${(props) => props.theme.textColor};
   }
 
   /*코드 블록 스타일*/
@@ -131,27 +135,25 @@ export const SectionHeader = styled.div`
     border: none;
     padding: 0;
     flex-shrink: 0; /* 제목 줄어들지 않게 */
+    color: ${(props) => props.theme.textColor};
   }
 `;
 //인라인 태그 목록 스타일
 export const InlineTagList = styled.div`
   display: flex;
-  gap: 8px; /* 태그 사이 간격 */
-  flex-wrap: wrap; /* 태그 많으면 줄바꿈 */
+  gap: 8px;
+  flex-wrap: wrap;
 `;
 //태그 영역
 export const TagLink = styled(Link)`
-  display: inline-block;
-  background-color: ${(props) => props.theme.authHoverBgColor};
-  color: ${(props) => props.theme.textColor};
-  padding: 3px 8px; /* 크기 살짝 줄임 */
-  border-radius: 12px;
-  font-size: 12px; /* 크기 살짝 줄임 */
-  text-decoration: none;
-  transition: background-color 0.2s;
-  &:hover {
-    background-color: ${(props) => props.theme.logoColor};
-    color: ${(props) => props.theme.bgColor};
+  display: inline-flex;
+  align-items: center;
+  background-color: ${(props) => props.theme.focusColor};
+  color: ${(props) => props.theme.bgColor};
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: 500;
   }
 `;
 
@@ -178,6 +180,7 @@ export const ExampleSection = styled.div`
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 8px;
+    color: ${(props) => props.theme.textColor};
   }
   pre {
     background-color: ${(props) => props.theme.bgColor};
@@ -188,6 +191,9 @@ export const ExampleSection = styled.div`
     white-space: pre-wrap;
     word-break: break-all;
     min-height: 50px; /* 최소 높이 확보 */
+  }
+  code {
+    color: ${(props) => props.theme.textColor};
   }
 `;
 

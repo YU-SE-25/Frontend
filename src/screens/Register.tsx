@@ -14,7 +14,6 @@ import {
   ModalContentBox,
   CloseButton,
   ModalBackdrop,
-  BackButton,
 } from "../theme/Register.Style.ts";
 
 //type UserType = "student";
@@ -42,8 +41,6 @@ const validatePassword = (password: string) => {
 
 export default function Register() {
   const navigate = useNavigate();
-
-  //const [userType, setUserType] = useState<UserType>("student");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -205,7 +202,6 @@ export default function Register() {
 
   return (
     <RegisterPageWrapper>
-      <BackButton onClick={handleGoBack}>&larr; {/* 왼쪽 화살표 */}</BackButton>
       <RegisterBox>
         <Title>회원가입</Title>
 

@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSetAtom } from "jotai";
+import { postLogin } from "../api/login_api";
+import { loginActionAtom } from "../atoms";
 import {
   LoginPageWrapper,
   LoginBox,
@@ -12,74 +15,56 @@ import {
   SubLink,
   SocialLoginGroup,
   SocialButton,
-  BackButton,
+  ErrorMessage,
+  OptionsGroup,
+  CheckboxLabel,
 } from "../theme/Login.Style";
 
-//코드
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepLogin, setKeepLogin] = useState(false);
-  const [failCount, setFailCount] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const navigate = useNavigate();
+  const runLoginAction = useSetAtom(loginActionAtom);
 
-  //뒤로가기
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
-  //로그인 검사
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    //이미 잠긴 계정인지 확인 : 백엔드 api 필요
-    /*
-    if (failCount >= 5) {
-      alert("이미 잠긴 계정입니다.");
-      return;
-    }
-      */
+    setErrorMessage("");
 
     if (!email || !password) {
-      alert("이메일과 비밀번호를 모두 입력해 주세요.");
+      setErrorMessage("이메일과 비밀번호를 모두 입력해 주세요.");
       return;
     }
 
-    //API 호출
-    const loginData = {
-      email: email,
-      password: password,
-      keepLogin: keepLogin, // 로그인 유지 상태 전달
-    };
-
     try {
-      console.log(`로그인 시도: ${email} (유지: ${keepLogin})`);
+      //현재는 mock API 사용
+      const response = await postLogin({ email, password, keepLogin });
 
-      // const response = await axios.post(`${API_BASE}/auth/login`, loginData);
+      // Jotai 전역 상태 저장
+      runLoginAction(response);
 
-      //API 성공시에
-      // const token = response.data.token;
-      // if (keepLogin) { localStorage.setItem('refreshToken', response.data.refreshToken); }
-
-      // 로그인 성공 후 처리 (상태 관리 스토어 업데이트 필요)
-      // useAuthStore.getState().login(response.data.user);
-
-      alert("로그인 성공!"); //최종 코드엔 뺍니다, 로그인 잘 되는지 확인용
-      navigate("/"); // 메인 페이지로 이동
-    } catch (error) {
-      //에러 메시지 받는 곳
+      navigate(-1); // 로그인 성공 후 이전 페이지로
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response) {
+        setErrorMessage(
+          error.response.data?.message || "로그인에 실패했습니다."
+        );
+      } else if (error.response) {
+        setErrorMessage(error.response.data.message);
+      } else {
+        setErrorMessage("서버와 연결할 수 없습니다. (네트워크 오류)");
+      }
     }
   };
 
   const handleSocialLogin = (platform: "google" | "github") => {
-    console.log(`${platform} 소셜 로그인 시도`);
-    //소셜 로그인 파트!
+    window.location.href = `http://localhost:8080/oauth2/authorization/${platform}`;
   };
 
   return (
     <LoginPageWrapper>
-      <BackButton onClick={handleGoBack}>&larr; {/* 왼쪽 화살표 */}</BackButton>
       <LoginBox>
         <LoginTitle>로그인</LoginTitle>
         <form onSubmit={handleSubmit}>
@@ -102,6 +87,20 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </InputGroup>
+
+          {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
+
+          <OptionsGroup>
+            <CheckboxLabel htmlFor="keepLogin">
+              <input
+                type="checkbox"
+                id="keepLogin"
+                checked={keepLogin}
+                onChange={(e) => setKeepLogin(e.target.checked)}
+              />
+              로그인 상태 유지
+            </CheckboxLabel>
+          </OptionsGroup>
 
           <MainButton type="submit">로그인</MainButton>
         </form>

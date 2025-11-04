@@ -1,35 +1,25 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
-import { useState } from "react"; // useState는 Theme Toggle 시뮬레이션용으로 사용
+import { useAtom, useSetAtom } from "jotai";
+import {
+  isDarkAtom,
+  toggleThemeActionAtom,
+  isLoggedInAtom,
+  logoutActionAtom,
+  userProfileAtom,
+} from "../atoms";
 
-//전역 상태 관리 (Zustand/Jotai를 위한 Placeholder)
-//실제 프로젝트에서는 이 부분을 useAuthStore.ts 등에서 import 해야 합니다.
-const useAuthStore = () => ({
-  // isLoggedin 상태를 가져오거나 set 하는 함수 (실제 스토어 사용 시 구현 필요)
-  logout: () => {
-    console.log("Global Auth State Reset initiated.");
-    // 예: set((state) => ({ isLoggedIn: false, user: null }))
-  },
-});
-//테마 관리 PLACEHOLDER -> 얘도 임시입니당
-const useThemeStore = () => {
-  const [isDark, setIsDark] = useState(false); // 로컬에서 임시로 다크 모드 상태 관리
-  const toggleTheme = () => setIsDark((prev) => !prev);
-  return { isDark, toggleTheme };
-};
-
-type TopbarProps = { isLoggedIn?: boolean };
-const HEADER_H = 50;
+export const TOPBAR_HEIGHT = 50;
 
 const TopbarContainer = styled.header`
-  height: ${HEADER_H}px;
+  height: ${TOPBAR_HEIGHT}px;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  justify-content: space-between;
+  justify-content: flex-start;
 
   background-color: ${(props) => props.theme.headerBgColor};
   color: ${(props) => props.theme.textColor};
@@ -39,19 +29,19 @@ const TopbarContainer = styled.header`
 `;
 
 const TopbarContent = styled.nav`
+  position: relative;
   width: 100%;
-  margin: 0 auto;
   padding: 0 20px;
   display: flex;
-  justify-content: space-evenly;
   align-items: center;
+  justify-content: space-between;
 `;
 //오른쪽 영역 (테마 토글 + 인증)을 묶는 컨테이너
 const RightSection = styled.div`
   display: flex;
   align-items: center;
-  width: 30%;
   gap: 20px; /* 테마 토글과 인증 버튼 사이 간격 */
+  flex-shrink: 0;
 `;
 
 const Logo = styled(Link)`
@@ -67,17 +57,21 @@ const Logo = styled(Link)`
 `;
 
 const Menu = styled.ul`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   gap: 24px;
   list-style: none;
   margin: 0;
   padding: 0;
-  @media (max-width: 768px) {
+  @media (max-width: 1050px) {
     display: none;
   }
 `;
 
 const MenuLink = styled(NavLink)`
+  margin: auto;
   font-size: 16px;
   color: ${(props) => props.theme.textColor};
   text-decoration: none;
@@ -97,6 +91,9 @@ const MenuLink = styled(NavLink)`
 const Auth = styled.div`
   display: flex;
   gap: 12px;
+  /* 줄바꿈 금지 */
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 `;
 
 const AuthLink = styled(Link)`
@@ -106,6 +103,8 @@ const AuthLink = styled(Link)`
   padding: 6px 10px;
   border-radius: 10px;
   outline: none;
+  /* 줄바꿈 금지 */
+  white-space: nowrap;
   &:hover {
     background: ${(props) => props.theme.authHoverBgColor};
     color: ${(props) => props.theme.authHoverTextColor};
@@ -162,40 +161,39 @@ const ToggleHandle = styled.div<{ $isDark: boolean }>`
 `;
 // **********************************************
 
-export const TOPBAR_HEIGHT = HEADER_H;
+export default function Topbar() {
+  //Jotai 인증 상태 및 액션 연결
+  const [isLoggedIn] = useAtom(isLoggedInAtom);
+  const [userProfile] = useAtom(userProfileAtom);
+  //로그아웃 액션 함수
+  const runLogoutAction = useSetAtom(logoutActionAtom);
 
-export default function Topbar({ isLoggedIn = false }: TopbarProps) {
-  const navigate = useNavigate();
-  const authStore = useAuthStore();
-  const { isDark, toggleTheme } = useThemeStore(); // 테마 토글 상태 가져오기
+  //테마 상태 읽기
+  const [isDark] = useAtom(isDarkAtom);
+  //테마 토글 액션 함수 가져오기
+  const runToggleTheme = useSetAtom(toggleThemeActionAtom);
 
-  // 💡 [로그아웃 처리 함수]
+  //마이페이지 URL에 사용할 사용자 닉네임 (null일 경우 'guest'로 폴백)
+  const userName = userProfile?.nickname || "guest";
+
+  //로그아웃
   const handleLogout = async () => {
-    // 1. Local Storage에서 Refresh Token 가져오기
     const refreshToken = localStorage.getItem("refreshToken");
 
-    // 2. Refresh Token 무효화 API 호출 (서버 세션 종료)
     if (refreshToken) {
       try {
-        // 백엔드에서 요구한 JSON 형식으로 전송
-        await axios.post("/api/auth/logout", {
-          refreshToken: refreshToken,
-        });
+        //서버 세션 종료
+        await axios.post("/api/auth/logout", { refreshToken: refreshToken });
       } catch (error) {
-        // API 호출 실패해도 클라이언트 측 로그아웃은 진행 (세션 불일치 방지)
+        // API 실패해도 클라이언트 상태 초기화는 진행 일관성 유지
         console.error(
           "Logout API call failed, proceeding with client-side logout:",
           error
         );
       }
     }
-
-    // 3. 클라이언트 측 상태 초기화 (LocalStorage와 전역 상태)
-    localStorage.removeItem("refreshToken"); // Local Storage에서 토큰 삭제
-    authStore.logout(); // 전역 인증 상태 초기화
-
-    // 4. 메인으로 복귀
-    navigate("/");
+    //전역 상태 초기화 (Local Storage의 refreshToken도 초기화)
+    runLogoutAction();
   };
 
   return (
@@ -216,12 +214,12 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
             <MenuLink to="/board">게시판</MenuLink>
           </li>
           <li>
-            <MenuLink to="/studygroup">스터디 그룹</MenuLink>
+            <MenuLink to="/studygroup-main">스터디 그룹</MenuLink>
           </li>
         </Menu>
 
         <RightSection>
-          <ThemeToggleContainer onClick={toggleTheme}>
+          <ThemeToggleContainer onClick={runToggleTheme}>
             <ToggleSwitch $isDark={isDark}>
               <ToggleHandle $isDark={isDark} />
             </ToggleSwitch>
@@ -234,8 +232,10 @@ export default function Topbar({ isLoggedIn = false }: TopbarProps) {
                 <AuthLink to="/login">로그인</AuthLink>
                 <AuthLink to="/register">회원가입</AuthLink>
                 {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
-                <AuthLink to="mypage/:userName">마이페이지</AuthLink>
-                <AuthLink to="/">로그아웃</AuthLink>
+                <AuthLink to="/mypage/InHereUserNamePlz">마이페이지</AuthLink>
+                <AuthLink to="/" onClick={handleLogout}>
+                  로그아웃
+                </AuthLink>
               </>
             )}
           </Auth>

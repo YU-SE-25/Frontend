@@ -3,6 +3,7 @@ import App from "./App";
 
 import Home from "./screens/Home";
 import Login from "./screens/Login";
+import OAuthCallback from "./screens/OAuthCallback";
 import ForgetPassword from "./screens/ForgetPassword";
 import ResetPassword from "./screens/ResetPassword";
 import Register from "./screens/Register";
@@ -11,10 +12,15 @@ import VerifySuccess from "./screens/VerifySuccess";
 import Mypage from "./screens/Mypage";
 
 import ProblemList from "./problem/ProblemList";
-import ProblemDetailPage from "./problem/ProblemDetail";
+import ProblemDetail from "./problem/ProblemDetail";
+import ProblemAdd from "./problem/ProblemAdd";
 
 import Board from "./screens/Board";
-import Studygroup from "./screens/Studygroup";
+
+import StudyGroupMain from "./studygroup/StudyGroupMain";
+import StudyGroupDetail from "./studygroup/StudyGroupDetail";
+
+import NotFound from "./screens/NotFound";
 
 const router = createBrowserRouter([
   {
@@ -23,19 +29,24 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: "problem-list", element: <ProblemList /> },
-      { path: "problem-detail/:problemID", element: <ProblemDetailPage /> },
+      { path: "problem-detail/:problemId", element: <ProblemDetail /> },
+      { path: "problem-add", element: <ProblemAdd /> },
 
       { path: "board", element: <Board /> },
-      { path: "studygroup", element: <Studygroup /> },
+
+      { path: "studygroup-main", element: <StudyGroupMain /> },
+      { path: "studygroup/:groupId", element: <StudyGroupDetail /> },
 
       { path: "login", element: <Login /> },
+      { path: "oauth/callback", element: <OAuthCallback /> },
       { path: "forget-password", element: <ForgetPassword /> },
       { path: "reset-password", element: <ResetPassword /> },
       { path: "register", element: <Register /> },
       { path: "register-success", element: <RegisterSuccess /> },
       { path: "verify-success", element: <VerifySuccess /> },
-      { path: "mypage/:username", element: <Mypage username="gamppe" /> },
+      { path: "mypage/:username", element: <Mypage /> },
     ],
+    errorElement: <NotFound />,
   },
 ]);
 

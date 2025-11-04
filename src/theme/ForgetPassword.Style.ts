@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import { Link } from "react-router-dom";
 import { TOPBAR_HEIGHT } from "../components/Topbar";
 
 interface ActionButtonProps {
@@ -26,7 +25,7 @@ export const LoginBox = styled.div`
 `;
 
 export const ResetTitle = styled.h2`
-  font-size: 24px; /* LoginTitle보다 살짝 작게 조정 */
+  font-size: 24px;
   font-weight: bold;
   margin-bottom: 20px;
   color: ${(props) => props.theme.textColor};
@@ -47,6 +46,7 @@ export const Label = styled.label`
   margin-right: 15px;
   font-weight: 600;
   width: 120px;
+  color: ${(props) => props.theme.textColor};
 `;
 
 // 텍스트 입력창

@@ -2,10 +2,6 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { TOPBAR_HEIGHT } from "../components/Topbar";
 
-//Type Definitions (TypeScript)
-export interface StatusProps {
-  $userStatus: UserProblemStatus; // 'solved' | 'attempted' | 'none'
-}
 // HeaderCell 너비 prop 타입
 export interface HeaderCellProps {
   width: string;
@@ -15,7 +11,10 @@ export type UserProblemStatus = "solved" | "attempted" | "none";
 export interface StatusProps {
   userStatus: UserProblemStatus;
 }
-
+//Type Definitions (TypeScript)
+export interface StatusStyleProps {
+  $userStatus?: UserProblemStatus; // 'solved' | 'attempted' | 'none'
+}
 //레이아웃 및 컨트롤 스타일
 export const ProblemListWrapper = styled.div`
   height: 100%;
@@ -28,81 +27,110 @@ export const ProblemListWrapper = styled.div`
   flex-direction: column;
   background-color: ${(props) => props.theme.bgColor};
 `;
-export const PageTitle = styled.h1`
-  font-size: 28px;
-  font-weight: 700;
+//PageTitle과 AddButton을 묶는 컨테이너
+export const PageTitleContainer = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 30px;
+`;
+
+export const PageTitle = styled.h1`
+  font-size: 30px;
+  font-weight: 700;
   color: ${(props) => props.theme.textColor};
+  flex-shrink: 0;
 `;
 export const ControlBar = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  gap: 3px;
+  gap: 10px;
+  transform: scale(1.1);
 `;
 export const SearchContainer = styled.div`
   display: flex;
   gap: 10px;
 `;
 export const SearchInput = styled.input`
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   border-radius: 4px;
-  width: 300px;
+  width: 340px;
   color: ${(props) => props.theme.textColor};
   background-color: ${(props) => props.theme.bgColor};
 `;
 export const SearchButton = styled.button`
-  padding: 8px 15px;
+  padding: 10px 18px;
   background-color: ${(props) => props.theme.logoColor};
   color: ${(props) => props.theme.authHoverTextColor};
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-size: 15px;
   cursor: pointer;
   transition: background-color 0.2s;
 `;
 export const SortSelect = styled.select`
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
-  border-radius: 4px;
+  border-radius: 6px;
+  font-size: 15px;
   color: ${(props) => props.theme.textColor};
   background-color: ${(props) => props.theme.bgColor};
+  option {
+    color: ${(props) => props.theme.textColor};
+    background-color: ${(props) => props.theme.bgColor};
+  }
+`;
+//문제 추가 버튼
+export const AddButton = styled.button`
+  padding: 10px 25px;
+  background-color: ${(props) => props.theme.logoColor};
+  color: ${(props) => props.theme.authHoverTextColor};
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
 `;
 
 //문제 목록 테이블 스타일
 export const ProblemTable = styled.table`
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   background-color: ${(props) => props.theme.headerBgColor};
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
+  table-layout: fixed;
 `;
 export const TableHead = styled.thead`
   background-color: ${(props) => props.theme.logoColor};
 `;
 export const HeaderCell = styled.th<HeaderCellProps>`
   width: ${(props) => props.width};
-  padding: 15px;
+  padding: 12px 10px;
   text-align: left;
   font-weight: 600;
   color: ${(props) => props.theme.textColor};
 `;
-export const TableRow = styled.tr<StatusProps>`
+export const TableRow = styled.tr<StatusStyleProps>`
   border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
 `;
 export const TableCell = styled.td`
-  padding: 15px;
+  padding: 12px 10px;
   color: ${(props) => props.theme.textColor};
-  font-size: 14px;
+  font-size: 17px;
   vertical-align: middle;
+  background-color: ${(props) => props.theme.headerBgColor}60;
 `;
 export const EmptyCell = styled(TableCell)`
   text-align: center;
   padding: 40px;
-  color: ${(props) => props.theme.authHoverBgColor};
+  color: ${(props) => props.theme.textColor}60;
   font-style: italic;
 `;
 
@@ -128,24 +156,51 @@ export const TitleContainer = styled.div`
   width: 100%;
 `;
 
-// 푼 문제 표시 점 스타일 (초록/빨강)
+export interface StatusProps {
+  $userStatus: "solved" | "attempted" | "none"; // `UserProblemStatus`와 동일하게 맞춤
+}
+
 export const StatusIndicator = styled.span<StatusProps>`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 8px;
-  background-color: ${
-    (props) =>
-      props.$userStatus === "solved"
-        ? props.theme.logoColor /* 초록 */
-        : props.$userStatus === "attempted"
-        ? "#ff3838" /* 빨강 */
-        : "transparent" /* 안 푼 문제 */
-  };
-  flex-shrink: 0;
+  font-size: 17px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+
+  ${({ $userStatus, theme }) => {
+    switch ($userStatus) {
+      case "solved":
+        return `
+          background: ${theme.logoColor + "30"}; 
+          border: 1px solid ${theme.logoColor}; 
+          color: ${theme.textColor}; 
+        `;
+      case "attempted":
+        return `
+          background: #ff383830; 
+          border: 1px solid #ff3838; 
+          color: ${theme.textColor}; 
+        `;
+      case "none":
+      default:
+        return ``;
+    }
+  }}
 `;
 export const TitleCell = styled(TableCell)`
   /* TitleCell 고유 스타일이 있다면 여기에 추가 */
+`;
+//문제 필터 드롭다운 스타일
+export const FilterSelect = styled.select`
+  padding: 8px 12px;
+  border: 1px solid ${(props) => props.theme.authHoverBgColor};
+  border-radius: 4px;
+  color: ${(props) => props.theme.textColor};
+  background-color: ${(props) => props.theme.bgColor};
+  /* 💡 ControlBar 내에서 다른 요소와 구분되도록 margin-left를 auto로 설정 */
+  margin-left: auto;
 `;
 
 // 아코디언 펼치기 버튼
@@ -154,7 +209,6 @@ export const ExpandButton = styled.button`
   border: none;
   cursor: pointer;
   color: ${(props) => props.theme.textColor};
-  font-size: 16px;
   padding: 5px;
   line-height: 1;
   margin-left: auto;
@@ -165,25 +219,28 @@ export const ExpandButton = styled.button`
 `;
 // 아코디언 내용 행
 export const SummaryRow = styled.tr`
-  background-color: ${(props) =>
-    props.theme.bgColor}; /* 기본 행과 구분되는 배경 */
+  background-color: ${(props) => props.theme.bgColor};
   border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
 `;
 // 아코디언 내용 박스
 export const SummaryBox = styled.div`
   padding: 15px 20px;
-  font-size: 14px;
+  font-size: 20px;
   color: ${(props) => props.theme.textColor};
   line-height: 1.6;
   text-align: left;
 
-  /* 내부 요소들을 좌우로 분리 */
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* 상단 정렬 */
+  align-items: center;
 
   p {
     margin-bottom: 8px;
+  }
+  p,
+  div,
+  strong {
+    color: ${(props) => props.theme.textColor};
   }
 `;
 export const ButtonContainer = styled.div`
@@ -199,7 +256,7 @@ export const ActionInSummaryButton = styled.button`
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 20px;
   font-weight: bold;
   transition: background-color 0.2s;
   white-space: nowrap; /* 버튼 글자 줄바꿈 방지 */
@@ -217,7 +274,7 @@ export const DetailsButton = styled.button`
   border: 1px solid ${(props) => props.theme.authActiveBgColor};
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 20px;
   font-weight: normal; /* 일반 굵기 */
   transition: background-color 0.2s;
   white-space: nowrap;
@@ -242,7 +299,7 @@ export const PageLink = styled.span<{
 }>`
   /* 기본 텍스트 스타일 */
   color: ${(props) => props.theme.textColor};
-  font-size: 16px;
+  font-size: 20px;
   cursor: pointer;
   padding: 5px;
   text-decoration: none;
@@ -256,7 +313,7 @@ export const PageLink = styled.span<{
   ${(props) =>
     props.isDisabled &&
     `
-    color: ${props.theme.authHoverBgColor}; /* 흐린 색상 */
+    color: ${props.theme.textColor}60; 
     cursor: not-allowed;
     pointer-events: none; /* 클릭 이벤트 자체를 막음 */
   `}
@@ -266,4 +323,23 @@ export const PageLink = styled.span<{
     color: ${(props) => props.theme.focusColor};
     text-decoration: underline;
   }
+`;
+// 태그 표시 컨테이너
+export const TagDisplayContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 25px;
+  padding-bottom: 5px;
+`;
+// 개별 태그 Chip 스타일
+export const TagChip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  background-color: ${(props) => props.theme.focusColor};
+  color: ${(props) => props.theme.bgColor};
+  padding: 4px 9px;
+  border-radius: 13px;
+  font-size: 15px;
+  font-weight: 500;
 `;
