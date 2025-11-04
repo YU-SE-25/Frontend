@@ -1,18 +1,15 @@
 /*******************나중에 할 것*****************
 실제 API로 교체
-문세 상세 페이지로 이동 - 아이템과 칩 클릭 시
+
 
 *************************************************/
 import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
-import {
-  getSolvedIds,
-  getBookmarkedIds,
-  getRecentSubmissions,
-} from "../api/dummy/mypage_dummy"; //더미 API 사용
-
+import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
+import { getUserProfile } from "../../api/mypage_api";
+const USE_DUMMY = true; //더미 데이터 사용 여부!
 type Submission = {
   id: number;
   problemId: number;
@@ -28,25 +25,6 @@ const Page = styled.div`
   padding: 24px;
   display: grid;
   gap: 20px;
-`;
-
-const Head = styled.header`
-  color: ${(props) => props.theme.textColor};
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-`;
-
-const Title = styled.h1`
-  color: ${(props) => props.theme.textColor};
-  font-size: 24px;
-  font-weight: 700;
-`;
-
-const Badge = styled.span`
-  color: ${(props) => props.theme.textColor};
-  font-size: 14px;
-  opacity: 0.7;
 `;
 
 const Grid = styled.section`
@@ -237,31 +215,46 @@ const Pill = styled.span<{ tone?: "ok" | "bad" | "neutral" }>`
       : `background:#f3f4f6;`}
 `;
 
-export default function MyPage() {
-  const { username } = useParams();
+export default function ActivityPage() {
+  const userId = "123";
   const nav = useNavigate();
 
-  const solvedQ = useQuery({
-    queryKey: ["mypage", "solvedIds", username],
-    queryFn: () => getSolvedIds(username!),
-    staleTime: 60_000,
+  const {
+    data: user,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["userProfile", userId],
+    queryFn: async () =>
+      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId),
+    staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
   });
 
-  const bookmarkedQ = useQuery({
-    queryKey: ["mypage", "bookmarkedIds", username],
-    queryFn: () => getBookmarkedIds(username!),
-    staleTime: 60_000,
-  });
-
-  const recentQ = useQuery({
-    queryKey: ["mypage", "recentSubmissions", username!],
-    queryFn: () => getRecentSubmissions(username!),
-    staleTime: 30_000,
-  });
-
-  const solvedIds = solvedQ.data ?? [];
-  const bookmarkedIds = bookmarkedQ.data ?? [];
-  const submissions: Submission[] = recentQ.data ?? [];
+  if (isError) {
+    return (
+      <Page>
+        <Card>
+          <Muted>❌ 데이터를 불러오는 중 오류가 발생했습니다.</Muted>
+          <Row>
+            <Button onClick={() => refetch()} variant="primary">
+              다시 시도하기
+            </Button>
+          </Row>
+        </Card>
+      </Page>
+    );
+  }
+  if (isLoading) {
+    return (
+      <Page>
+        <Muted>⏳ 데이터를 불러오는 중입니다...</Muted>
+      </Page>
+    );
+  }
+  const solvedIds = user?.solvedProblems ?? [];
+  const bookmarkedIds = user?.bookmarkedProblems ?? [];
+  const submissions: Submission[] = user?.recentSubmissions ?? [];
 
   const solvedPreview = useMemo(() => solvedIds.slice(0, 10), [solvedIds]);
   const bookmarkedPreview = useMemo(
@@ -285,11 +278,7 @@ export default function MyPage() {
 
   return (
     <Page>
-      <Head>
-        <Title>마이페이지</Title>
-        <Badge>User: {username}</Badge>
-      </Head>
-
+      {/* 푼문제수, 북마크, 정답률 */}
       <StatGrid>
         <Stat>
           <StatLabel>푼 문제 수</StatLabel>
@@ -305,16 +294,17 @@ export default function MyPage() {
         </Stat>
       </StatGrid>
 
+      {/* 내가 푼 문제, 북마크한 문제 */}
       <Grid>
         <Card>
           <CardTitleRow>
             <CardTitle>내가 푼 문제</CardTitle>
-            <Muted>{solvedQ.isFetching ? "동기화 중…" : ""}</Muted>
+            <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
           </CardTitleRow>
           <Row>
             <Button
               onClick={goSolved}
-              disabled={solvedQ.isLoading || !solvedIds.length}
+              disabled={isLoading || !solvedIds.length}
               variant="primary"
             >
               내가 푼 문제만 보기
@@ -322,7 +312,7 @@ export default function MyPage() {
             <Button onClick={goAll} variant="soft">
               전체 문제 보기
             </Button>
-            <Button onClick={() => solvedQ.refetch()} variant="ghost">
+            <Button onClick={() => refetch()} variant="ghost">
               새로고침
             </Button>
           </Row>
@@ -341,16 +331,16 @@ export default function MyPage() {
         <Card>
           <CardTitleRow>
             <CardTitle>북마크한 문제</CardTitle>
-            <Muted>{bookmarkedQ.isFetching ? "동기화 중…" : ""}</Muted>
+            <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
           </CardTitleRow>
           <Row>
             <Button
               onClick={goBookmarked}
-              disabled={bookmarkedQ.isLoading || !bookmarkedIds.length}
+              disabled={isLoading || !bookmarkedIds.length}
             >
               북마크 목록 보기
             </Button>
-            <Button onClick={() => bookmarkedQ.refetch()} variant="ghost">
+            <Button onClick={() => refetch()} variant="ghost">
               새로고침
             </Button>
           </Row>
@@ -369,10 +359,11 @@ export default function MyPage() {
         </Card>
       </Grid>
 
+      {/* 최근 제출 */}
       <Card>
         <CardTitleRow>
           <CardTitle>최근 제출</CardTitle>
-          <Muted>{recentQ.isFetching ? "동기화 중…" : ""}</Muted>
+          <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
         </CardTitleRow>
         {!submissions.length ? (
           <Muted>기록 없음</Muted>

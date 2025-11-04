@@ -9,7 +9,7 @@ import ResetPassword from "./screens/ResetPassword";
 import Register from "./screens/Register";
 import RegisterSuccess from "./screens/RegisterSuccess";
 import VerifySuccess from "./screens/VerifySuccess";
-import Mypage from "./screens/Mypage";
+import MypageLayout from "./screens/mypage/MypageLayout";
 
 import ProblemList from "./screens/problem/ProblemList";
 import ProblemDetail from "./screens/problem/ProblemDetail";
@@ -21,6 +21,8 @@ import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 
 import NotFound from "./screens/NotFound";
+import UserPageLayout from "./screens/mypage/UserpageLayout";
+import MyPageScreen from "./screens/mypage/MypageScreen";
 
 const router = createBrowserRouter([
   {
@@ -44,7 +46,16 @@ const router = createBrowserRouter([
       { path: "register", element: <Register /> },
       { path: "register-success", element: <RegisterSuccess /> },
       { path: "verify-success", element: <VerifySuccess /> },
-      { path: "mypage/:username", element: <Mypage /> },
+      {
+        path: "mypage",
+        element: <MypageLayout />, // 이 컴포넌트 안에서 <Outlet/> 렌더해야 함!
+        children: [{ index: true, element: <MyPageScreen /> }],
+      },
+      {
+        path: "mypage/:username",
+        element: <UserPageLayout />,
+        children: [{ index: true, element: <MyPageScreen /> }],
+      },
     ],
     errorElement: <NotFound />,
   },
