@@ -35,7 +35,7 @@ const MainLink = styled(Link)`
   border-radius: 5px;
   font-size: 18px;
   font-weight: bold;
-  }
+  
 `;
 
 //화면 글자 조정 필요
