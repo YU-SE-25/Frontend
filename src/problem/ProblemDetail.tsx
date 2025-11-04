@@ -199,6 +199,26 @@ export default function ProblemDetail() {
               내 코드 보기
             </ViewCodeButton>
           )}
+          <ViewCodeButton
+            onClick={() => {
+              if (!isLoggedIn) {
+                alert("로그인 후 이용 가능합니다.");
+                return;
+              }
+              // navigate(`~~~`);
+            }}
+          >
+            코드 리뷰
+          </ViewCodeButton>
+
+          {/* QnA 버튼 (로직 아직 없음, 주석 처리) */}
+          <ViewCodeButton
+            onClick={() => {
+              // navigate(`~~~`);
+            }}
+          >
+            QnA
+          </ViewCodeButton>
         </ActionSection>
       </MainContent>
     </ProblemWrapper>

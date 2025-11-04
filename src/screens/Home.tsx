@@ -1,12 +1,40 @@
+import React from "react";
 import styled from "styled-components";
 
-const Cat = styled.img`
-  width: auto;
-  height: auto;
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  text-align: center;
+  background-color: ${(props) => props.theme.bgColor};
+  color: ${(props) => props.theme.textColor};
+`;
+
+const Title = styled.h1`
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: ${(props) => props.theme.logoColor};
+`;
+
+const Subtitle = styled.p`
+  font-size: 20px;
+  font-weight: 500;
+  color: ${(props) => props.theme.textColor};
 `;
 
 export default function Main() {
   return (
-    <Cat src="https://camo.githubusercontent.com/89946a1fdbfdf5c66275e9d78ccf6191cddfee5afd3578d22bcc14002deea052/68747470733a2f2f632e74656e6f722e636f6d2f42543849356233356f4d5141414141432f6f61746d65616c2d6d656d652e676966" />
+    <Wrapper>
+      <Title>UnIDE</Title>
+      <Subtitle>
+        단순한 채점 플랫폼을 넘어, 학습자의 알고리즘 이해와 성장을 돕는 지능형
+        IDE
+      </Subtitle>
+      {/*특징 설명 추후 추가 예정*/}
+      {/*주간 순위 또한 추후 추가 예정*/}
+    </Wrapper>
   );
 }

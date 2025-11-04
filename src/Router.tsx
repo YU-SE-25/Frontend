@@ -13,9 +13,13 @@ import Mypage from "./screens/Mypage";
 
 import ProblemList from "./problem/ProblemList";
 import ProblemDetail from "./problem/ProblemDetail";
+import ProblemAdd from "./problem/ProblemAdd";
 
 import Board from "./screens/Board";
-import Studygroup from "./screens/Studygroup";
+
+import StudyGroupMain from "./studygroup/StudyGroupMain";
+import StudyGroupDetail from "./studygroup/StudyGroupDetail";
+
 import NotFound from "./screens/NotFound";
 
 const router = createBrowserRouter([
@@ -26,9 +30,12 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: "problem-list", element: <ProblemList /> },
       { path: "problem-detail/:problemId", element: <ProblemDetail /> },
+      { path: "problem-add", element: <ProblemAdd /> },
 
       { path: "board", element: <Board /> },
-      { path: "studygroup", element: <Studygroup /> },
+
+      { path: "studygroup-main", element: <StudyGroupMain /> },
+      { path: "studygroup/:groupId", element: <StudyGroupDetail /> },
 
       { path: "login", element: <Login /> },
       { path: "oauth/callback", element: <OAuthCallback /> },
