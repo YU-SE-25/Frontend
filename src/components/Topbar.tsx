@@ -232,7 +232,7 @@ export default function Topbar() {
                 <AuthLink to="/login">로그인</AuthLink>
                 <AuthLink to="/register">회원가입</AuthLink>
                 {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
-                <AuthLink to="/mypage">마이페이지</AuthLink>
+                <AuthLink to="/mypage?tab=activity">마이페이지</AuthLink>
                 <AuthLink to="/" onClick={handleLogout}>
                   로그아웃
                 </AuthLink>

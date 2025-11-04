@@ -4,7 +4,7 @@
 
 *************************************************/
 import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
@@ -25,25 +25,6 @@ const Page = styled.div`
   padding: 24px;
   display: grid;
   gap: 20px;
-`;
-
-const Head = styled.header`
-  color: ${(props) => props.theme.textColor};
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-`;
-
-const Title = styled.h1`
-  color: ${(props) => props.theme.textColor};
-  font-size: 24px;
-  font-weight: 700;
-`;
-
-const Badge = styled.span`
-  color: ${(props) => props.theme.textColor};
-  font-size: 14px;
-  opacity: 0.7;
 `;
 
 const Grid = styled.section`
@@ -234,9 +215,8 @@ const Pill = styled.span<{ tone?: "ok" | "bad" | "neutral" }>`
       : `background:#f3f4f6;`}
 `;
 
-export default function MyPage() {
-  const userId = "1"; //나중에 인증된 사용자 ID로 교체
-  const { username } = useParams();
+export default function ActivityPage() {
+  const userId = "123";
   const nav = useNavigate();
 
   const {
@@ -251,9 +231,30 @@ export default function MyPage() {
     staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
   });
 
-  const solvedIds = user.solvedProblems ?? [];
-  const bookmarkedIds = user.bookmarkedProblems ?? [];
-  const submissions: Submission[] = user.recentSubmissions ?? [];
+  if (isError) {
+    return (
+      <Page>
+        <Card>
+          <Muted>❌ 데이터를 불러오는 중 오류가 발생했습니다.</Muted>
+          <Row>
+            <Button onClick={() => refetch()} variant="primary">
+              다시 시도하기
+            </Button>
+          </Row>
+        </Card>
+      </Page>
+    );
+  }
+  if (isLoading) {
+    return (
+      <Page>
+        <Muted>⏳ 데이터를 불러오는 중입니다...</Muted>
+      </Page>
+    );
+  }
+  const solvedIds = user?.solvedProblems ?? [];
+  const bookmarkedIds = user?.bookmarkedProblems ?? [];
+  const submissions: Submission[] = user?.recentSubmissions ?? [];
 
   const solvedPreview = useMemo(() => solvedIds.slice(0, 10), [solvedIds]);
   const bookmarkedPreview = useMemo(
@@ -277,11 +278,6 @@ export default function MyPage() {
 
   return (
     <Page>
-      <Head>
-        <Title>마이페이지</Title>
-        <Badge>User: {username}</Badge>
-      </Head>
-
       {/* 푼문제수, 북마크, 정답률 */}
       <StatGrid>
         <Stat>

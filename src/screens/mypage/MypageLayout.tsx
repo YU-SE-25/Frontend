@@ -3,8 +3,7 @@
 
 
 *************************************************/
-import { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
@@ -15,14 +14,18 @@ import {
   SiJavascript,
   SiCoffeescript,
 } from "react-icons/si";
+import Sidebar from "../../components/mypage_sidebar";
 const USE_DUMMY = true; //더미 데이터 사용 여부!
 
+//css styles
 const Page = styled.div`
-  max-width: 1040px;
+  max-width: 2080px;
   margin: 0 auto;
   padding: 24px;
-  display: grid;
-  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
 `;
 
 const Head = styled.header`
@@ -121,11 +124,15 @@ const LangChip = styled.div<{ tone?: string }>`
     }};
   }
 `;
-const Muted = styled.div`
-  color: ${(props) => props.theme.textColor};
-  font-size: 13px;
-  opacity: 0.7;
+
+const Body = styled.div`
+  max-width: 1200px;
+  margin-top: 30px;
+  width: 100%;
+  height: auto;
+  display: flex;
 `;
+
 export default function MyPageLayout() {
   const userId = "123"; //임시 유저 ID
 
@@ -166,6 +173,10 @@ export default function MyPageLayout() {
           </Chips>
         </UserInfo>
       </Head>
+      <Body>
+        <Sidebar />
+        <Outlet />
+      </Body>
     </Page>
   );
 }
