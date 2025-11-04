@@ -4,11 +4,11 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 // ▶ 실제 API 사용
 //import { getProblemDetail, increaseView,  } from "../api/problemdetail_api";
 // ▶ 더미 사용하려면 위 import 대신 이 두 줄로 바꿔서 사용
-import type { IProblem } from "../api/problem_api";
+import type { IProblem } from "../../api/problem_api";
 import {
   getDummyProblemDetail as getProblemDetail,
   increaseDummyView as increaseView,
-} from "../api/dummy/problem_dummy";
+} from "../../api/dummy/problem_dummy";
 
 import {
   ProblemWrapper,
@@ -29,7 +29,7 @@ import {
   SolveButton,
   ViewCodeButton,
   TagLink,
-} from "../theme/ProblemDetail.Style";
+} from "../../theme/ProblemDetail.Style";
 
 export default function ProblemDetail() {
   const { problemId } = useParams<{ problemId: string }>();

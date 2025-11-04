@@ -154,7 +154,6 @@ export const TagLink = styled(Link)`
   border-radius: 15px;
   font-size: 14px;
   font-weight: 500;
-  }
 `;
 
 //입출력

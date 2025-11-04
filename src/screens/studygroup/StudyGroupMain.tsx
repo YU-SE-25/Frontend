@@ -18,7 +18,7 @@ import {
   EmptyMessage,
   TagDisplayContainer,
   TagChip,
-} from "../theme/StudyGroupMain.Style";
+} from "../../theme/StudyGroupMain.Style";
 
 interface Group {
   id: number;

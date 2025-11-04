@@ -27,6 +27,8 @@ export type UserProfile = {
   solvedProblems: number[];
   bookmarkedProblems: number[];
   recentSubmissions: Submission[];
+  prefferred_language?: string[];
+  role: string;
   stats: {
     totalSolved: number;
     totalSubmitted: number;
@@ -42,10 +44,11 @@ export type UserProfile = {
 const dummyUser: UserProfile = {
   userId: 1024,
   username: "gamppe",
-  avatarUrl: "https://avatars.githubusercontent.com/u/1024?v=4",
+  avatarUrl: "https://media.tenor.com/CNI1fSM1XSoAAAAe/shocked-surprised.png",
   bio: "꾸준히 성장하는 개발자 👨‍💻",
   joinedAt: "2025-02-10T13:41:00Z",
-
+  prefferred_language: ["Python", "C++", "JavaScript", "Java", "Ummlang", "Go"],
+  role: "LEARNER",
   solvedProblems: [1, 3, 5, 8, 13, 21, 34, 55, 89],
   bookmarkedProblems: [5, 13, 42, 120],
   recentSubmissions: [
@@ -103,9 +106,7 @@ const dummyUser: UserProfile = {
   ],
 };
 
-// -------------------------------
-// 실제 API와 동일한 함수 이름 유지
-// -------------------------------
+/* deprecated
 export async function getSolvedIds(userId: string | number): Promise<number[]> {
   console.log(`[mock] getSolvedIds(${userId})`);
   return Promise.resolve(dummyUser.solvedProblems);
@@ -124,10 +125,7 @@ export async function getRecentSubmissions(
   console.log(`[mock] getRecentSubmissions(${userId})`);
   return Promise.resolve(dummyUser.recentSubmissions);
 }
-
-export async function getUserProfile(
-  userId: string | number
-): Promise<UserProfile> {
-  console.log(`[mock] getUserProfile(${userId})`);
+*/
+export async function getDummyUserProfile(): Promise<UserProfile> {
   return Promise.resolve(dummyUser);
 }
