@@ -25,6 +25,8 @@ export type UserProfile = {
   solvedProblems: number[];
   bookmarkedProblems: number[];
   recentSubmissions: Submission[];
+  prefferred_language?: string[];
+  role: string;
   stats: {
     totalSolved: number;
     totalSubmitted: number;
@@ -37,12 +39,13 @@ export type UserProfile = {
 };
 
 const USERS_API_BASE = "/api/users";
+
 export async function getUserProfile(userId: string): Promise<UserProfile> {
-  const { data } = await axios.get<UserProfile>(
-    `${USERS_API_BASE}/${userId}/profile`
-  );
+  const { data } = await axios.get<UserProfile>(`${USERS_API_BASE}/${userId}`);
   return data;
 }
+/* deprecated 
+@)))))))))))))))))))))))))))))))김밥 머거
 
 export async function getSolvedIds(userId: string): Promise<number[]> {
   const { data } = await axios.get<{ ids: number[] }>(
@@ -64,3 +67,4 @@ export async function getRecentSubmissions(userId: string) {
   });
   return Array.isArray(data) ? data : [];
 }
+*/

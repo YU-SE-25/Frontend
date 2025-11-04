@@ -27,6 +27,8 @@ export type UserProfile = {
   solvedProblems: number[];
   bookmarkedProblems: number[];
   recentSubmissions: Submission[];
+  prefferred_language?: string[];
+  role: string;
   stats: {
     totalSolved: number;
     totalSubmitted: number;
@@ -45,7 +47,8 @@ const dummyUser: UserProfile = {
   avatarUrl: "https://media.tenor.com/CNI1fSM1XSoAAAAe/shocked-surprised.png",
   bio: "꾸준히 성장하는 개발자 👨‍💻",
   joinedAt: "2025-02-10T13:41:00Z",
-
+  prefferred_language: ["Python", "C++", "JavaScript", "Java", "Ummlang", "Go"],
+  role: "LEARNER",
   solvedProblems: [1, 3, 5, 8, 13, 21, 34, 55, 89],
   bookmarkedProblems: [5, 13, 42, 120],
   recentSubmissions: [

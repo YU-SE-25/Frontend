@@ -46,7 +46,11 @@ const Username = styled.h1`
   font-weight: bold;
   color: ${(props) => props.theme.textColor};
 `;
-
+const Muted = styled.div`
+  color: ${(props) => props.theme.textColor};
+  font-size: 13px;
+  opacity: 0.7;
+`;
 export default function UserPageLayout() {
   const userId = "123"; //임시 유저 ID
   const {
