@@ -7,12 +7,9 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
-import {
-  getSolvedIds,
-  getBookmarkedIds,
-  getRecentSubmissions,
-} from "../../api/dummy/mypage_dummy"; //더미 API 사용
-
+import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
+import { getUserProfile } from "../../api/mypage_api";
+const USE_DUMMY = true; //더미 데이터 사용 여부!
 type Submission = {
   id: number;
   problemId: number;
@@ -238,30 +235,25 @@ const Pill = styled.span<{ tone?: "ok" | "bad" | "neutral" }>`
 `;
 
 export default function MyPage() {
+  const userId = "1"; //나중에 인증된 사용자 ID로 교체
   const { username } = useParams();
   const nav = useNavigate();
 
-  const solvedQ = useQuery({
-    queryKey: ["mypage", "solvedIds", username],
-    queryFn: () => getSolvedIds(username!),
-    staleTime: 60_000,
+  const {
+    data: user,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["userProfile", userId],
+    queryFn: async () =>
+      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId),
+    staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
   });
 
-  const bookmarkedQ = useQuery({
-    queryKey: ["mypage", "bookmarkedIds", username],
-    queryFn: () => getBookmarkedIds(username!),
-    staleTime: 60_000,
-  });
-
-  const recentQ = useQuery({
-    queryKey: ["mypage", "recentSubmissions", username!],
-    queryFn: () => getRecentSubmissions(username!),
-    staleTime: 30_000,
-  });
-
-  const solvedIds = solvedQ.data ?? [];
-  const bookmarkedIds = bookmarkedQ.data ?? [];
-  const submissions: Submission[] = recentQ.data ?? [];
+  const solvedIds = user.solvedProblems ?? [];
+  const bookmarkedIds = user.bookmarkedProblems ?? [];
+  const submissions: Submission[] = user.recentSubmissions ?? [];
 
   const solvedPreview = useMemo(() => solvedIds.slice(0, 10), [solvedIds]);
   const bookmarkedPreview = useMemo(
@@ -311,12 +303,12 @@ export default function MyPage() {
         <Card>
           <CardTitleRow>
             <CardTitle>내가 푼 문제</CardTitle>
-            <Muted>{solvedQ.isFetching ? "동기화 중…" : ""}</Muted>
+            <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
           </CardTitleRow>
           <Row>
             <Button
               onClick={goSolved}
-              disabled={solvedQ.isLoading || !solvedIds.length}
+              disabled={isLoading || !solvedIds.length}
               variant="primary"
             >
               내가 푼 문제만 보기
@@ -324,7 +316,7 @@ export default function MyPage() {
             <Button onClick={goAll} variant="soft">
               전체 문제 보기
             </Button>
-            <Button onClick={() => solvedQ.refetch()} variant="ghost">
+            <Button onClick={() => refetch()} variant="ghost">
               새로고침
             </Button>
           </Row>
@@ -343,16 +335,16 @@ export default function MyPage() {
         <Card>
           <CardTitleRow>
             <CardTitle>북마크한 문제</CardTitle>
-            <Muted>{bookmarkedQ.isFetching ? "동기화 중…" : ""}</Muted>
+            <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
           </CardTitleRow>
           <Row>
             <Button
               onClick={goBookmarked}
-              disabled={bookmarkedQ.isLoading || !bookmarkedIds.length}
+              disabled={isLoading || !bookmarkedIds.length}
             >
               북마크 목록 보기
             </Button>
-            <Button onClick={() => bookmarkedQ.refetch()} variant="ghost">
+            <Button onClick={() => refetch()} variant="ghost">
               새로고침
             </Button>
           </Row>
@@ -375,7 +367,7 @@ export default function MyPage() {
       <Card>
         <CardTitleRow>
           <CardTitle>최근 제출</CardTitle>
-          <Muted>{recentQ.isFetching ? "동기화 중…" : ""}</Muted>
+          <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
         </CardTitleRow>
         {!submissions.length ? (
           <Muted>기록 없음</Muted>

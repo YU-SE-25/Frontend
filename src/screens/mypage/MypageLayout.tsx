@@ -12,15 +12,6 @@ import { getUserProfile } from "../../api/mypage_api";
 
 const USE_DUMMY = true; //더미 데이터 사용 여부!
 
-type Submission = {
-  id: number;
-  problemId: number;
-  verdict: "AC" | "WA" | "TLE" | "MLE" | "RE"; //정답,오답,시간초과,메모리초과,런타임에러
-  runtimeMs?: number;
-  lang?: string;
-  submittedAt: string;
-};
-
 const Page = styled.div`
   max-width: 1040px;
   margin: 0 auto;
@@ -58,6 +49,8 @@ const Username = styled.h1`
 
 export default function MyPageLayout() {
   const userId = "123"; //임시 유저 ID
+
+  //fetch user profile data
   const {
     data: user,
     isLoading,
@@ -68,17 +61,14 @@ export default function MyPageLayout() {
       USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId),
     staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
   });
-
   if (isLoading) return <div>불러오는 중…</div>;
   if (isError || !user) return <div>에러가 발생했어요.</div>;
-  console.log(user);
+
+  console.log(user); //debug log
   return (
     <Page>
       <Head>
-        <UserImg
-          src="https://media.tenor.com/CNI1fSM1XSoAAAAe/shocked-surprised.png"
-          alt="User Profile"
-        />
+        <UserImg src={user.avatarUrl} alt="User Profile" />
         <UserInfo>
           <Username>{user.username}</Username>
         </UserInfo>

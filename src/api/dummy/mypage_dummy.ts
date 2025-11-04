@@ -42,7 +42,7 @@ export type UserProfile = {
 const dummyUser: UserProfile = {
   userId: 1024,
   username: "gamppe",
-  avatarUrl: "https://avatars.githubusercontent.com/u/1024?v=4",
+  avatarUrl: "https://media.tenor.com/CNI1fSM1XSoAAAAe/shocked-surprised.png",
   bio: "꾸준히 성장하는 개발자 👨‍💻",
   joinedAt: "2025-02-10T13:41:00Z",
 

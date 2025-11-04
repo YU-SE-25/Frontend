@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 #형섭꺼
-todolist.txt
+/todolist.txt
