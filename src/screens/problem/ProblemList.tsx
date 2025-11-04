@@ -29,12 +29,12 @@ import {
   AddButton,
   TagDisplayContainer,
   TagChip,
-} from "../theme/ProblemList.Style";
+} from "../../theme/ProblemList.Style";
 
-import type { UserProblemStatus } from "../theme/ProblemList.Style";
-import type { IProblem } from "../api/problem_api";
-import { fetchProblems } from "../api/problem_api";
-import { fetchDummyProblems } from "../api/dummy/problem_dummy";
+import type { UserProblemStatus } from "../../theme/ProblemList.Style";
+import type { IProblem } from "../../api/problem_api";
+import { fetchProblems } from "../../api/problem_api";
+import { fetchDummyProblems } from "../../api/dummy/problem_dummy";
 
 const USE_DUMMY = true;
 

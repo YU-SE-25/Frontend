@@ -103,9 +103,7 @@ const dummyUser: UserProfile = {
   ],
 };
 
-// -------------------------------
-// 실제 API와 동일한 함수 이름 유지
-// -------------------------------
+/* deprecated
 export async function getSolvedIds(userId: string | number): Promise<number[]> {
   console.log(`[mock] getSolvedIds(${userId})`);
   return Promise.resolve(dummyUser.solvedProblems);
@@ -124,10 +122,7 @@ export async function getRecentSubmissions(
   console.log(`[mock] getRecentSubmissions(${userId})`);
   return Promise.resolve(dummyUser.recentSubmissions);
 }
-
-export async function getUserProfile(
-  userId: string | number
-): Promise<UserProfile> {
-  console.log(`[mock] getUserProfile(${userId})`);
+*/
+export async function getDummyUserProfile(): Promise<UserProfile> {
   return Promise.resolve(dummyUser);
 }

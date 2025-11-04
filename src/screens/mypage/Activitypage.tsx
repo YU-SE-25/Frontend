@@ -1,6 +1,6 @@
 /*******************나중에 할 것*****************
 실제 API로 교체
-문세 상세 페이지로 이동 - 아이템과 칩 클릭 시
+
 
 *************************************************/
 import { useMemo } from "react";
@@ -11,7 +11,7 @@ import {
   getSolvedIds,
   getBookmarkedIds,
   getRecentSubmissions,
-} from "../api/dummy/mypage_dummy"; //더미 API 사용
+} from "../../api/dummy/mypage_dummy"; //더미 API 사용
 
 type Submission = {
   id: number;
@@ -290,6 +290,7 @@ export default function MyPage() {
         <Badge>User: {username}</Badge>
       </Head>
 
+      {/* 푼문제수, 북마크, 정답률 */}
       <StatGrid>
         <Stat>
           <StatLabel>푼 문제 수</StatLabel>
@@ -305,6 +306,7 @@ export default function MyPage() {
         </Stat>
       </StatGrid>
 
+      {/* 내가 푼 문제, 북마크한 문제 */}
       <Grid>
         <Card>
           <CardTitleRow>
@@ -369,6 +371,7 @@ export default function MyPage() {
         </Card>
       </Grid>
 
+      {/* 최근 제출 */}
       <Card>
         <CardTitleRow>
           <CardTitle>최근 제출</CardTitle>
