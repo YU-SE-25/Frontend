@@ -11,14 +11,14 @@ import RegisterSuccess from "./screens/RegisterSuccess";
 import VerifySuccess from "./screens/VerifySuccess";
 import Mypage from "./screens/Mypage";
 
-import ProblemList from "./problem/ProblemList";
-import ProblemDetail from "./problem/ProblemDetail";
-import ProblemAdd from "./problem/ProblemAdd";
+import ProblemList from "./screens/problem/ProblemList";
+import ProblemDetail from "./screens/problem/ProblemDetail";
+import ProblemAdd from "./screens/problem/ProblemAdd";
 
 import Board from "./screens/Board";
 
-import StudyGroupMain from "./studygroup/StudyGroupMain";
-import StudyGroupDetail from "./studygroup/StudyGroupDetail";
+import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
+import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 
 import NotFound from "./screens/NotFound";
 

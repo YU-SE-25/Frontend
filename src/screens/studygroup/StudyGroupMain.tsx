@@ -18,7 +18,7 @@ import {
   EmptyMessage,
   TagDisplayContainer,
   TagChip,
-} from "../theme/StudyGroupMain.Style";
+} from "../../theme/StudyGroupMain.Style";
 
 interface Group {
   id: number;
@@ -36,7 +36,7 @@ const MY_GROUPS: Group[] = [
   {
     id: 1,
     name: "알고리즘 뽀개기",
-    leader: "유진",
+    leader: "율무",
     description: "DP와 그래프 알고리즘 스터디입니다.",
     memberCount: 8,
     maxMembers: 10,
@@ -62,7 +62,7 @@ const DUMMY_GROUPS: Group[] = [
   {
     id: 3,
     name: "코테 입문 준비반",
-    leader: "지훈",
+    leader: "코드천재",
     description: "취업을 위한 코딩 테스트 입문반입니다.",
     memberCount: 7,
     maxMembers: 8,
