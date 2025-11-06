@@ -1,3 +1,5 @@
+import { DUMMY_TAGS } from "./dummy/studygroup_dummy";
+
 export type GroupRole = "MEMBER" | "LEADER"; // 그룹 멤버 역할 타입
 
 //그룹 목록 및 상세 정보 타입
@@ -57,4 +59,9 @@ export interface AssignedProblemList {
   totalProblems: number; // 총 문제 수 (5)
   submittedCount: number; // 제출한 문제 수 (3)
   problems: AssignedProblem[]; // 하위 문제 배열
+}
+
+export async function fetchAvailableTags(): Promise<string[]> {
+  // 실제 API를 사용하지 않고 더미 데이터를 반환하는 경우:
+  return DUMMY_TAGS;
 }
