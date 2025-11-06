@@ -178,3 +178,130 @@ export const TagChip = styled.span<{ active?: boolean }>`
     opacity: 0.8;
   }
 `;
+
+//스터디 그룹 생성
+
+//모달 배경 오버레이
+export const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+//모달 내용 컨테이너
+export const ModalContent = styled.div`
+  position: relative;
+  background-color: ${(props) => props.theme.bgColor};
+  color: ${(props) => props.theme.textColor};
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: ${(props) => props.theme.textColor};
+  }
+`;
+
+//폼 각 행
+export const FormRow = styled.div`
+  margin-bottom: 25px;
+`;
+
+export const Label = styled.label`
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: ${(props) => props.theme.textColor};
+`;
+
+//입력 필드 스타일
+export const InputField = styled.input`
+  ${SearchInput};
+  width: 100%;
+  box-sizing: border-box;
+`;
+
+//텍스트 영역 필드
+export const TextAreaField = styled.textarea`
+  ${InputField};
+  height: 120px;
+  resize: vertical;
+`;
+
+//버튼 컨테이너
+export const ButtonContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 30px;
+`;
+
+//취소 버튼
+export const CancelButton = styled(AddButton)`
+  background-color: ${(props) => props.theme.authHoverBgColor};
+  color: ${(props) => props.theme.textColor};
+  &:hover {
+    background-color: ${(props) => props.theme.authHoverBgColor};
+    opacity: 0.8;
+  }
+`;
+// 태그 전체 묶음 (인라인 스타일 제거용)
+export const TagWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+`;
+
+//폼 구조 및 입력 요소
+export const StyledInput = styled.input`
+  flex: 1;
+  padding: 10px;
+  border: 1px solid ${(props) => props.theme.authHoverBgColor};
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 15px;
+  color: ${(props) => props.theme.textColor};
+  background-color: ${(props) => props.theme.bgColor};
+`;
+export const StyledTextArea = styled.textarea`
+  width: 100%;
+  min-height: 150px;
+  padding: 10px;
+  border: 1px solid ${(props) => props.theme.authHoverBgColor};
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 15px;
+  color: ${(props) => props.theme.textColor};
+  background-color: ${(props) => props.theme.bgColor};
+  resize: vertical;
+`;
+//X버튼
+export const CloseButton = styled.button`
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  background: none;
+  border: none;
+  color: ${(props) => props.theme.textColor};
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.7;
+  }
+`;
