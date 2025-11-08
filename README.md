@@ -17,11 +17,11 @@
 
 | 항목          | 버전                      | 비고                               |
 | ----------- | ----------------------- | -------------------------------- |
-| **프레임워크**   | React + Vite            | SPA 환경 구성                        |
-| **언어**      | TypeScript              | 필요 시 TSX 사용                      |
-| **스타일**     | Styled-Components       | CSS-in-JS 방식                     |
-| **라우팅**     | (미정) |    |
-| **패키지 매니저** | npm 또는 yarn             | package.json  |
+| **프레임워크** | React + Vite | SPA 환경 구성 |
+| **언어** | TypeScript | 필요 시 TSX 사용 |
+| **스타일** | Styled-Components | CSS-in-JS 방식 |
+| **라우팅** | React Router DOM | 페이지 이동 및 SPA 라우팅 관리 |
+| **패키지 매니저** | npm | package.json 기반 관리 |
 
 ---
 
@@ -36,10 +36,13 @@ cd Frontend
 
 # 3. 의존성 다운로드 및 빌드
 
-# 핵심 라이브러리 및 API 통신, 스타일링 패키지 설치
+# 1) 전체 패키지 설치
+npm install
+
+# 2) 핵심 라이브러리 및 API 통신, 스타일링 패키지 설치
 npm install axios styled-components
 
-# 개발 의존성 (TypeScript 타입 정의 파일) 설치
+# 3) 개발 의존성 (TypeScript 타입 정의 파일) 설치
 # styled-components와 axios를 TS 환경에서 사용하기 위한 타입 정의 파일입니다.
 npm install -D @types/styled-components @types/axios
 
