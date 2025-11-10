@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 
 // ▶ 실제 API 사용
 //import { getProblemDetail, increaseView,  } from "../api/problemdetail_api";
@@ -33,7 +33,6 @@ import {
 
 export default function ProblemDetail() {
   const { problemId } = useParams<{ problemId: string }>();
-  const navigate = useNavigate();
 
   const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);

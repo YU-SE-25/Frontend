@@ -7,7 +7,7 @@ export const isDarkAtom = atom<boolean>(true);
 export interface UserProfile {
   userId: number;
   nickname: string;
-  role: "ADMIN" | "INSTRUCTOR" | "LEARNER";
+  role: "MANAGER" | "INSTRUCTOR" | "LEARNER"; // 백앤드코드에 따라 수정했어요!
 }
 export interface LoginResponse {
   accessToken: string;
@@ -36,7 +36,7 @@ export const refreshTokenAtom = atomWithStorage<string | null>(
 );
 //사용자의 최소 정보
 export const userProfileAtom = atom<UserProfile | null>(null);
-
+userProfileAtom.debugLabel = "User Profile";
 //로그인 여부 판단: accessToken이 존재하고 userProfile이 있으면 true
 export const isLoggedInAtom = atom((get) => {
   return !!get(accessTokenAtom) && !!get(userProfileAtom);
