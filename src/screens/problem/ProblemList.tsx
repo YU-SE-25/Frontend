@@ -248,7 +248,7 @@ export default function ProblemList() {
 
                   <TableCell>
                     <TagDisplayContainer>
-                      {problem.tags.map((tag, idx) => (
+                      {problem.tags?.map((tag, idx) => (
                         <TagChip key={idx}>{tag}</TagChip>
                       ))}
                     </TagDisplayContainer>

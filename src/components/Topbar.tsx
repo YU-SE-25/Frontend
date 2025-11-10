@@ -226,7 +226,7 @@ export default function Topbar() {
           </ThemeToggleContainer>
           <Auth>
             {isLoggedIn ? (
-              <AuthLink to="/mypage/:userName">마이페이지</AuthLink>
+              <AuthLink to="/mypage/">마이페이지</AuthLink>
             ) : (
               <>
                 <AuthLink to="/login">로그인</AuthLink>

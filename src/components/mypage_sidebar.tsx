@@ -12,6 +12,8 @@ const SidebarWrap = styled.aside`
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   min-width: 220px;
   height: fit-content;
+  position: sticky;
+  top: 200px;
 `;
 
 const Title = styled.h2`
@@ -65,7 +67,13 @@ const NavLink = styled(Link)`
   }
 `;
 
-export default function Sidebar() {
+export default function MyPageSidebar({
+  isMyPage,
+  role,
+}: {
+  isMyPage: boolean;
+  role?: string;
+}) {
   const [sp, setSp] = useSearchParams();
   const active = sp.get("tab") ?? "activity";
 
@@ -83,12 +91,22 @@ export default function Sidebar() {
           - 나의 활동
         </NavItem>
 
-        <NavItem
-          onClick={() => go("profile-edit")}
-          $active={active === "profile-edit"}
-        >
-          - 내 정보 수정
-        </NavItem>
+        {isMyPage && (
+          <NavItem
+            onClick={() => go("profile-edit")}
+            $active={active === "profile-edit"}
+          >
+            - 내 정보 수정
+          </NavItem>
+        )}
+        {isMyPage && (role === "MANAGER" || role === "INSTRUCTOR") && (
+          <NavItem
+            onClick={() => go("manager-page")}
+            $active={active === "manager-page"}
+          >
+            - 관리자 페이지
+          </NavItem>
+        )}
 
         <NavLink to="/studygroup-main">- 내 스터디그룹</NavLink>
       </NavList>

@@ -3,7 +3,7 @@
 
 
 *************************************************/
-import { Outlet } from "react-router-dom";
+import { Outlet, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
@@ -15,6 +15,9 @@ import {
   SiCoffeescript,
 } from "react-icons/si";
 import Sidebar from "../../components/mypage_sidebar";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "../../atoms";
+import type { UserProfile } from "../../atoms";
 const USE_DUMMY = true; //더미 데이터 사용 여부!
 
 //css styles
@@ -134,7 +137,16 @@ const Body = styled.div`
 `;
 
 export default function MyPageLayout() {
-  const userId = "123"; //임시 유저 ID
+  const { username } = useParams<{ username: string }>();
+  const userProfile = useAtomValue(userProfileAtom) ?? {
+    nickname: "guest",
+    role: "GUEST",
+    userId: "0",
+  };
+  //내 페이지인지 판별
+  const isMypage = userProfile.nickname === username ? true : false;
+
+  const userId = "23"; //여기서 뭔가 문제가 있는거 같아요...
 
   //fetch user profile data
   const {
@@ -142,15 +154,14 @@ export default function MyPageLayout() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["userProfile", userId],
+    queryKey: USE_DUMMY ? ["dummyUserProfile"] : ["userProfile", userId],
     queryFn: async () =>
-      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId),
+      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId!),
     staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
   });
   if (isLoading) return <div>불러오는 중…</div>;
   if (isError || !user) return <div>에러가 발생했어요.</div>;
 
-  console.log(user); //debug log
   return (
     <Page>
       <Head>
@@ -174,7 +185,7 @@ export default function MyPageLayout() {
         </UserInfo>
       </Head>
       <Body>
-        <Sidebar />
+        <Sidebar isMyPage={isMypage} role={userProfile.role} />
         <Outlet />
       </Body>
     </Page>
