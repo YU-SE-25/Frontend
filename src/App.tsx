@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { DevTools } from "jotai-devtools";
 import Topbar, { TOPBAR_HEIGHT } from "./components/Topbar";
 import styled, { ThemeProvider } from "styled-components";
 import { darkTheme, lightTheme } from "./theme/theme";
@@ -42,6 +43,9 @@ export default function App() {
 
   return (
     <>
+      {/* 디버그 코드!!!!*/}
+      <DevTools />
+
       {/* 테마설정 */}
       <ThemeProvider theme={isDark ? darkTheme : lightTheme}>
         <Topbar />

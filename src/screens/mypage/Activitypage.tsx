@@ -231,27 +231,6 @@ export default function ActivityPage() {
     staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
   });
 
-  if (isError) {
-    return (
-      <Page>
-        <Card>
-          <Muted>❌ 데이터를 불러오는 중 오류가 발생했습니다.</Muted>
-          <Row>
-            <Button onClick={() => refetch()} variant="primary">
-              다시 시도하기
-            </Button>
-          </Row>
-        </Card>
-      </Page>
-    );
-  }
-  if (isLoading) {
-    return (
-      <Page>
-        <Muted>⏳ 데이터를 불러오는 중입니다...</Muted>
-      </Page>
-    );
-  }
   const solvedIds = user?.solvedProblems ?? [];
   const bookmarkedIds = user?.bookmarkedProblems ?? [];
   const submissions: Submission[] = user?.recentSubmissions ?? [];
@@ -276,6 +255,27 @@ export default function ActivityPage() {
     return Math.round((ac / submissions.length) * 100);
   }, [submissions]);
 
+  if (isError) {
+    return (
+      <Page>
+        <Card>
+          <Muted>❌ 데이터를 불러오는 중 오류가 발생했습니다.</Muted>
+          <Row>
+            <Button onClick={() => refetch()} variant="primary">
+              다시 시도하기
+            </Button>
+          </Row>
+        </Card>
+      </Page>
+    );
+  }
+  if (isLoading) {
+    return (
+      <Page>
+        <Muted>⏳ 데이터를 불러오는 중입니다...</Muted>
+      </Page>
+    );
+  }
   return (
     <Page>
       {/* 푼문제수, 북마크, 정답률 */}

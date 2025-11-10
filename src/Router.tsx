@@ -21,8 +21,9 @@ import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 
 import NotFound from "./screens/NotFound";
-import UserPageLayout from "./screens/mypage/UserpageLayout";
 import MyPageScreen from "./screens/mypage/MypageScreen";
+import EditPage from "./screens/mypage/EditPage";
+import MyPageRedirect from "./screens/mypage/MypageRedirect";
 
 const router = createBrowserRouter([
   {
@@ -48,13 +49,16 @@ const router = createBrowserRouter([
       { path: "verify-success", element: <VerifySuccess /> },
       {
         path: "mypage",
-        element: <MypageLayout />, // 이 컴포넌트 안에서 <Outlet/> 렌더해야 함!
-        children: [{ index: true, element: <MyPageScreen /> }],
+        element: <MyPageRedirect />,
       },
       {
         path: "mypage/:username",
-        element: <UserPageLayout />,
+        element: <MypageLayout />,
         children: [{ index: true, element: <MyPageScreen /> }],
+      },
+      {
+        path: "mypage/:username/edit",
+        element: <EditPage />,
       },
     ],
     errorElement: <NotFound />,
