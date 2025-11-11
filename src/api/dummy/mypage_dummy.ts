@@ -236,5 +236,5 @@ export async function getRecentSubmissions(
 */
 //mamagerUser, instructorUser, dummyUser 중에서 역할에 따라 반환
 export async function getDummyUserProfile(): Promise<UserProfile> {
-  return Promise.resolve(instructorUser);
+  return Promise.resolve(managerUser);
 }
