@@ -99,14 +99,13 @@ export default function MyPageSidebar({
             - 내 정보 수정
           </NavItem>
         )}
-        {isMyPage && (role === "MANAGER" || role === "INSTRUCTOR") && (
-          <NavItem
-            onClick={() => go("manager-page")}
-            $active={active === "manager-page"}
-          >
-            - 관리자 페이지
-          </NavItem>
-        )}
+
+        <NavItem
+          onClick={() => go("manage-page")}
+          $active={active === "manage-page"}
+        >
+          - 관리자 페이지
+        </NavItem>
 
         <NavLink to="/studygroup-main">- 내 스터디그룹</NavLink>
       </NavList>
