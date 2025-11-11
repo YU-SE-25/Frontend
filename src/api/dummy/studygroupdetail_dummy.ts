@@ -11,11 +11,11 @@ export const DUMMY_GROUP_DETAIL: StudyGroup = {
   created_at: "2025-10-30T10:00:00Z",
   group_goal: "최선을 다하자!",
   group_description:
-    "대기업 취업을 목표로 만든 스터디 그룹입니다. 열심히 하실 분들만 들어오세요.",
-  leader_name: "팀장 이름", // FE용
-  myRole: "LEADER",
-  max_members: 10, // 💡 추가
-  groupmember_id: [12345, 23456, 34567, 56789], // 💡 현재 4명
+    "대기업 취업을 목표로 만든 스터디 그룹입니다. 열심히 하실 분들만 들어오세요.", // 추가
+  leader_name: "팀장 이름", // 추가
+  myRole: "LEADER", // 추가
+  max_members: 10, // 추가
+  groupmember_id: [12345, 23456, 34567, 56789],
 };
 
 // 💡 5개짜리 문제 목록 더미

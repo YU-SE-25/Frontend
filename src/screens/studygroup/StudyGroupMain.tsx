@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import CreateStudyGroup from "./StudyGroupCreate";
 import {
   Wrapper,
   HeaderContainer,
@@ -16,69 +17,21 @@ import {
   CardTags,
   JoinButton,
   EmptyMessage,
-  TagDisplayContainer,
   TagChip,
+  TagWrapper,
 } from "../../theme/StudyGroupMain.Style";
-
-interface Group {
-  id: number;
-  name: string;
-  leader: string;
-  description: string;
-  memberCount: number;
-  maxMembers: number;
-  createdAt: string;
-  goal: string;
-  tags: string[];
-}
-
-const MY_GROUPS: Group[] = [
-  {
-    id: 1,
-    name: "알고리즘 뽀개기",
-    leader: "율무",
-    description: "DP와 그래프 알고리즘 스터디입니다.",
-    memberCount: 8,
-    maxMembers: 10,
-    createdAt: "2025-01-01",
-    goal: "프로그래머스 4단계 완료",
-    tags: ["DP", "BFS", "심화"],
-  },
-];
-
-const DUMMY_GROUPS: Group[] = [
-  MY_GROUPS[0],
-  {
-    id: 2,
-    name: "C++ 문법 마스터",
-    leader: "민수",
-    description: "C++ 기초부터 심화까지 다룹니다.",
-    memberCount: 5,
-    maxMembers: 10,
-    createdAt: "2025-03-15",
-    goal: "문법 완벽 이해",
-    tags: ["C++", "기초"],
-  },
-  {
-    id: 3,
-    name: "코테 입문 준비반",
-    leader: "코드천재",
-    description: "취업을 위한 코딩 테스트 입문반입니다.",
-    memberCount: 7,
-    maxMembers: 8,
-    createdAt: "2025-05-20",
-    goal: "백준 150문제 해결",
-    tags: ["구현", "기초"],
-  },
-];
-
-const availableTags = ["C++", "DP", "BFS", "심화", "기초", "구현"];
+//import type { StudyGroup } from "../../api/studygroup_api";
+import {
+  DUMMY_GROUPS,
+  MY_GROUPS,
+  DUMMY_TAGS,
+} from "../../api/dummy/studygroup_dummy";
 
 export default function StudyGroupListPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -86,20 +39,27 @@ export default function StudyGroupListPage() {
     );
   };
 
+  // ✅ 검색 + 태그 필터링
   const filteredGroups = useMemo(() => {
     let list = DUMMY_GROUPS.filter((group) =>
-      group.name.toLowerCase().includes(searchTerm.toLowerCase())
+      group.group_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
     if (selectedTags.length > 0) {
       list = list.filter((group) =>
-        selectedTags.every((tag) => group.tags.includes(tag))
+        selectedTags.every(
+          (tag) =>
+            group.group_description.includes(tag) ||
+            group.group_goal.includes(tag) ||
+            group.group_name.includes(tag)
+        )
       );
     }
+
     return list;
   }, [searchTerm, selectedTags]);
 
-  const handleGroupClick = (groupId: number) =>
-    navigate(`/studygroup/${groupId}`);
+  const handleGroupClick = (id: number) => navigate(`/studygroup/${id}`);
 
   return (
     <Wrapper>
@@ -108,35 +68,35 @@ export default function StudyGroupListPage() {
           <h1>스터디 그룹</h1>
           <p>함께 공부하고 성장할 스터디 그룹을 찾아보세요.</p>
         </div>
-        <AddButton onClick={() => setShowModal(true)}>
-          스터디 그룹 생성
+        <AddButton onClick={() => setShowCreateModal(true)}>
+          + 스터디 그룹 생성
         </AddButton>
       </HeaderContainer>
 
+      {/* ✅ 나의 스터디 그룹 섹션 */}
       <MyGroupSection>
         <h2>나의 소속 스터디 그룹</h2>
         <GroupGrid>
           {MY_GROUPS.length > 0 ? (
             MY_GROUPS.map((group) => (
-              <MyGroupCard key={group.id}>
+              <MyGroupCard key={group.group_id}>
                 <CardHeader>
-                  <h3>{group.name}</h3>
-                  <p>{group.createdAt}</p>
+                  <h3>{group.group_name}</h3>
+                  <p>{new Date(group.created_at).toLocaleDateString()}</p>
                 </CardHeader>
-                <GroupLeader>그룹장: {group.leader}</GroupLeader>
-                <p>{group.description}</p>
+                <GroupLeader>그룹장: {group.leader_name}</GroupLeader>
+                <p>{group.group_description}</p>
                 <p>
-                  <strong>목표:</strong> {group.goal}
+                  <strong>목표:</strong> {group.group_goal}
                 </p>
                 <p>
-                  <strong>정원:</strong> {group.memberCount}/{group.maxMembers}
+                  <strong>정원:</strong> {group.groupmember_id.length}/
+                  {group.max_members}
                 </p>
                 <CardTags>
-                  {group.tags.map((tag) => (
-                    <span key={tag}>#{tag}</span>
-                  ))}
+                  <span>{group.myRole === "LEADER" ? "리더" : "멤버"}</span>
                 </CardTags>
-                <JoinButton onClick={() => handleGroupClick(group.id)}>
+                <JoinButton onClick={() => handleGroupClick(group.group_id)}>
                   입장하기
                 </JoinButton>
               </MyGroupCard>
@@ -147,61 +107,63 @@ export default function StudyGroupListPage() {
         </GroupGrid>
       </MyGroupSection>
 
+      {/* ✅ 전체 스터디 그룹 목록 */}
       <SectionContainer>
         <h2>스터디 그룹 살펴보기</h2>
+
         <ControlBar>
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="스터디 그룹명 검색"
           />
-          {/*검색 기능 추후 추가*/}
           <AddButton>검색</AddButton>
-          <TagDisplayContainer>
-            {availableTags.map((tag) => (
-              <TagChip
-                key={tag}
-                active={selectedTags.includes(tag)}
-                onClick={() => toggleTag(tag)}
-              >
-                {tag}
-              </TagChip>
-            ))}
-          </TagDisplayContainer>
         </ControlBar>
 
-        <GroupGrid>
-          {filteredGroups.map((group) => (
-            <GroupCard key={group.id}>
-              <CardHeader>
-                <h3>{group.name}</h3>
-                <p>{group.createdAt}</p>
-              </CardHeader>
-              <GroupLeader>그룹장: {group.leader}</GroupLeader>
-              <p>{group.description}</p>
-              <p>
-                <strong>목표:</strong> {group.goal}
-              </p>
-              <p>
-                <strong>정원:</strong> {group.memberCount}/{group.maxMembers}
-              </p>
-              <CardTags>
-                {group.tags.map((tag) => (
-                  <span key={tag}>#{tag}</span>
-                ))}
-              </CardTags>
-              <JoinButton onClick={() => handleGroupClick(group.id)}>
-                가입하기
-              </JoinButton>
-            </GroupCard>
+        {/* 태그 선택 영역 */}
+        <TagWrapper>
+          {DUMMY_TAGS.map((tag) => (
+            <TagChip
+              key={tag}
+              active={selectedTags.includes(tag)}
+              onClick={() => toggleTag(tag)}
+            >
+              {tag}
+            </TagChip>
           ))}
+        </TagWrapper>
+
+        <GroupGrid>
+          {filteredGroups.length > 0 ? (
+            filteredGroups.map((group) => (
+              <GroupCard key={group.group_id}>
+                <CardHeader>
+                  <h3>{group.group_name}</h3>
+                  <p>{new Date(group.created_at).toLocaleDateString()}</p>
+                </CardHeader>
+                <GroupLeader>그룹장: {group.leader_name}</GroupLeader>
+                <p>{group.group_description}</p>
+                <p>
+                  <strong>목표:</strong> {group.group_goal}
+                </p>
+                <p>
+                  <strong>정원:</strong> {group.groupmember_id.length}/
+                  {group.max_members}
+                </p>
+                <JoinButton onClick={() => handleGroupClick(group.group_id)}>
+                  입장하기
+                </JoinButton>
+              </GroupCard>
+            ))
+          ) : (
+            <EmptyMessage>조건에 맞는 스터디 그룹이 없습니다.</EmptyMessage>
+          )}
         </GroupGrid>
-        {filteredGroups.length === 0 && (
-          <EmptyMessage>검색 결과가 없습니다.</EmptyMessage>
-        )}
       </SectionContainer>
 
-      {showModal && <div>{/* StudyGroupCreateModal Placeholder */}</div>}
+      {showCreateModal && (
+        <CreateStudyGroup onClose={() => setShowCreateModal(false)} />
+      )}
     </Wrapper>
   );
 }
