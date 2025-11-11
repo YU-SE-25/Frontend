@@ -133,36 +133,7 @@ export default function ProblemDetail() {
               </UserStatsBox>
             )}
         </MetaInfoSection>
-        <ActionSection>
-          {/*추후 조건 추가(로그인&하나라도 풀었으면*/}
-          <ViewCodeButton onClick={handleViewMyCode}>
-            내 코드 보기
-          </ViewCodeButton>
-          <ViewCodeButton
-            onClick={() => {
-              if (!isLoggedIn) {
-                alert("로그인 후 이용 가능합니다.");
-                return;
-              }
-              // navigate(`/problems/${problemId}/qna`);
-            }}
-          >
-            QnA
-          </ViewCodeButton>
-          <ViewCodeButton
-            onClick={() => {
-              if (!isLoggedIn) {
-                alert("로그인 후 이용 가능합니다.");
-                return;
-              }
-              // navigate(`/problems/${problemId}/review`);
-            }}
-          >
-            코드 리뷰
-          </ViewCodeButton>
 
-          <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
-        </ActionSection>
         <DescriptionSection>
           <SectionHeader>
             <h3>문제 설명</h3>
@@ -219,6 +190,35 @@ export default function ProblemDetail() {
             <p>{problemData.source}</p>
           </DescriptionSection>
         )}
+
+        <ActionSection>
+          <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
+          {isLoggedIn && problemData.userStatus === "solved" && (
+            <ViewCodeButton onClick={handleViewMyCode}>
+              내 코드 보기
+            </ViewCodeButton>
+          )}
+          <ViewCodeButton
+            onClick={() => {
+              if (!isLoggedIn) {
+                alert("로그인 후 이용 가능합니다.");
+                return;
+              }
+              // navigate(`~~~`);
+            }}
+          >
+            코드 리뷰
+          </ViewCodeButton>
+
+          {/* QnA 버튼 (로직 아직 없음, 주석 처리) */}
+          <ViewCodeButton
+            onClick={() => {
+              // navigate(`~~~`);
+            }}
+          >
+            QnA
+          </ViewCodeButton>
+        </ActionSection>
       </MainContent>
     </ProblemWrapper>
   );

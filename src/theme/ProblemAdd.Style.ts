@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 //레이아웃 및 컨테이너 스타일
 export const RegisterWrapper = styled.div`
-  height: 100%;
+    height: 100%;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -29,12 +29,12 @@ export const TitleRow = styled.div`
 `;
 //폼 구조 및 입력 요소
 export const SectionTitle = styled.h3`
-  font-size: 20px;
+  font-size: 30px;
+  font-weight: 600;
   margin-top: 30px;
   margin-bottom: 15px;
   padding-bottom: 5px;
   border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
-  color: ${(props) => props.theme.textColor};
 `;
 export const InputGroup = styled.div`
   margin-bottom: 25px;
@@ -46,7 +46,7 @@ export const Label = styled.label`
   font-size: 20px;
   font-weight: 300;
   margin-right: 15px;
-  width: 150px;
+  width: 150px; 
   flex-shrink: 0;
   color: ${(props) => props.theme.textColor};
 `;
@@ -62,7 +62,7 @@ export const StyledInput = styled.input`
 `;
 export const StyledTextArea = styled.textarea`
   width: 100%;
-  min-height: 150px;
+  min-height: 150px; 
   padding: 10px;
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   border-radius: 4px;
@@ -75,7 +75,7 @@ export const StyledTextArea = styled.textarea`
 // 예제 입력/출력 가로 배치
 export const ExampleGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr; 
   gap: 20px;
   margin-bottom: 20px;
 `;
@@ -103,12 +103,13 @@ export const MainButton = styled.button`
   font-weight: bold;
   cursor: pointer;
   transition: filter 0.2s;
-
+  
   &:disabled {
     background-color: ${(props) => props.theme.authHoverBgColor};
     cursor: not-allowed;
   }
 `;
+
 
 export const ErrorMessage = styled.p`
   color: #ff3838;
@@ -118,7 +119,7 @@ export const ErrorMessage = styled.p`
 
 //드롭다운 스타일
 export const StyledSelect = styled.select`
-  width: 100%;
+  width : 100%;
   padding: 10px;
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   border-radius: 4px;
@@ -126,9 +127,6 @@ export const StyledSelect = styled.select`
   font-size: 15px;
   color: ${(props) => props.theme.textColor};
   background-color: ${(props) => props.theme.bgColor};
-  option {
-    color: ${(props) => props.theme.textColor};
-  }
 `;
 
 //태그 표시 컨테이너
@@ -144,8 +142,8 @@ export const TagDisplayContainer = styled.div`
 export const TagChip = styled.span`
   display: inline-flex;
   align-items: center;
-  background-color: ${(props) => props.theme.focusColor};
-  color: ${(props) => props.theme.bgColor};
+  background-color: ${(props) => props.theme.logoColor};
+  color: ${(props) => props.theme.authHoverTextColor};
   padding: 5px 10px;
   border-radius: 15px;
   font-size: 14px;
