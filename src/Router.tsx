@@ -56,6 +56,10 @@ const router = createBrowserRouter([
         element: <MypageLayout />,
         children: [{ index: true, element: <MyPageScreen /> }],
       },
+      {
+        path: "mypage/:username/edit",
+        element: <EditPage />,
+      },
     ],
     errorElement: <NotFound />,
   },

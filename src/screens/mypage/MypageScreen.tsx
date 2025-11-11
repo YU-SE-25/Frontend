@@ -2,7 +2,6 @@
 import { useSearchParams } from "react-router-dom";
 import ActivityPage from "./ActivityPage";
 import EditAlert from "./EditAlert";
-import ManagePage from "./ManagePage";
 
 export default function MyPageScreen() {
   const [sp] = useSearchParams();
@@ -10,7 +9,5 @@ export default function MyPageScreen() {
 
   if (tab === "activity") return <ActivityPage />;
   else if (tab === "profile-edit") return <EditAlert />;
-  else if (tab === "manage-page") return <ManagePage />;
-
   return <div style={{ padding: 16 }}>준비 중: {tab}</div>;
 }
