@@ -49,9 +49,9 @@ export default function ProblemList() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "solved" | "attempted"
-  >("all");
+  const [filter, setFilter] = useState<
+    "off" | "solved" | "attempted" | "tried"
+  >("off");
 
   const [problems, setProblems] = useState<IProblem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,7 @@ export default function ProblemList() {
           page: 1,
           size: 1000,
         });
-        if (mounted) setProblems(data);
+        if (mounted) setProblems(data || []);
       } catch (e) {
         if (mounted) setError("문제 목록을 불러오는 데 실패했습니다.");
       } finally {
@@ -122,19 +122,18 @@ export default function ProblemList() {
   };
 
   const filteredProblems = problems.filter((problem) => {
-    // 'all'이면 모든 문제 표시
-    if (statusFilter === "all") return true;
+    if (filter === "off") return true;
+    if (filter === "tried")
+      return (
+        problem.userStatus === "solved" || problem.userStatus === "attempted"
+      );
 
-    // 'solved'이면 'solved' 상태 문제만 표시
-    if (statusFilter === "solved") {
+    if (filter === "solved") {
       return problem.userStatus === "solved";
     }
-
-    // 'attempted'이면 'attempted' 상태 문제만 표시 (사용자 요청: 틀림)
-    if (statusFilter === "attempted") {
+    if (filter === "attempted") {
       return problem.userStatus === "attempted";
     }
-
     return true;
   });
   // 페이지네이션 계산을 필터링된 목록 기준으로 변경
@@ -199,16 +198,19 @@ export default function ProblemList() {
 
         {/*기록 필터링 Select */}
         <SortSelect
-          value={statusFilter}
+          value={filter}
           onChange={(e) => {
-            setStatusFilter(e.target.value as "all" | "solved" | "attempted");
+            setFilter(
+              e.target.value as "off" | "solved" | "attempted" | "tried"
+            );
             setCurrentPage(1);
           }}
           style={{ marginRight: "10px" }}
         >
-          <option value="all">기록 필터: 전체</option>
-          <option value="solved">기록 필터: 맞춤</option>
-          <option value="attempted">기록 필터: 틀림</option>
+          <option value="off">문제 필터</option>
+          <option value="tried">시도 문제</option>
+          <option value="solved">맞은 문제</option>
+          <option value="attempted">틀린 문제</option>
         </SortSelect>
       </ControlBar>
 

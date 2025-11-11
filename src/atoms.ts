@@ -1,3 +1,4 @@
+//상태 저장 + 로그인 유지 + 토큰 갱신 정보 관리
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 

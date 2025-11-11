@@ -39,7 +39,7 @@ export default function StudyGroupListPage() {
     );
   };
 
-  // ✅ 검색 + 태그 필터링
+  //검색 + 태그 필터링
   const filteredGroups = useMemo(() => {
     let list = DUMMY_GROUPS.filter((group) =>
       group.group_name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -73,7 +73,6 @@ export default function StudyGroupListPage() {
         </AddButton>
       </HeaderContainer>
 
-      {/* ✅ 나의 스터디 그룹 섹션 */}
       <MyGroupSection>
         <h2>나의 소속 스터디 그룹</h2>
         <GroupGrid>
@@ -107,7 +106,6 @@ export default function StudyGroupListPage() {
         </GroupGrid>
       </MyGroupSection>
 
-      {/* ✅ 전체 스터디 그룹 목록 */}
       <SectionContainer>
         <h2>스터디 그룹 살펴보기</h2>
 
@@ -120,7 +118,6 @@ export default function StudyGroupListPage() {
           <AddButton>검색</AddButton>
         </ControlBar>
 
-        {/* 태그 선택 영역 */}
         <TagWrapper>
           {DUMMY_TAGS.map((tag) => (
             <TagChip
