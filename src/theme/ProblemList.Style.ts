@@ -6,14 +6,10 @@ import { TOPBAR_HEIGHT } from "../components/Topbar";
 export interface HeaderCellProps {
   width: string;
 }
-// 푼 문제 상태 타입
 export type UserProblemStatus = "solved" | "attempted" | "none";
+// 푼 문제 상태 타입
 export interface StatusProps {
-  userStatus: UserProblemStatus;
-}
-//Type Definitions (TypeScript)
-export interface StatusStyleProps {
-  $userStatus?: UserProblemStatus; // 'solved' | 'attempted' | 'none'
+  $userStatus?: "solved" | "attempted" | "none";
 }
 //레이아웃 및 컨트롤 스타일
 export const ProblemListWrapper = styled.div`
@@ -65,7 +61,7 @@ export const SearchInput = styled.input`
 export const SearchButton = styled.button`
   padding: 10px 18px;
   background-color: ${(props) => props.theme.logoColor};
-  color: ${(props) => props.theme.authHoverTextColor};
+  color: ${(props) => props.theme.bgColor};
   border: none;
   border-radius: 6px;
   font-size: 15px;
@@ -88,7 +84,7 @@ export const SortSelect = styled.select`
 export const AddButton = styled.button`
   padding: 10px 25px;
   background-color: ${(props) => props.theme.logoColor};
-  color: ${(props) => props.theme.authHoverTextColor};
+  color: ${(props) => props.theme.bgColor};
   border: none;
   border-radius: 5px;
   font-size: 16px;
@@ -115,9 +111,9 @@ export const HeaderCell = styled.th<HeaderCellProps>`
   padding: 12px 10px;
   text-align: left;
   font-weight: 600;
-  color: ${(props) => props.theme.textColor};
+  color: ${(props) => props.theme.bgColor};
 `;
-export const TableRow = styled.tr<StatusStyleProps>`
+export const TableRow = styled.tr<StatusProps>`
   border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
 `;
 export const TableCell = styled.td`
@@ -156,10 +152,7 @@ export const TitleContainer = styled.div`
   width: 100%;
 `;
 
-export interface StatusProps {
-  $userStatus: "solved" | "attempted" | "none"; // `UserProblemStatus`와 동일하게 맞춤
-}
-
+//필터상태
 export const StatusIndicator = styled.span<StatusProps>`
   font-size: 17px;
   padding: 4px 8px;
@@ -183,7 +176,6 @@ export const StatusIndicator = styled.span<StatusProps>`
           border: 1px solid #ff3838; 
           color: ${theme.textColor}; 
         `;
-      case "none":
       default:
         return ``;
     }
@@ -250,38 +242,26 @@ export const ButtonContainer = styled.div`
 `;
 //코드 바로 작성 버튼
 export const ActionInSummaryButton = styled.button`
-  padding: 6px 12px; /* SearchButton보다 살짝 작게 */
+  padding: 6px 12px; 
   background-color: ${(props) => props.theme.logoColor};
-  color: ${(props) => props.theme.authHoverTextColor};
+  color: ${(props) => props.theme.bgColor};
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 20px;
-  font-weight: bold;
   transition: background-color 0.2s;
-  white-space: nowrap; /* 버튼 글자 줄바꿈 방지 */
-
-  &:hover {
-    background-color: ${(props) => props.theme.focusColor};
   }
 `;
 //문제 상세보기 버튼
 export const DetailsButton = styled.button`
   padding: 6px 12px;
-  /* 다른 색상 사용 (예: 회색 계열) */
   background-color: ${(props) => props.theme.authHoverBgColor};
   color: ${(props) => props.theme.textColor};
-  border: 1px solid ${(props) => props.theme.authActiveBgColor};
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 20px;
-  font-weight: normal; /* 일반 굵기 */
   transition: background-color 0.2s;
-  white-space: nowrap;
-
-  &:hover {
-    background-color: ${(props) => props.theme.authActiveBgColor};
-  }
 `;
 
 //페이지네이션
@@ -289,8 +269,8 @@ export const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px; /* 버튼 사이 간격 */
-  margin-top: 30px; /* 테이블과의 간격 */
+  gap: 8px;
+  margin-top: 30px;
 `;
 
 export const PageLink = styled.span<{

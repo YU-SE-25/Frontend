@@ -23,6 +23,8 @@ import {
 interface ProblemFormData {
   title: string;
   description: string;
+  inputDescription: string;
+  outputDescription: string;
   timeLimit: string;
   memoryLimit: string;
   difficulty: string;
@@ -45,6 +47,8 @@ export default function ProblemAdd() {
   const [formData, setFormData] = useState<ProblemFormData>({
     title: "",
     description: "",
+    inputDescription: "",
+    outputDescription: "",
     timeLimit: "",
     memoryLimit: "",
     difficulty: "하",
@@ -62,7 +66,7 @@ export default function ProblemAdd() {
 
   const [selectedTags, setSelectedTags] = useState(["기초", "구현"]); // 임시 초기값
 
-  // 💡 2. 태그 추가/삭제 핸들러
+  //태그 추가/삭제 핸들러
   const handleTagSelect = (tag: string) => {
     if (!selectedTags.includes(tag)) {
       setSelectedTags([...selectedTags, tag]);
@@ -78,6 +82,8 @@ export default function ProblemAdd() {
     return (
       formData.title.trim() !== "" &&
       formData.description.trim() !== "" &&
+      formData.inputDescription.trim() !== "" &&
+      formData.outputDescription.trim() !== "" &&
       formData.timeLimit.trim() !== "" &&
       formData.memoryLimit.trim() !== "" &&
       examples.length >= 1 &&
@@ -130,7 +136,6 @@ export default function ProblemAdd() {
             />
           </InputGroup>
 
-          {/* 💡 난이도 드롭다운 */}
           <InputGroup>
             <Label htmlFor="difficulty">난이도:</Label>
             <StyledSelect
@@ -161,7 +166,7 @@ export default function ProblemAdd() {
             >
               <StyledSelect
                 id="tagSelect"
-                onChange={handleTagSelect}
+                onChange={(e) => handleTagSelect(e.target.value)}
                 value=""
                 style={{ maxWidth: "200px" }}
               >
@@ -269,7 +274,7 @@ export default function ProblemAdd() {
           </InputGroup>
 
           <SectionTitle>
-            입출력 예제{" "}
+            입출력 예제
             <ActionButton
               type="button"
               onClick={() =>
