@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ProblemListWrapper,
   PageTitle,
@@ -41,6 +41,8 @@ const USE_DUMMY = true;
 
 export default function ProblemList() {
   const navigate = useNavigate();
+  //문제 상세 -> 테그 연동
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState("latest");
@@ -60,10 +62,13 @@ export default function ProblemList() {
 
   const isLoggedIn = true;
 
+  // 'tag' 파라미터가 있으면 그 값을 배열로 초기화, 없으면 빈 배열로 초기화
+  const initialTags = searchParams.get("tag") ? [searchParams.get("tag")!] : []; // !는 값이 반드시 있음을 타입스크립트에 알림
+
   //AVAILABLE TAGS 상태 정의 (API로 불러올 태그 전체 목록)
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   // SELECTED TAGS 상태 정의 (사용자가 클릭해서 선택한 필터 태그)
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
 
   //사용 가능한 태그 목록 불러오기 (컴포넌트 마운트 시 1회)
   useEffect(() => {
@@ -109,15 +114,29 @@ export default function ProblemList() {
   //태그 칩 클릭 핸들러
   const handleToggleTag = (tag: string) => {
     setSelectedTags((prevTags) => {
+      let newTags;
       //필터 해제
       if (prevTags.includes(tag)) {
         return prevTags.filter((t) => t !== tag);
+      } else {
+        newTags = [...prevTags, tag];
       }
       //필터 적용
-      return [...prevTags, tag];
+      if (newTags.length > 0) {
+        // 여러 태그 필터링을 지원한다면, 쿼리 파라미터 처리가 더 복잡해질 수 있습니다.
+        // 여기서는 단순하게 첫 번째 태그만 쿼리로 유지하거나, 아니면 복수 쿼리 파라미터를 사용해야 합니다.
+        // 간단하게, 첫 번째 태그만 쿼리에 반영하거나, 태그를 제거합니다. (현재 문제 상세에서 1개만 전달하므로, 1개만 고려)
+        const newTagQuery = newTags[0];
+        setSearchParams({ tag: newTagQuery }, { replace: true });
+      } else {
+        // 태그가 없으면 쿼리 파라미터에서 제거
+        setSearchParams({}, { replace: true });
+      }
+
+      // 태그 필터가 바뀌면 1페이지로 돌아가게 설정
+      setCurrentPage(1);
+      return newTags;
     });
-    // 태그 필터가 바뀌면 1페이지로 돌아가게 설정
-    setCurrentPage(1);
   };
 
   const handleSearch = () => {

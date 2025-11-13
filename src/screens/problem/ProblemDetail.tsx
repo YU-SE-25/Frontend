@@ -169,7 +169,10 @@ export default function ProblemDetail() {
             {problemData.tags && problemData.tags.length > 0 && (
               <InlineTagList>
                 {problemData.tags.map((tag) => (
-                  <TagLink key={tag} to={`/problems?tag=${tag}`}>
+                  <TagLink
+                    key={tag}
+                    to={`/problem-list?tag=${encodeURIComponent(tag)}`}
+                  >
                     {tag}
                   </TagLink>
                 ))}
