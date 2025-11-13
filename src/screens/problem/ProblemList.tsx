@@ -29,11 +29,12 @@ import {
   AddButton,
   TagDisplayContainer,
   TagChip,
+  ProblemTagChip,
 } from "../../theme/ProblemList.Style";
 
 import type { UserProblemStatus } from "../../theme/ProblemList.Style";
 import type { IProblem } from "../../api/problem_api";
-import { fetchProblems } from "../../api/problem_api";
+import { fetchProblems, fetchAvailableTags } from "../../api/problem_api";
 import { fetchDummyProblems } from "../../api/dummy/problem_dummy";
 
 const USE_DUMMY = true;
@@ -59,6 +60,24 @@ export default function ProblemList() {
 
   const isLoggedIn = true;
 
+  //AVAILABLE TAGS 상태 정의 (API로 불러올 태그 전체 목록)
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  // SELECTED TAGS 상태 정의 (사용자가 클릭해서 선택한 필터 태그)
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  //사용 가능한 태그 목록 불러오기 (컴포넌트 마운트 시 1회)
+  useEffect(() => {
+    const loadAvailableTags = async () => {
+      try {
+        const tags = await fetchAvailableTags(); //API 호출
+        setAvailableTags(tags);
+      } catch (e) {
+        console.error("사용 가능한 태그 목록을 불러오는 데 실패했습니다.", e);
+      }
+    };
+    loadAvailableTags();
+  }, []); //마운트 시 1회 실행
+
   useEffect(() => {
     let mounted = true;
     const run = async () => {
@@ -72,6 +91,7 @@ export default function ProblemList() {
           isLoggedIn,
           page: 1,
           size: 1000,
+          tags: selectedTags.length > 0 ? selectedTags : undefined, //selectedTags를 API 인자로 전달
         });
         if (mounted) setProblems(data || []);
       } catch (e) {
@@ -84,7 +104,21 @@ export default function ProblemList() {
     return () => {
       mounted = false;
     };
-  }, [sortType, isLoggedIn, searchTerm]);
+  }, [sortType, isLoggedIn, searchTerm, selectedTags]);
+
+  //태그 칩 클릭 핸들러
+  const handleToggleTag = (tag: string) => {
+    setSelectedTags((prevTags) => {
+      //필터 해제
+      if (prevTags.includes(tag)) {
+        return prevTags.filter((t) => t !== tag);
+      }
+      //필터 적용
+      return [...prevTags, tag];
+    });
+    // 태그 필터가 바뀌면 1페이지로 돌아가게 설정
+    setCurrentPage(1);
+  };
 
   const handleSearch = () => {
     if (searchTerm.trim().length === 0) {
@@ -150,21 +184,6 @@ export default function ProblemList() {
     if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
   };
 
-  const translateVerdict = (verdict: string) => {
-    switch (verdict) {
-      case "AC":
-        return "맞춤";
-      case "WA":
-        return "틀림";
-      case "TLE": // 시간 초과
-      case "MLE": // 메모리 초과
-      case "RE": // 런타임 에러
-        return "실패";
-      default:
-        return verdict;
-    }
-  };
-
   return (
     <ProblemListWrapper>
       <PageTitleContainer>
@@ -214,6 +233,28 @@ export default function ProblemList() {
         </SortSelect>
       </ControlBar>
 
+      {availableTags.length > 0 && (
+        <TagDisplayContainer
+          style={{
+            maxWidth: "1200px",
+            margin: "15px auto",
+            padding: "0 20px",
+            flexWrap: "wrap",
+          }}
+        >
+          {availableTags.map((tag) => (
+            <TagChip
+              key={tag}
+              // 선택된 태그 배열에 현재 태그가 포함되어 있으면 'active' 스타일 적용
+              $active={selectedTags.includes(tag)}
+              onClick={() => handleToggleTag(tag)} //클릭 핸들러 바인딩
+            >
+              {tag}
+            </TagChip>
+          ))}
+        </TagDisplayContainer>
+      )}
+
       {loading && <p>문제 목록을 불러오는 중...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -251,7 +292,7 @@ export default function ProblemList() {
                   <TableCell>
                     <TagDisplayContainer>
                       {problem.tags?.map((tag, idx) => (
-                        <TagChip key={idx}>{tag}</TagChip>
+                        <ProblemTagChip key={idx}>{tag}</ProblemTagChip>
                       ))}
                     </TagDisplayContainer>
                   </TableCell>
