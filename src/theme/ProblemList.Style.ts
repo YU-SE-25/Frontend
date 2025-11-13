@@ -313,7 +313,21 @@ export const TagDisplayContainer = styled.div`
   padding-bottom: 5px;
 `;
 // 개별 태그 Chip 스타일
-export const TagChip = styled.span`
+export const TagChip = styled.span<{ $active?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  background-color: ${(props) =>
+    props.$active ? props.theme.focusColor : props.theme.authHoverBgColor};
+  color: ${(props) =>
+    props.$active ? props.theme.bgColor : props.theme.textColor};
+  padding: 4px 9px;
+  border-radius: 13px;
+  font-size: 15px;
+  font-weight: 500;
+`;
+
+//문제 목록 속 태그 칩
+export const ProblemTagChip = styled.span<{ $active?: boolean }>`
   display: inline-flex;
   align-items: center;
   background-color: ${(props) => props.theme.focusColor};

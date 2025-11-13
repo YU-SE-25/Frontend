@@ -307,12 +307,35 @@ function cmpDifficulty(a: string, b: string) {
   return order.indexOf(a) - order.indexOf(b);
 }
 
+export const ALL_AVAILABLE_TAGS = [
+  "구현",
+  "기초",
+  "이진 탐색",
+  "탐색",
+  "문자열",
+  "투 포인터",
+  "중심 확장",
+  "스택",
+  "시뮬레이션",
+  "자료구조",
+  "다이나믹 프로그래밍",
+  "카데인",
+  "배열",
+  "그리디",
+  "정렬",
+  "우선순위 큐",
+  "그래프",
+  "BFS",
+  "DFS",
+];
+
 export async function fetchDummyProblems({
   sortType,
   searchTerm,
   isLoggedIn,
   page = 1,
   size = 50,
+  tags,
 }: FetchProblemParams): Promise<IProblem[]> {
   let list = Object.values(DUMMY_STORE);
 
@@ -322,6 +345,15 @@ export async function fetchDummyProblems({
       (p) =>
         p.title.toLowerCase().includes(key) || p.id.toString().includes(key)
     );
+  }
+  if (tags && tags.length > 0) {
+    // 선택된 '모든' 태그를 포함하는 문제만 필터링
+    list = list.filter((problem) => {
+      return (
+        problem.tags &&
+        tags.every((selectedTag) => problem.tags!.includes(selectedTag))
+      );
+    });
   }
 
   switch (sortType) {

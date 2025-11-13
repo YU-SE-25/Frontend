@@ -62,11 +62,6 @@ export default function Register() {
     null
   );
 
-  //뒤로가기
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
   //가입 버튼 활성화
   const isFormValid = useMemo(() => {
     return (
