@@ -14,6 +14,7 @@ import MypageLayout from "./screens/mypage/MypageLayout";
 import ProblemList from "./screens/problem/ProblemList";
 import ProblemDetail from "./screens/problem/ProblemDetail";
 import ProblemAdd from "./screens/problem/ProblemAdd";
+import ProblemSolve from "./screens/problem/ProblemSolve";
 
 import Board from "./screens/Board";
 
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: "problem-list", element: <ProblemList /> },
       { path: "problem-detail/:problemId", element: <ProblemDetail /> },
       { path: "problem-add", element: <ProblemAdd /> },
+      { path: "problems/:problemId/solve", element: <ProblemSolve /> },
 
       { path: "board", element: <Board /> },
 
