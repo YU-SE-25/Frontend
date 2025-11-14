@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 
 // ▶ 실제 API 사용
 //import { getProblemDetail, increaseView,  } from "../api/problemdetail_api";
@@ -32,6 +32,7 @@ import {
 } from "../../theme/ProblemDetail.Style";
 
 export default function ProblemDetail() {
+  const navigate = useNavigate();
   const { problemId } = useParams<{ problemId: string }>();
 
   const [problemData, setProblemData] = useState<IProblem | null>(null);
@@ -62,7 +63,7 @@ export default function ProblemDetail() {
       alert("로그인 후 이용 가능합니다.");
       return;
     }
-    // navigate(`/problems/${problemId}/solve`);
+    navigate(`/problems/${problemId}/solve`);
   };
 
   const handleViewMyCode = () => {
@@ -155,7 +156,7 @@ export default function ProblemDetail() {
                 alert("로그인 후 이용 가능합니다.");
                 return;
               }
-              // navigate(`/problems/${problemId}/review`);
+              //navigate(`/problems/${problemId}/review`);
             }}
           >
             코드 리뷰
