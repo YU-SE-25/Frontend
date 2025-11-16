@@ -32,12 +32,14 @@ export const MainContentArea = styled.div`
 export const PageHeader = styled.div`
   margin-bottom: 100px;
 `;
+
 export const MainTitle = styled.h1`
   font-size: 70px;
   font-weight: 800;
   margin-bottom: 15px;
   color: ${(props) => props.theme.logoColor};
 `;
+
 export const SubText = styled.p`
   font-size: 30px;
   font-weight: 500;
@@ -54,6 +56,7 @@ export const FeatureSectionContainer = styled.div`
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   text-align: center;
 `;
+
 //탭 전환
 export const TabHeader = styled.div`
   display: flex;
@@ -78,16 +81,18 @@ export const TabButton = styled.button<TabButtonProps>`
     props.isActive ? props.theme.logoColor : props.theme.textColor};
   transition: all 0.2s ease-in-out;
 `;
+
 export const FeatureGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 30px;
 `;
+
 //카드들
 export const FeatureCard = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* 아이템 내부 왼쪽 정렬 */
+  align-items: flex-start;
   gap: 15px;
   padding: 20px;
   background-color: ${(props) => props.theme.bgColor};
@@ -95,17 +100,20 @@ export const FeatureCard = styled.div`
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
 `;
+
 //아이콘
 export const FeatureIcon = styled.span`
   font-size: 35px;
   color: ${(props) => props.theme.focusColor};
 `;
+
 //제목
 export const FeatureCardTitle = styled.h4`
   font-size: 22px;
   font-weight: 700;
   color: ${(props) => props.theme.textColor};
 `;
+
 //설명
 export const FeatureCardDescription = styled.p`
   font-size: 17px;
@@ -115,7 +123,6 @@ export const FeatureCardDescription = styled.p`
 `;
 
 //주간 순위 테이블 스타일
-//랭킹 섹션 컨테이너
 export const RankingSection = styled.div`
   max-width: 1600px;
   width: 95%;
@@ -125,19 +132,21 @@ export const RankingSection = styled.div`
   border-radius: 12px;
 `;
 
-//랭킹 테이블 (ProblemListTable 스타일 재활용)
 export const RankingTitle = styled.h2`
   font-size: 35px;
   font-weight: 700;
   margin-bottom: 20px;
   color: ${(props) => props.theme.textColor};
 `;
+
 export const RankingTable = styled.table`
   width: 100%;
   border-collapse: collapse;
+
   thead {
     background-color: ${(props) => props.theme.logoColor};
   }
+
   th {
     padding: 12px 15px;
     color: ${(props) => props.theme.bgColor};
@@ -145,6 +154,7 @@ export const RankingTable = styled.table`
     font-weight: 600;
     text-align: left;
   }
+
   td {
     padding: 12px 15px;
     border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
