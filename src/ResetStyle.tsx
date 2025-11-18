@@ -70,5 +70,8 @@ body{
   transition: background-color 0.3s ease, color 0.3s ease;
 
   }
+  html {
+    overflow-y: scroll;
+  }
 `;
 export default ResetStyle;

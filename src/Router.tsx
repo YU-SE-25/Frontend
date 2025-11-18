@@ -17,14 +17,13 @@ import ProblemAdd from "./screens/problem/ProblemAdd";
 import ProblemSolve from "./screens/problem/ProblemSolve";
 import CodeAnalysis from "./screens/problem/CodeAnalysis";
 
-import Board from "./screens/Board";
+import Board from "./screens/board/BoardList";
 
 import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 
 import NotFound from "./screens/NotFound";
 import MyPageScreen from "./screens/mypage/MypageScreen";
-import EditPage from "./screens/mypage/EditPage";
 import MyPageRedirect from "./screens/mypage/MypageRedirect";
 
 const router = createBrowserRouter([
@@ -43,7 +42,7 @@ const router = createBrowserRouter([
         element: <CodeAnalysis />,
       },
 
-      { path: "board", element: <Board /> },
+      { path: "board/:category", element: <Board /> },
 
       { path: "studygroup-main", element: <StudyGroupMain /> },
       { path: "studygroup/:groupId", element: <StudyGroupDetail /> },

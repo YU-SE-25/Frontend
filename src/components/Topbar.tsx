@@ -1,5 +1,6 @@
-import { Link, NavLink } from "react-router-dom";
-import styled from "styled-components";
+import React, { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import styled, { keyframes, css } from "styled-components";
 import axios from "axios";
 import { useAtom, useSetAtom } from "jotai";
 import {
@@ -36,11 +37,12 @@ const TopbarContent = styled.nav`
   align-items: center;
   justify-content: space-between;
 `;
-//오른쪽 영역 (테마 토글 + 인증)을 묶는 컨테이너
+
+// 오른쪽 영역 (테마 토글 + 인증)을 묶는 컨테이너
 const RightSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 20px; /* 테마 토글과 인증 버튼 사이 간격 */
+  gap: 20px;
   flex-shrink: 0;
 `;
 
@@ -70,10 +72,17 @@ const Menu = styled.ul`
   }
 `;
 
+const MenuItem = styled.li`
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
 const MenuLink = styled(NavLink)`
   margin: auto;
   font-size: 16px;
   color: ${(props) => props.theme.textColor};
+  line-height: 1;
   text-decoration: none;
   outline: none;
   &:hover {
@@ -88,10 +97,100 @@ const MenuLink = styled(NavLink)`
   }
 `;
 
+const BoardMenuButton = styled.button`
+  margin: auto;
+  font-size: 16px;
+  font: inherit;
+  line-height: 1;
+  display: inline-block;
+
+  background: none;
+  border: none;
+  padding: 0;
+  color: ${(props) => props.theme.textColor};
+  cursor: pointer;
+  text-decoration: none;
+  outline: none;
+
+  &:hover {
+    color: ${(props) => props.theme.focusColor};
+  }
+  &:focus-visible {
+    outline: 2px solid ${(props) => props.theme.focusColor};
+    outline-offset: 2px;
+  }
+`;
+const dropdownOpen = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const dropdownClose = keyframes`
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+`;
+// 게시판 드롭다운 컨테이너
+
+const BoardDropdown = styled.ul<{ $open: boolean }>`
+  position: absolute;
+  top: 120%;
+  left: -50px;
+  margin-top: 0px;
+
+  background-color: ${(props) => props.theme.bgColor};
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  padding: 6px 0;
+  list-style: none;
+  min-width: 140px;
+  z-index: 200;
+
+  transform-origin: top;
+
+  /* 항상 렌더해두고, 열림/닫힘만 애니메이션으로 제어 */
+  animation: ${({ $open }) =>
+    $open
+      ? css`
+          ${dropdownOpen} 0.16s ease-out forwards
+        `
+      : css`
+          ${dropdownClose} 0.16s ease-in forwards
+        `};
+
+  /* 닫혀 있을 때는 클릭 안 되게 */
+  pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
+`;
+// 드롭다운 내부 링크
+const BoardDropdownItem = styled(Link)`
+  display: block;
+  padding: 8px 14px;
+  font-size: 14px;
+  color: ${(props) => props.theme.textColor};
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    background: ${(props) => props.theme.authHoverBgColor};
+    color: ${(props) => props.theme.authHoverTextColor};
+  }
+`;
+
 const Auth = styled.div`
   display: flex;
   gap: 12px;
-  /* 줄바꿈 금지 */
   flex-wrap: nowrap;
   flex-shrink: 0;
 `;
@@ -103,7 +202,6 @@ const AuthLink = styled(Link)`
   padding: 6px 10px;
   border-radius: 10px;
   outline: none;
-  /* 줄바꿈 금지 */
   white-space: nowrap;
   &:hover {
     background: ${(props) => props.theme.authHoverBgColor};
@@ -123,7 +221,7 @@ const AuthLink = styled(Link)`
 
 // **********************************************
 
-//라이트.다크모드 변경 버튼(추후에 뺄수도 있음, css확인용)
+// 라이트/다크 모드 변경 버튼
 const ThemeToggleContainer = styled.div`
   display: flex;
   align-items: center;
@@ -136,64 +234,75 @@ const ThemeToggleContainer = styled.div`
     white-space: nowrap;
   }
 `;
+
 // 실제 스위치 영역 (막대)
 const ToggleSwitch = styled.div<{ $isDark: boolean }>`
-  width: 44px; /* 스위치 막대 너비 */
-  height: 24px; /* 스위치 막대 높이 */
+  width: 44px;
+  height: 24px;
   background-color: ${(props) =>
     props.$isDark ? props.theme.focusColor : props.theme.authHoverBgColor};
   border-radius: 12px;
   position: relative;
   transition: background-color 0.3s;
 `;
+
 // 스위치 핸들 (동그란 부분)
 const ToggleHandle = styled.div<{ $isDark: boolean }>`
   width: 18px;
   height: 18px;
-  background-color: ${(props) => props.theme.bgColor}; /* 항상 밝은 색 */
+  background-color: ${(props) => props.theme.bgColor};
   border-radius: 50%;
   position: absolute;
   top: 3px;
-  /* Dark 모드일 때 오른쪽으로 이동 */
   left: ${(props) => (props.$isDark ? "23px" : "3px")};
   transition: left 0.3s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 `;
+
 // **********************************************
 
 export default function Topbar() {
-  //Jotai 인증 상태 및 액션 연결
+  const navigate = useNavigate();
+
+  // Jotai 인증 상태 및 액션 연결
   const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [userProfile] = useAtom(userProfileAtom);
-  //로그아웃 액션 함수
   const runLogoutAction = useSetAtom(logoutActionAtom);
 
-  //테마 상태 읽기
+  // 테마 상태
   const [isDark] = useAtom(isDarkAtom);
-  //테마 토글 액션 함수 가져오기
   const runToggleTheme = useSetAtom(toggleThemeActionAtom);
 
-  //마이페이지 URL에 사용할 사용자 닉네임 (null일 경우 'guest'로 폴백)
+  // (미사용이긴 하지만 혹시 쓸 수도 있으니 그대로 둠)
   const userName = userProfile?.nickname || "guest";
 
-  //로그아웃
+  // 게시판 드롭다운 열림 상태
+  const [isBoardOpen, setIsBoardOpen] = useState(false);
+
+  // 로그아웃
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem("refreshToken");
 
     if (refreshToken) {
       try {
-        //서버 세션 종료
-        await axios.post("/api/auth/logout", { refreshToken: refreshToken });
+        await axios.post("/api/auth/logout", { refreshToken });
       } catch (error) {
-        // API 실패해도 클라이언트 상태 초기화는 진행 일관성 유지
         console.error(
           "Logout API call failed, proceeding with client-side logout:",
           error
         );
       }
     }
-    //전역 상태 초기화 (Local Storage의 refreshToken도 초기화)
     runLogoutAction();
+  };
+
+  const handleClickBoardMain = () => {
+    setIsBoardOpen((prev) => !prev);
+  };
+
+  const handleSelectBoard = (path: string) => {
+    setIsBoardOpen(false);
+    navigate(path);
   };
 
   return (
@@ -201,21 +310,69 @@ export default function Topbar() {
       <TopbarContent aria-label="Top navigation">
         <Logo to="/">
           <img
-            src="../res/Logo.png"
+            src="../../res/Logo.png"
             alt="Logo"
             style={{ height: "50px", verticalAlign: "middle" }}
           />
         </Logo>
+
         <Menu>
-          <li>
+          <MenuItem>
             <MenuLink to="/problem-list">문제</MenuLink>
-          </li>
-          <li>
-            <MenuLink to="/board">게시판</MenuLink>
-          </li>
-          <li>
+          </MenuItem>
+
+          <MenuItem
+            onMouseEnter={() => setIsBoardOpen(true)}
+            onMouseLeave={() => setIsBoardOpen(false)}
+          >
+            <BoardMenuButton
+              type="button"
+              aria-haspopup="true"
+              aria-expanded={isBoardOpen}
+            >
+              게시판
+            </BoardMenuButton>
+
+            <BoardDropdown $open={isBoardOpen}>
+              {/* <li>
+                <BoardDropdownItem
+                  to="/board/free"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectBoard("/board/free");
+                  }}
+                >
+                  자유게시판
+                </BoardDropdownItem>
+              </li> */}
+              <li>
+                <BoardDropdownItem
+                  to="/board/discussion"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectBoard("/board/discussion");
+                  }}
+                >
+                  토론게시판
+                </BoardDropdownItem>
+              </li>
+              <li>
+                <BoardDropdownItem
+                  to="/board/qna"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectBoard("/board/qna");
+                  }}
+                >
+                  Q&A 게시판
+                </BoardDropdownItem>
+              </li>
+            </BoardDropdown>
+          </MenuItem>
+
+          <MenuItem>
             <MenuLink to="/studygroup-main">스터디 그룹</MenuLink>
-          </li>
+          </MenuItem>
         </Menu>
 
         <RightSection>
@@ -224,18 +381,23 @@ export default function Topbar() {
               <ToggleHandle $isDark={isDark} />
             </ToggleSwitch>
           </ThemeToggleContainer>
+
           <Auth>
             {isLoggedIn ? (
-              <AuthLink to="/mypage/">마이페이지</AuthLink>
+              <>
+                <AuthLink
+                  to={`/mypage/${encodeURIComponent(userName)}?tab=activity`}
+                >
+                  마이페이지
+                </AuthLink>
+                <AuthLink to="/" onClick={handleLogout}>
+                  로그아웃
+                </AuthLink>
+              </>
             ) : (
               <>
                 <AuthLink to="/login">로그인</AuthLink>
                 <AuthLink to="/register">회원가입</AuthLink>
-                {/*마이페이지 및 로그아웃 버튼 위치 추후 수정 예정*/}
-                <AuthLink to="/mypage?tab=activity">마이페이지</AuthLink>
-                <AuthLink to="/" onClick={handleLogout}>
-                  로그아웃
-                </AuthLink>
               </>
             )}
           </Auth>
