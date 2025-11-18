@@ -242,7 +242,7 @@ export const ButtonContainer = styled.div`
 `;
 //코드 바로 작성 버튼
 export const ActionInSummaryButton = styled.button`
-  padding: 6px 12px; 
+  padding: 6px 12px;
   background-color: ${(props) => props.theme.logoColor};
   color: ${(props) => props.theme.bgColor};
   border: none;
@@ -250,7 +250,6 @@ export const ActionInSummaryButton = styled.button`
   cursor: pointer;
   font-size: 20px;
   transition: background-color 0.2s;
-  }
 `;
 //문제 상세보기 버튼
 export const DetailsButton = styled.button`
