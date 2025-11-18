@@ -20,6 +20,24 @@ import {
   BridgeSection,
 } from "../theme/Home.Style";
 
+import {
+  dummyProblemRanking,
+  dummyReputationRanking,
+  dummyReviewRanking,
+} from "../api/dummy/home_dummy";
+
+// 나중에 백엔드 연동용 (지금은 주석 유지)
+/*
+import {
+  getProblemRanking,
+  getReputationRanking,
+  getReviewRanking,
+  type IProblemRankingItem,
+  type IReputationRankingItem,
+  type IReviewRankingItem,
+} from "../api/home_api";
+*/
+
 const MAIN_TABS = {
   CODE_ANALYSIS: "CODE_ANALYSIS",
   USER_DASHBOARD: "USER_DASHBOARD",
@@ -31,12 +49,35 @@ const RANKING_TABS = {
   CODE_REVIEW: "코드 리뷰",
 };
 
+type ProblemItem = {
+  rank: number;
+  title: string;
+  view: number;
+  weekly_views: number;
+};
+
+type ReputationItem = {
+  id: number;
+  user_id: string;
+  rank: number;
+  delta: number;
+};
+
+type ReviewItem = {
+  id: number;
+  user_id: string;
+  rank: number;
+  delta: number;
+  vote: number;
+  problem_title: string;
+  review_title: string;
+};
+
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState(MAIN_TABS.CODE_ANALYSIS); // 활성화된 탭 상태
+  const [activeTab, setActiveTab] = useState(MAIN_TABS.CODE_ANALYSIS);
   const [activeRankingTab, setActiveRankingTab] = useState(
     RANKING_TABS.PROBLEM_VIEWS
-  ); //순위 탭 상태
-  //코드 분석 기능 목록
+  );
   const codeAnalysisFeatures = [
     {
       icon: "🧩",
@@ -59,7 +100,6 @@ export default function HomePage() {
       desc: "코드 내 잠재적 취약점을 분석하고 관련 보안 개념을 학습 자료로 제공합니다.",
     },
   ];
-
   const userDashboardFeatures = [
     {
       icon: "🏆",
@@ -82,50 +122,73 @@ export default function HomePage() {
       desc: "활동 패턴 분석을 통한 시의적절한 학습 독려 리마인드를 제공합니다.",
     },
   ];
-  //css 확인용 임시더미, 추후에 따로 더미 파일로 빼놓겠습니다
-  const DUMMY_RANKING = [
-    {
-      rank: 1,
-      title: "두 수의 합",
-      difficulty: "하",
-      views: 325,
-      date: "2025-11-03",
-      weeklyViews: 47,
-    },
-    {
-      rank: 8,
-      title: "연속 부분합",
-      difficulty: "상",
-      views: 417,
-      date: "2025-10-09",
-      weeklyViews: 39,
-    },
-  ];
 
+  // 랭킹 데이터 상태 (지금은 더미 사용)
+  const [problemRanking, setProblemRanking] =
+    useState<ProblemItem[]>(dummyProblemRanking);
+  const [reputationRanking, setReputationRanking] = useState<ReputationItem[]>(
+    dummyReputationRanking
+  );
+  const [reviewRanking, setReviewRanking] =
+    useState<ReviewItem[]>(dummyReviewRanking);
+
+  // 백엔드 연동용
+  /*
+  useEffect(() => {
+    getProblemRanking()
+      .then((res) => setProblemRanking(res))
+      .catch(() => setProblemRanking([]));
+
+    getReputationRanking()
+      .then((res) => setReputationRanking(res))
+      .catch(() => setReputationRanking([]));
+
+    getReviewRanking()
+      .then((res) => setReviewRanking(res))
+      .catch(() => setReviewRanking([]));
+  }, []);
+  */
+  //순위 데이터 렌더링용 변환
   const renderRankingData = () => {
     switch (activeRankingTab) {
       case RANKING_TABS.PROBLEM_VIEWS:
         return {
           headers: ["번호", "문제제목", "총 조회수", "주간 조회수"],
-          data: DUMMY_RANKING.map((item) => ({
+          data: problemRanking.map((item) => ({
             rank: item.rank,
             title: item.title,
-            value1: item.views,
-            value2: item.weeklyViews,
+            value1: item.view,
+            value2: item.weekly_views,
           })),
-          isComingSoon: false,
         };
+
       case RANKING_TABS.REPUTATION:
+        return {
+          headers: ["순위", "유저명", "주간 평판 변화", "비고"],
+          data: reputationRanking.map((item) => ({
+            rank: item.rank,
+            title: item.user_id,
+            value1: item.delta,
+            value2: "-", // 일단 비우고 나중에 확장해도 됨
+          })),
+        };
+
       case RANKING_TABS.CODE_REVIEW:
         return {
-          headers: [],
-          data: [],
-          isComingSoon: true,
+          headers: ["순위", "문제제목 / 리뷰제목", "투표수", "주간 변화량"],
+          data: reviewRanking.map((item) => ({
+            rank: item.rank,
+            title: `${item.problem_title} / ${item.review_title}`,
+            value1: item.vote,
+            value2: item.delta,
+          })),
         };
+
       default:
-        return { headers: [], data: [], isComingSoon: false };
+        return { headers: [], data: [] };
     }
   };
+
   const currentRankingData = renderRankingData();
 
   return (
@@ -142,7 +205,7 @@ export default function HomePage() {
         <BridgeSection>
           <h2>어떻게 학습을 더 똑똑하게 바꿀 수 있을까요?</h2>
           <p>
-            UnIDE는 단순한 문제풀이 플랫폼이 아니라,{" "}
+            UnIDE는 단순한 문제풀이 플랫폼이 아니라{" "}
             <strong>코드 분석·시각화·피드백</strong>을 통해 개발자의 성장 여정을
             함께 설계하는 학습 도구입니다.
           </p>
@@ -201,7 +264,7 @@ export default function HomePage() {
                   <th
                     key={index}
                     style={{
-                      width: index === 1 ? "40%" : "15%",
+                      width: index === 1 ? "40%" : "15%", // 네가 원래 쓰던 비율 느낌 살려서
                       textAlign: index === 0 ? "left" : "center",
                     }}
                   >

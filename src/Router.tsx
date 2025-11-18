@@ -14,6 +14,8 @@ import MypageLayout from "./screens/mypage/MypageLayout";
 import ProblemList from "./screens/problem/ProblemList";
 import ProblemDetail from "./screens/problem/ProblemDetail";
 import ProblemAdd from "./screens/problem/ProblemAdd";
+import ProblemSolve from "./screens/problem/ProblemSolve";
+import CodeAnalysis from "./screens/problem/CodeAnalysis";
 
 import Board from "./screens/Board";
 
@@ -34,6 +36,12 @@ const router = createBrowserRouter([
       { path: "problem-list", element: <ProblemList /> },
       { path: "problem-detail/:problemId", element: <ProblemDetail /> },
       { path: "problem-add", element: <ProblemAdd /> },
+      { path: "problems/:problemId/solve", element: <ProblemSolve /> },
+      //문제분석용 임시 라우터(그대로 써도되긴함)
+      {
+        path: "problems/:problemId/submissions/:submissionId",
+        element: <CodeAnalysis />,
+      },
 
       { path: "board", element: <Board /> },
 

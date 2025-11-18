@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   RegisterWrapper,
@@ -19,6 +19,12 @@ import {
   RemoveTagButton,
 } from "../../theme/ProblemAdd.Style";
 
+//태그 api에서 fetch
+import { fetchAvailableTags } from "../../api/problem_api";
+//태그 더미 사용
+import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
+const USE_DUMMY = true;
+
 //임시용 폼 데이터 타입 정의 (추후 api 맞춰서 연동할겁니다)
 interface ProblemFormData {
   title: string;
@@ -38,8 +44,6 @@ interface ProblemFormData {
 
 //임시 난이도 옵션
 const DIFFICULTY_OPTIONS = ["하", "중", "상", "최상"];
-//임시 태그 옵션
-const AVAILABLE_TAGS = ["기초", "구현", "심화", "DP", "그래프"];
 
 export default function ProblemAdd() {
   const navigate = useNavigate();
@@ -64,7 +68,24 @@ export default function ProblemAdd() {
   const [testCases, setTestCases] = useState<FileList | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [selectedTags, setSelectedTags] = useState(["기초", "구현"]); // 임시 초기값
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  //태그 불러오기
+  useEffect(() => {
+    const loadAvailableTags = async () => {
+      try {
+        // 더미 데이터 사용
+        const fetchedTags = USE_DUMMY
+          ? ALL_AVAILABLE_TAGS
+          : await fetchAvailableTags();
+        setAvailableTags(fetchedTags);
+      } catch (e) {
+        console.error("사용 가능한 태그 목록을 불러오는 데 실패했습니다.", e);
+      }
+    };
+    loadAvailableTags();
+  }, []);
 
   //태그 추가/삭제 핸들러
   const handleTagSelect = (tag: string) => {
@@ -159,9 +180,11 @@ export default function ProblemAdd() {
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
+                flexDirection: "row",
                 flex: 1,
                 gap: "10px",
+                alignItems: "center",
+                flexWrap: "wrap",
               }}
             >
               <StyledSelect
@@ -173,13 +196,13 @@ export default function ProblemAdd() {
                 <option value="" disabled>
                   태그를 선택하세요
                 </option>
-                {AVAILABLE_TAGS.filter(
-                  (tag) => !selectedTags.includes(tag)
-                ).map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
+                {availableTags
+                  .filter((tag) => !selectedTags.includes(tag))
+                  .map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
               </StyledSelect>
 
               <TagDisplayContainer>

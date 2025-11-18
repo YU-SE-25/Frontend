@@ -156,6 +156,13 @@ export const TagLink = styled(Link)`
   font-weight: 500;
   text-decoration: none;
 `;
+//태그 간격
+export const TagContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px 0;
+`;
 
 //입출력
 // 전체 예제들을 세로로 쌓는 컨테이너 (기존)
