@@ -79,7 +79,7 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
     ${({ theme, $active }) => ($active ? theme.focusColor : "rgba(0,0,0,0.12)")};
   background: ${({ theme, $active }) =>
     $active ? theme.focusColor : "transparent"};
-  color: ${({ theme, $active }) => ($active ? theme.bgColor : theme.textColor)};
+  color: ${({ theme, $active }) => ($active ? "white" : theme.textColor)};
   font-size: 14px;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease,
@@ -96,7 +96,7 @@ export default function BoardList() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const currentCategory: BoardCategory =
-    category === "discussion" || category === "qna" ? category : "free";
+    category === "discussion" || category === "free" ? category : "qna";
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
@@ -140,6 +140,7 @@ export default function BoardList() {
       },
       { replace: true }
     );
+    window.scrollTo(0, 0);
   };
 
   const handleWritePost = () => {
@@ -210,12 +211,12 @@ export default function BoardList() {
           <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
         </div>
         <CategoryTabs>
-          <CategoryTab
+          {/* <CategoryTab
             $active={currentCategory === "free"}
             onClick={() => handleChangeCategory("free")}
           >
             자유게시판
-          </CategoryTab>
+          </CategoryTab> */}
           <CategoryTab
             $active={currentCategory === "discussion"}
             onClick={() => handleChangeCategory("discussion")}

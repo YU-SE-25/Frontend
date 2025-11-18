@@ -60,6 +60,7 @@ const TitleBlock = styled.div`
 const DetailTitle = styled.h2`
   margin: 0;
   font-size: 20px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const MetaRow = styled.div`
@@ -70,6 +71,11 @@ const MetaRow = styled.div`
     content: " | ";
     margin: 0 4px;
   }
+  p,
+  span,
+  strong {
+    color: inherit;
+  }
 `;
 
 const TagChip = styled.span`
@@ -79,6 +85,7 @@ const TagChip = styled.span`
   border-radius: 999px;
   font-size: 11px;
   margin-top: 4px;
+  width: fit-content;
 
   background: rgba(148, 163, 184, 0.18);
   color: ${({ theme }) => theme.textColor}70;
@@ -124,6 +131,10 @@ const StatsRow = styled.div`
   color: ${({ theme }) => theme.textColor}70;
   display: flex;
   gap: 12px;
+
+  span {
+    color: ${({ theme }) => theme.textColor};
+  }
 `;
 
 const CommentsSection = styled.section`
@@ -142,6 +153,7 @@ const CommentsHeader = styled.div`
 
 const CommentCount = styled.span`
   font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const CommentList = styled.ul`
@@ -153,6 +165,7 @@ const CommentList = styled.ul`
 const CommentItem = styled.li`
   padding: 8px 0;
   border-top: 1px solid rgba(148, 163, 184, 0.25);
+  color: ${({ theme }) => theme.textColor};
 
   &:first-child {
     border-top: none;
@@ -163,11 +176,17 @@ const CommentMeta = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.textColor}70;
   margin-bottom: 2px;
+
+  strong {
+    color: ${({ theme }) => theme.textColor};
+    font-weight: 600;
+  }
 `;
 
 const CommentContent = styled.div`
   font-size: 14px;
   white-space: pre-wrap;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const CommentForm = styled.form`
@@ -187,7 +206,7 @@ const CommentTextarea = styled.textarea`
 
   font-size: 14px;
   font-family: inherit;
-  background: "rgba(15, 23, 42, 0.7)";
+  background-color: ${({ theme }) => theme.bgColor};
   color: ${({ theme }) => theme.textColor};
 
   &:focus-visible {
@@ -235,6 +254,7 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
   const [draft, setDraft] = useState("");
   useEffect(() => {
     setLocalComments(post.comments ?? []);
+    window.scrollTo(0, 0);
   }, [post.post_id]);
 
   const displayAuthor = post.anonymity ? "익명" : post.author;

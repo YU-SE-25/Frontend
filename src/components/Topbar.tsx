@@ -334,7 +334,7 @@ export default function Topbar() {
             </BoardMenuButton>
 
             <BoardDropdown $open={isBoardOpen}>
-              <li>
+              {/* <li>
                 <BoardDropdownItem
                   to="/board/free"
                   onClick={(e) => {
@@ -344,7 +344,7 @@ export default function Topbar() {
                 >
                   자유게시판
                 </BoardDropdownItem>
-              </li>
+              </li> */}
               <li>
                 <BoardDropdownItem
                   to="/board/discussion"
