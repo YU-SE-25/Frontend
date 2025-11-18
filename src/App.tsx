@@ -44,7 +44,7 @@ export default function App() {
   return (
     <>
       {/* 디버그 코드!!!!*/}
-      <DevTools />
+      {/* <DevTools /> */}
 
       {/* 테마설정 */}
       <ThemeProvider theme={isDark ? darkTheme : lightTheme}>

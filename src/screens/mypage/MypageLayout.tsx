@@ -17,7 +17,6 @@ import {
 import Sidebar from "../../components/mypage_sidebar";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
-import type { UserProfile } from "../../atoms";
 const USE_DUMMY = true; //더미 데이터 사용 여부!
 
 //css styles
