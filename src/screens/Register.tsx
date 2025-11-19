@@ -16,11 +16,11 @@ import {
   ModalBackdrop,
 } from "../theme/Register.Style.ts";
 
-//type UserType = "student";
+// 백엔드 API 연결용 axios 인스턴스
+import { api } from "../api/axios";
 
 //비밀번호
 const validatePassword = (password: string) => {
-  //최소 8자, 대문자(A-Z), 소문자(a-z), 숫자(0-9) 각각 1개 이상 포함
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
   const isValid = regex.test(password);
@@ -62,7 +62,6 @@ export default function Register() {
     null
   );
 
-  //가입 버튼 활성화
   const isFormValid = useMemo(() => {
     return (
       isTermsChecked &&
@@ -85,9 +84,8 @@ export default function Register() {
     isValidNicknameLength,
   ]);
 
-  //전화번호
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const cleaned = e.target.value.replace(/[^0-9]/g, "").slice(0, 11); // 숫자 11개까지만 허용
+    const cleaned = e.target.value.replace(/[^0-9]/g, "").slice(0, 11);
 
     let formattedNumber = cleaned;
 
@@ -102,7 +100,6 @@ export default function Register() {
     setPhoneNumber(formattedNumber);
   };
 
-  //약관동의
   const handleOpenTerms = (type: "terms" | "privacy") => {
     setModalContent(type);
   };
@@ -113,18 +110,20 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    //백엔드쪽에서 이메일 중복체크, 닉네임 중복체크, 동일인물(이름 + 전화번호) 중복체크
-    //가입하기 누르면 링크 전송 창 띄우기
-    //가입 신청 완료 페이지 만들어서 넘어갈 것
-
-    //API 호출 및 중복 체크 시작
-    //const API_BASE = "/api/v1"; // 임시 API 베이스 주소 설정
-
-    //0. 블랙리스트 : 해당 이메일 혹은 전화번호가 등록되어 있을 경우
+    //백엔드 연결용 API 호출 구간
+    /*
+    // 0. 블랙리스트 체크 (/auth/check/blacklist)
     try {
       console.log("0. 블랙리스트 체크 시작...");
-      //Api 적힌대로 함
-      // const response = await axios.post(`${API_BASE}/auth/check/blacklist`, { name, email, phone: phoneNumber });
+      const response = await api.post<{ isBlacklisted: boolean }>(
+        "/auth/check/blacklist",
+        {
+          email,
+          phone: phoneNumber,
+        }
+      );
+      // 백엔드 연결용
+
       if (response.data.isBlacklisted) {
         alert("회원가입이 제한된 사용자입니다.");
         return;
@@ -133,65 +132,75 @@ export default function Register() {
       alert("블랙리스트 확인 중 오류가 발생했습니다.");
       return;
     }
-
-    //1.이메일 중복(/auth/check/email)
+*/
+    // 1. 이메일 중복 체크 (/auth/check/email)
     try {
       console.log("1. 이메일 중복 체크 시작...");
-      // await axios.post(`${API_BASE}/auth/check/email`, { email });
+      //await api.post("/api/auth/check/email", { email }); // 백엔드 연결용
     } catch (error) {
       alert("이미 사용 중인 이메일입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
 
-    //2.닉네임 중복(/auth/check/nickname)
+    // 2. 닉네임 중복 체크 (/auth/check/nickname)
     try {
       console.log("2. 닉네임 중복 체크 시작...");
-      // await axios.post(`${API_BASE}/auth/check/nickname`, { nickname });
+      //await api.post("/api/auth/check/nickname", { nickname }); // 백엔드 연결용
     } catch (error) {
       alert("이미 사용 중인 닉네임입니다.");
       return;
     }
+
     // 3. 전화번호 중복 체크 (/auth/check/phone)
     try {
       console.log("3. 전화번호 중복 체크 시작...");
-      // await axios.post(`${API_BASE}/auth/check/phone`, { phone: phoneNumber });
+      //await api.post("/api/auth/check/phone", { phone: phoneNumber }); // 백엔드 연결용
     } catch (error) {
       alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
 
-    //4.동일 인물(/auth/check/duplicate-account)
-    try {
-      console.log("4. 동일 인물 계정 확인 시작...");
-      // await axios.post(`${API_BASE}/auth/check/duplicate-account`, { name, phoneNumber });
-    } catch (error) {
-      alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
-      return;
-    }
+    // 4. 동일 인물 계정 확인 (/auth/check/duplicate-account)
+    // 백엔드 재확인 필요
+    /*
+  try {
+    console.log("4. 동일 인물 계정 확인 시작...");
+    await api.post("/api/auth/check/duplicate-account", {
+      name,
+      phoneNumber,
+    }); // 백엔드 연결용
+  } catch (error) {
+    alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
+    return;
+  }
+  */
 
-    //최종 회원가입
     const registerData = {
-      email: email,
-      password: password,
-      name: name,
-      nickname: nickname,
-      phone: phoneNumber,
+      email,
+      password,
+      name,
+      nickname,
+      phone: phoneNumber, // 반드시 010-0000-0000 형태
       role: "LEARNER",
-      agreedToTerms: isTermsChecked && isPrivacyChecked,
+      agreedTerms: ["TERMS_OF_SERVICE", "PRIVACY_POLICY"],
+      portfolioFileUrl: null,
+      originalFileName: null,
+      fileSize: null,
+      portfolioLinks: [],
     };
 
+    // 5. 최종 회원가입 (/auth/register)
     try {
-      //회원가입 요청 (/auth/register)
       console.log("5. 최종 회원가입 요청 전송...");
-      // await axios.post(`${API_BASE}/auth/register`, registrationData);
+      //await api.post("/api/auth/register", registerData); // 백엔드 연결용
 
-      //이메일 인증 링크 발송 (/auth/email/send-link)
+      // 6. 이메일 인증 링크 발송 (/auth/email/send-link)
       console.log("6. 이메일 인증 링크 발송 요청...");
-      // await axios.post(`${API_BASE}/auth/email/send-link`, { email });
+      //await api.post("/api/auth/email/send-link", { email }); // 백엔드 연결용
 
       navigate("/register-success");
     } catch (error) {
-      alert("서버 오류");
+      alert("서버 오류가 발생했습니다.");
     }
   };
 
@@ -207,9 +216,7 @@ export default function Register() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-              }}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </InputGroup>
 
@@ -222,9 +229,11 @@ export default function Register() {
               placeholder="최소 8자, 대/소문자 숫자 포함"
             />
           </InputGroup>
+
           {password.length > 0 && !passwordValidationResult.isValid && (
             <ErrorMessage>비밀번호 규정을 따라주세요.</ErrorMessage>
           )}
+
           <InputGroup>
             <Label>비밀번호 확인 :</Label>
             <StyledInput
@@ -233,16 +242,18 @@ export default function Register() {
               onChange={(e) => setPasswordConfirm(e.target.value)}
             />
           </InputGroup>
+
           {!passwordsMatch && (
             <ErrorMessage>비밀번호가 일치하지 않습니다.</ErrorMessage>
           )}
+
           <InputGroup>
             <Label>전화번호 :</Label>
             <StyledInput
               type="tel"
               value={phoneNumber}
               onChange={handlePhoneChange}
-              placeholder="010-XXXX-XXXX 형식으로 자동 입력"
+              placeholder="010-XXXX-XXXX"
               maxLength={13}
             />
           </InputGroup>
@@ -255,6 +266,7 @@ export default function Register() {
               onChange={(e) => setName(e.target.value)}
             />
           </InputGroup>
+
           <InputGroup>
             <Label>닉네임 :</Label>
             <StyledInput
@@ -281,6 +293,7 @@ export default function Register() {
               </span>
               (필수)
             </CheckboxLabel>
+
             <CheckboxLabel>
               <input
                 type="checkbox"
@@ -302,10 +315,10 @@ export default function Register() {
           </FullWidthButton>
         </form>
       </RegisterBox>
+
       {modalContent && (
         <ModalBackdrop onClick={handleCloseModal}>
           <ModalContentBox onClick={(e) => e.stopPropagation()}>
-            {/* 모달 박스 클릭 시 배경 닫힘 방지 */}
             <CloseButton onClick={handleCloseModal}>&times;</CloseButton>
             <h3>
               {modalContent === "terms" ? "이용 약관" : "개인정보 처리방침"}

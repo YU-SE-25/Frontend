@@ -19,6 +19,8 @@ import {
   EmptyMessage,
   TagChip,
   TagWrapper,
+  CardText,
+  CardStrong,
 } from "../../theme/StudyGroupMain.Style";
 //import type { StudyGroup } from "../../api/studygroup_api";
 import {
@@ -85,13 +87,17 @@ export default function StudyGroupListPage() {
                 </CardHeader>
                 <GroupLeader>그룹장: {group.leader_name}</GroupLeader>
                 <p>{group.group_description}</p>
-                <p>
-                  <strong>목표:</strong> {group.group_goal}
-                </p>
-                <p>
-                  <strong>정원:</strong> {group.groupmember_id.length}/
-                  {group.max_members}
-                </p>
+                <>
+                  <CardText>
+                    <CardStrong>목표:</CardStrong> {group.group_goal}
+                  </CardText>
+
+                  <CardText>
+                    <CardStrong>정원:</CardStrong> {group.groupmember_id.length}
+                    /{group.max_members}
+                  </CardText>
+                </>
+
                 <CardTags>
                   <span>{group.myRole === "LEADER" ? "리더" : "멤버"}</span>
                 </CardTags>

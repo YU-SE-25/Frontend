@@ -1,6 +1,7 @@
 // src/screens/board/BoardDetail.tsx
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import ReportButton from "../ReportButton";
 
 export interface BoardComment {
   id: number;
@@ -297,7 +298,13 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
           {post.tag && <TagChip>#{post.tag}</TagChip>}
         </TitleBlock>
 
-        {onClose && <CloseButton onClick={onClose}>닫기</CloseButton>}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <ReportButton
+            targetContentId={post.post_id}
+            targetContentType="post"
+          />
+          {onClose && <CloseButton onClick={onClose}>닫기</CloseButton>}
+        </div>
       </DetailHeader>
 
       <ContentArea>{post.contents}</ContentArea>
@@ -323,6 +330,10 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                 <CommentItem key={c.id}>
                   <CommentMeta>
                     <strong>{commentAuthor}</strong> · {date}
+                    <ReportButton
+                      targetContentId={c.id}
+                      targetContentType="comment"
+                    />
                   </CommentMeta>
                   <CommentContent>{c.contents}</CommentContent>
                 </CommentItem>

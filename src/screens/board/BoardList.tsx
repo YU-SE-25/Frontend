@@ -23,7 +23,7 @@ import {
   PageTitleContainer,
   AddButton,
 } from "../../theme/ProblemList.Style";
-import BoardDetail from "./Boarddetail";
+import BoardDetail from "./BoardDetail";
 
 type BoardCategory = "free" | "discussion" | "qna";
 // 댓글(Comment)
@@ -48,6 +48,12 @@ export interface BoardContent {
   contents: string; // 본문 내용 (상세 보기에서 추가됨)
 
   comments: BoardComment[]; // 댓글 배열 포함 (상세용)
+}
+
+//스터디그룹용
+interface BoardListProps {
+  mode?: "global" | "study";
+  groupId?: number;
 }
 
 const CATEGORY_LABEL: Record<BoardCategory, string> = {
@@ -90,7 +96,11 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
   }
 `;
 
-export default function BoardList() {
+// 기존 함수 선언 → props 형태로 변경됨
+export default function BoardList({
+  mode = "global",
+  groupId,
+}: BoardListProps) {
   const navigate = useNavigate();
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -103,7 +113,25 @@ export default function BoardList() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const posts = DUMMY_POSTS_BY_CATEGORY[currentCategory];
+  //기존 posts 제거하고 상태로 관리하도록 변경됨
+  const [posts, setPosts] = useState<BoardContent[]>([]);
+
+  //스터디그룹 api 추가
+  React.useEffect(() => {
+    if (mode === "study" && groupId) {
+      // 스터디그룹 전용 토론게시판 API
+      /*
+      api.get(`/api/studygroup/${groupId}/discuss`)
+        .then(res => setPosts(res.data))
+        .catch(err => console.error(err));
+      */
+      //더미
+      setPosts(DUMMY_POSTS_BY_CATEGORY["discussion"]);
+    } else {
+      //기존 BoardList 더미 로직 그대로 유지
+      setPosts(DUMMY_POSTS_BY_CATEGORY[currentCategory]);
+    }
+  }, [mode, groupId, currentCategory]);
 
   // URL의 ?no=값을 읽어서 선택된 글 ID로 사용
   const selectedPostId = searchParams.get("no");
@@ -165,11 +193,9 @@ export default function BoardList() {
 
     result = [...result].sort((a, b) => {
       if (sortType === "latest") {
-        // 작성일(create_time) 기준 최신순
         return b.create_time.localeCompare(a.create_time);
       }
       if (sortType === "views") {
-        // 조회수 필드는 없으니 일단 like_count 기준으로 정렬
         return (b.like_count ?? 0) - (a.like_count ?? 0);
       }
       if (sortType === "id") {
@@ -195,7 +221,7 @@ export default function BoardList() {
   };
 
   return (
-    <BoardListWrapper>
+    <BoardListWrapper $fullWidth={mode === "study"}>
       <PageTitleContainer
         style={{ flexDirection: "column", alignItems: "flex-start", gap: 8 }}
       >
@@ -210,26 +236,28 @@ export default function BoardList() {
           <PageTitle>{CATEGORY_LABEL[currentCategory]}</PageTitle>
           <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
         </div>
-        <CategoryTabs>
-          {/* <CategoryTab
+        {mode !== "study" && (
+          <CategoryTabs>
+            {/* <CategoryTab
             $active={currentCategory === "free"}
             onClick={() => handleChangeCategory("free")}
           >
             자유게시판
           </CategoryTab> */}
-          <CategoryTab
-            $active={currentCategory === "discussion"}
-            onClick={() => handleChangeCategory("discussion")}
-          >
-            토론게시판
-          </CategoryTab>
-          <CategoryTab
-            $active={currentCategory === "qna"}
-            onClick={() => handleChangeCategory("qna")}
-          >
-            Q&A 게시판
-          </CategoryTab>
-        </CategoryTabs>
+            <CategoryTab
+              $active={currentCategory === "discussion"}
+              onClick={() => handleChangeCategory("discussion")}
+            >
+              토론게시판
+            </CategoryTab>
+            <CategoryTab
+              $active={currentCategory === "qna"}
+              onClick={() => handleChangeCategory("qna")}
+            >
+              Q&A 게시판
+            </CategoryTab>
+          </CategoryTabs>
+        )}
       </PageTitleContainer>
       {selectedPost && <BoardDetail post={selectedPost} />}
 
