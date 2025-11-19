@@ -11,10 +11,10 @@ export type UserProblemStatus = "solved" | "attempted" | "none";
 export interface StatusProps {
   $userStatus?: "solved" | "attempted" | "none";
 }
-//레이아웃 및 컨트롤 스타일
-export const ProblemListWrapper = styled.div`
+//레이아웃 및 컨트롤 스타일, 스터디그룹 화면 크기용 추가
+export const ProblemListWrapper = styled.div<{ $fullWidth?: boolean }>`
   height: 100%;
-  width: 80%;
+  width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "80%")};
   margin: 0 auto;
   display: flex;
   padding-top: ${TOPBAR_HEIGHT + 10}px;
