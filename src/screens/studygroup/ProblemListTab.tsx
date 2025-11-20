@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   TabContentHeader,
   ProblemListAddButton,
@@ -8,90 +7,99 @@ import {
   AccordionHeader,
   ProblemSummary,
   ProblemSummarySmall,
+  ProblemListInfo,
   ProblemDetailList,
   ProblemDetailItem,
   ProblemTitleLink,
-  ProblemListInfo,
   StatusBadge,
-  ProblemListInfoContainer,
   SubmissionDateText,
+  ProblemListInfoContainer,
 } from "../../theme/StudyGroupDetail.Style";
+
+import type { AssignedProblemList, GroupRole } from "../../api/studygroup_api";
 import { DUMMY_ASSIGNED_LISTS } from "../../api/dummy/studygroupdetail_dummy";
 
-export default function ProblemListTab() {
-  const navigate = useNavigate();
+interface Props {
+  role: GroupRole | undefined;
+}
 
-  //expandedId는 할당된 문제 목록 그룹(assignedId)을 저장합니다.
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+export default function ProblemListTab({ role }: Props) {
+  // 더미 데이터
+  const [assignedLists, setAssignedLists] =
+    useState<AssignedProblemList[]>(DUMMY_ASSIGNED_LISTS);
 
-  const handleAccordionToggle = (assignedId: number) => {
-    setExpandedId((currentId) =>
-      currentId === assignedId ? null : assignedId
-    );
+  // 아코디언 펼침 여부
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  const toggleExpand = (id: number) => {
+    setExpanded(expanded === id ? null : id);
   };
 
-  //문제 제목 클릭 시 상세 페이지로 이동
-  const handleProblemClick = (problemId: number) => {
-    navigate(`/problem-detail/${problemId}`);
+  // 그룹장만 새로운 문제 리스트 추가 가능
+  const handleAddProblemList = () => {
+    if (role !== "LEADER") {
+      alert("그룹장만 문제를 지정할 수 있습니다.");
+      return;
+    }
+
+    // 실제 기능은 나중에 구현 (검색 모달)
+    alert("문제 리스트 추가 기능은 추후 구현 예정입니다!");
   };
 
   return (
     <>
       <TabContentHeader>
-        <h3>할당된 문제목록</h3>
-        <ProblemListAddButton>목록 생성</ProblemListAddButton>
+        <h3>지정된 문제 목록</h3>
+
+        {/* 그룹장일 때만 보임 */}
+        {role === "LEADER" && (
+          <ProblemListAddButton onClick={handleAddProblemList}>
+            + 문제 리스트 추가
+          </ProblemListAddButton>
+        )}
       </TabContentHeader>
 
       <ProblemAccordionContainer>
-        {DUMMY_ASSIGNED_LISTS.map((listGroup) => {
-          const submittedCount = listGroup.submittedCount;
-          const totalProblems = listGroup.totalProblems;
-          const isExpanded = expandedId === listGroup.assignedId;
+        {assignedLists.map((list) => {
+          const isOpen = expanded === list.assignedId;
 
           return (
-            <ProblemAccordionItem
-              key={listGroup.assignedId}
-              $isExpanded={isExpanded}
-            >
-              <AccordionHeader
-                onClick={() => handleAccordionToggle(listGroup.assignedId)}
-              >
-                <ProblemSummary>{listGroup.listTitle}</ProblemSummary>
+            <ProblemAccordionItem key={list.assignedId} $isExpanded={isOpen}>
+              <AccordionHeader onClick={() => toggleExpand(list.assignedId)}>
+                <ProblemSummary>{list.listTitle}</ProblemSummary>
 
-                <ProblemListInfoContainer>
+                <ProblemListInfo>
                   <ProblemSummarySmall>
-                    {submittedCount}/{totalProblems}
+                    {list.submittedCount}/{list.totalProblems}
                   </ProblemSummarySmall>
-                  <span>기한: {listGroup.dueDate}</span>
-                </ProblemListInfoContainer>
+                  <ProblemSummarySmall>
+                    마감: {list.dueDate}
+                  </ProblemSummarySmall>
+                </ProblemListInfo>
               </AccordionHeader>
 
-              {isExpanded && (
+              {/* 상세 문제 목록 */}
+              {isOpen && (
                 <ProblemDetailList>
-                  {listGroup.problems.map((problem) => (
+                  {list.problems.map((problem) => (
                     <ProblemDetailItem key={problem.problem_id}>
-                      <ProblemTitleLink
-                        onClick={() => handleProblemClick(problem.problem_id)}
-                      >
-                        {problem.problem_id}. {problem.problem_title}
-                      </ProblemTitleLink>
+                      <ProblemListInfoContainer>
+                        <ProblemTitleLink>
+                          {problem.problem_title}
+                        </ProblemTitleLink>
 
-                      <ProblemListInfo>
-                        <StatusBadge
-                          $status={
-                            problem.user_status === "제출완료"
-                              ? "ok"
-                              : "pending"
-                          }
-                        >
-                          {problem.user_status}
-                        </StatusBadge>
                         <SubmissionDateText>
-                          {problem.user_status === "제출완료"
-                            ? `제출일: ${problem.create_time.substring(0, 10)}`
-                            : "제출일: -"}
+                          {new Date(problem.create_time).toLocaleDateString()}
                         </SubmissionDateText>
-                      </ProblemListInfo>
+                      </ProblemListInfoContainer>
+
+                      <StatusBadge
+                        $status={
+                          problem.user_status === "제출완료" ? "ok" : "none"
+                        }
+                      >
+                        {problem.user_status}
+                      </StatusBadge>
                     </ProblemDetailItem>
                   ))}
                 </ProblemDetailList>
@@ -100,6 +108,10 @@ export default function ProblemListTab() {
           );
         })}
       </ProblemAccordionContainer>
+
+      {assignedLists.length === 0 && (
+        <p style={{ opacity: 0.7 }}>지정된 문제가 없습니다.</p>
+      )}
     </>
   );
 }
