@@ -1,7 +1,8 @@
 // src/screens/board/BoardDetail.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import styled from "styled-components";
 import ReportButton from "../ReportButton";
+import { useNavigate } from "react-router-dom";
 
 export interface BoardComment {
   id: number;
@@ -64,9 +65,11 @@ const DetailTitle = styled.h2`
   color: ${({ theme }) => theme.textColor};
 `;
 
-const MetaRow = styled.div`
+const MetaRow = styled.div<{
+  isDisabled?: boolean;
+}>`
   font-size: 13px;
-  color: ${({ theme }) => theme.textColor}70;
+  color: ${({ theme }) => theme.textColor}60;
 
   span + span::before {
     content: " | ";
@@ -75,7 +78,27 @@ const MetaRow = styled.div`
   p,
   span,
   strong {
+    transition: none;
+
     color: inherit;
+  }
+  //Metarow의 첫번째 자식
+  & > span:first-child {
+    color: ${({ theme }) => theme.textColor};
+    cursor: pointer;
+
+    ${(props) =>
+      props.isDisabled &&
+      `
+    color: ${props.theme.textColor}60; 
+    cursor: not-allowed;
+    pointer-events: none; /* 클릭 이벤트 자체를 막음 */
+  `}
+
+    /* 호버 효과 (비활성화 아닐 때만) */
+  &:not([aria-disabled="true"]):hover {
+      text-decoration: underline;
+    }
   }
 `;
 
@@ -173,7 +196,9 @@ const CommentItem = styled.li`
   }
 `;
 
-const CommentMeta = styled.div`
+const CommentMeta = styled.div<{
+  isDisabled?: boolean;
+}>`
   font-size: 12px;
   color: ${({ theme }) => theme.textColor}70;
   margin-bottom: 2px;
@@ -181,6 +206,19 @@ const CommentMeta = styled.div`
   strong {
     color: ${({ theme }) => theme.textColor};
     font-weight: 600;
+    cursor: pointer;
+    ${(props) =>
+      props.isDisabled &&
+      `
+    color: ${props.theme.textColor}60; 
+    cursor: not-allowed;
+    pointer-events: none; /* 클릭 이벤트 자체를 막음 */
+  `}
+
+    /* 호버 효과 (비활성화 아닐 때만) */
+  &:not([aria-disabled="true"]):hover {
+      text-decoration: underline;
+    }
   }
 `;
 
@@ -219,6 +257,10 @@ const CommentTextarea = styled.textarea`
 const CommentSubmitRow = styled.div`
   display: flex;
   justify-content: flex-end;
+  & > label > span {
+    font-size: 13px;
+    color: ${({ theme }) => theme.textColor};
+  }
 `;
 
 const CommentButton = styled.button`
@@ -249,6 +291,8 @@ const EmptyText = styled.p`
 `;
 
 export default function BoardDetail({ post, onClose }: BoardDetailProps) {
+  const nav = useNavigate();
+  const [anonymity, setAnonimity] = useState(false);
   const [localComments, setLocalComments] = useState<BoardComment[]>(
     post.comments ?? []
   );
@@ -269,12 +313,15 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
       id: Date.now(),
       author: "Guest", // TODO: 나중에 실제 로그인 유저 닉네임으로 교체
       contents: text,
-      anonymity: false,
+      anonymity: anonymity,
       create_time: new Date().toISOString(),
     };
 
     setLocalComments((prev) => [...prev, next]);
     setDraft("");
+  };
+  const handleNavigateMypage = (username: string) => () => {
+    nav(`/mypage/${username}`);
   };
 
   return (
@@ -283,8 +330,8 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
         <TitleBlock>
           <DetailTitle>{post.post_title}</DetailTitle>
 
-          <MetaRow>
-            <span>
+          <MetaRow isDisabled={post.anonymity}>
+            <span onClick={handleNavigateMypage(displayAuthor)}>
               <strong>작성자:</strong> {displayAuthor}
             </span>
             <span>
@@ -330,10 +377,6 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                 <CommentItem key={c.id}>
                   <CommentMeta>
                     <strong>{commentAuthor}</strong> · {date}
-                    <ReportButton
-                      targetContentId={c.id}
-                      targetContentType="comment"
-                    />
                   </CommentMeta>
                   <CommentContent>{c.contents}</CommentContent>
                 </CommentItem>
@@ -348,7 +391,19 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
             onChange={(e) => setDraft(e.target.value)}
             placeholder="댓글을 입력하세요."
           />
+
           <CommentSubmitRow>
+            <label
+              style={{ display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <span>익명</span>
+              <input
+                type="checkbox"
+                checked={anonymity}
+                onChange={(e) => setAnonimity(e.target.checked)}
+              />
+            </label>
+
             <CommentButton type="submit">댓글 작성</CommentButton>
           </CommentSubmitRow>
         </CommentForm>

@@ -39,7 +39,6 @@ export default function CodeEditorView({
   onSubmit,
   language,
   onLanguageChange,
-  isSubmitting,
 }: CodeEditorViewProps) {
   const [isDark] = useAtom(isDarkAtom);
 
@@ -112,8 +111,8 @@ export default function CodeEditorView({
       <ActionRow>
         <ActionButton onClick={onLoadTemp}>불러오기</ActionButton>
         <ActionButton onClick={onSaveTemp}>임시저장</ActionButton>
-        <ActionButton $main onClick={onSubmit} disabled={isSubmitting}>
-          {isSubmitting ? "채점 중..." : "제출하기"}
+        <ActionButton $main onClick={onSubmit}>
+          제출하기
         </ActionButton>
       </ActionRow>
     </ViewContentWrapper>

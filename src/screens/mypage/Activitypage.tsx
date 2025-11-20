@@ -243,7 +243,8 @@ export default function ActivityPage() {
 
   // 내가 푼 문제 페이지로 이동
   const goSolved = () =>
-    solvedIds.length && nav(`/problem-list?ids=${solvedIds.join(",")}`);
+    solvedIds.length &&
+    nav(`/problems/${user?.username}/solved?showResult=false`);
   const goBookmarked = () =>
     bookmarkedIds.length && nav(`/problem-list?ids=${bookmarkedIds.join(",")}`);
   const goAll = () => nav("/problem-list");
@@ -307,7 +308,7 @@ export default function ActivityPage() {
               disabled={isLoading || !solvedIds.length}
               variant="primary"
             >
-              내가 푼 문제만 보기
+              내가 푼 문제 보기
             </Button>
             <Button onClick={goAll} variant="soft">
               전체 문제 보기

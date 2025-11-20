@@ -5,13 +5,14 @@ import type { BoardContent, BoardComment } from "../../screens/board/BoardList";
 function makeComment(
   id: number,
   author: string,
-  content: string
+  content: string,
+  anonymity?: boolean
 ): BoardComment {
   return {
     id,
     author,
     contents: content,
-    anonymity: false,
+    anonymity: anonymity ?? false,
     create_time: new Date().toISOString(),
   };
 }
@@ -29,7 +30,7 @@ export const BOARD_DUMMY: Record<string, BoardContent[]> = {
       create_time: "2025-11-10T09:00:00Z",
       contents: "진짜 너무 춥다.. 패딩 꺼냄.",
       comments: [
-        makeComment(1, "감자튀김", "서울도 개추움"),
+        makeComment(1, "감자튀김", "서울도 개추움", true),
         makeComment(2, "코딩러", "갑자기 왜 이렇게 변했지 ㅋㅋ"),
       ],
     },
@@ -121,7 +122,7 @@ export const BOARD_DUMMY: Record<string, BoardContent[]> = {
       post_title: "문과 vs 이과 여전히 의미 있나?",
       author: "학생A",
       tag: "교육",
-      anonymity: false,
+      anonymity: true,
       like_count: 2,
       comment_count: 1,
       create_time: "2025-10-06T16:00:00Z",
@@ -224,7 +225,7 @@ export const BOARD_DUMMY: Record<string, BoardContent[]> = {
       create_time: "2025-11-01T21:00:00Z",
       contents: "copy()랑 deepcopy() 정확한 차이가 뭔가요?",
       comments: [
-        makeComment(1, "파이썬고인물", "mutable vs immutable 차이 때문"),
+        makeComment(1, "파이썬고인물", "mutable vs immutable 차이 때문", true),
       ],
     },
   ],
