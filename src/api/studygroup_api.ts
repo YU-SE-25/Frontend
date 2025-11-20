@@ -65,3 +65,10 @@ export async function fetchAvailableTags(): Promise<string[]> {
   // 실제 API를 사용하지 않고 더미 데이터를 반환하는 경우:
   return DUMMY_TAGS;
 }
+
+//활동 기록(추후 수정)
+export interface ActivityLog {
+  icon: string; // 이모지
+  text: string; // 내용
+  date: string; // 날짜
+}
