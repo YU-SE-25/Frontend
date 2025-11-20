@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import type { IProblem } from "../../api/problem_api";
@@ -9,11 +9,9 @@ import {
   saveDraft,
   loadDraft,
   submitCode,
-  getSubmissionStatus,
 } from "../../api/codeeditor_api";
 
 import CodeEditorView from "./CodeEditorView";
-import CodeResult from "./CodeResult";
 
 import {
   ProblemSolveWrapper,
@@ -54,9 +52,6 @@ export default function ProblemSolvePage() {
 
   /* 팝업 */
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  /* 제출 중 polling 여부 */
-  const [isPolling, setIsPolling] = useState(false);
 
   /* 문제 로딩*/
   useEffect(() => {
@@ -131,6 +126,7 @@ export default function ProblemSolvePage() {
   }, [problemId]);
 
   /* 제출 + 채점 */
+  const nav = useNavigate();
   const handleSubmit = useCallback(async () => {
     if (!problemId) return;
 
@@ -139,19 +135,17 @@ export default function ProblemSolvePage() {
       code,
       language,
     });
+    //const submissionId = submission.submissionId;
 
-    const submissionId = submission.submissionId;
-
-    setIsPolling(true);
-
+    //deprecated
+    /*
     let finalData: ExecutionResult | null = null;
-
+  
     const poll = setInterval(async () => {
       const statusData = await getSubmissionStatus(submissionId);
-
+  
       if (statusData.status === "GRADING") return;
-
-      // 채점 완료 → 팝업에 사용할 데이터 만들기
+  
       finalData = {
         status: statusData.status,
         time: `${statusData.runtime ?? 0}ms`,
@@ -161,13 +155,17 @@ export default function ProblemSolvePage() {
             ? `${statusData.passedTestCases}/${statusData.totalTestCases}`
             : "0/0",
       };
-
+  
       clearInterval(poll);
-      setIsPolling(false);
+  
       setExecutionResult(finalData);
       setIsModalOpen(true);
     }, 900);
-  }, [code, language, problemId]);
+    */
+
+    // 🔹 제출 후 결과 페이지로 이동
+    nav("/problems/:username/solved?id=" + problemId + "&showResult=true");
+  }, [code, language, problemId, nav]);
 
   if (loading) return <ProblemSolveWrapper>로딩 중...</ProblemSolveWrapper>;
   if (!problemData)
@@ -175,18 +173,6 @@ export default function ProblemSolvePage() {
 
   return (
     <>
-      {/*결과 팝업 */}
-      {isModalOpen && executionResult && (
-        <CodeResult
-          result={executionResult}
-          onClose={() => setIsModalOpen(false)}
-          onRetry={() => setIsModalOpen(false)}
-          onMySubmissions={() =>
-            navigate(`/submissions?problemId=${problemId}`)
-          }
-        />
-      )}
-
       <ProblemSolveWrapper>
         {/* 왼쪽: 문제 정보 */}
         <ProblemInfoContainer>
@@ -242,7 +228,6 @@ export default function ProblemSolvePage() {
             onSubmit={handleSubmit}
             language={language}
             onLanguageChange={setLanguage}
-            isSubmitting={isPolling}
           />
         </EditorPanelContainer>
       </ProblemSolveWrapper>

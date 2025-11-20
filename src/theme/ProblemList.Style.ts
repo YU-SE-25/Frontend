@@ -323,6 +323,7 @@ export const TagChip = styled.span<{ $active?: boolean }>`
   border-radius: 13px;
   font-size: 15px;
   font-weight: 500;
+  cursor: pointer;
 `;
 
 //문제 목록 속 태그 칩
