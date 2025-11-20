@@ -23,7 +23,7 @@ import {
   PageTitleContainer,
   AddButton,
 } from "../../theme/ProblemList.Style";
-import BoardDetail from "./Boarddetail";
+import BoardDetail from "./BoardDetail";
 
 type BoardCategory = "free" | "discussion" | "qna";
 // 댓글(Comment)
