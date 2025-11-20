@@ -2,6 +2,7 @@ import type {
   StudyGroup,
   AssignedProblem,
   AssignedProblemList,
+  ActivityLog,
 } from "../studygroup_api";
 
 export const DUMMY_GROUP_DETAIL: StudyGroup = {
@@ -123,4 +124,25 @@ export const DUMMY_ASSIGNED_LISTS: AssignedProblemList[] = [
   },
 ];
 
-export const DUMMY_TAGS = ["알고리즘", "DP", "그래프", "입문", "심화"];
+export const DUMMY_ACTIVITY_LOGS: ActivityLog[] = [
+  {
+    icon: "👤",
+    text: "홍길동님이 그룹에 가입했습니다.",
+    date: "2025-11-01",
+  },
+  {
+    icon: "🗑️",
+    text: "그룹장이 멤버 김코딩님을 강퇴했습니다.",
+    date: "2025-11-02",
+  },
+  {
+    icon: "🧩",
+    text: "문제 리스트 'DP 기초 5문제'가 추가되었습니다.",
+    date: "2025-11-02",
+  },
+  {
+    icon: "💬",
+    text: "새로운 토론글이 작성되었습니다.",
+    date: "2025-11-03",
+  },
+];

@@ -319,3 +319,18 @@ export const CardText = styled.p`
 export const CardStrong = styled.strong`
   color: ${({ theme }) => theme.textColor};
 `;
+
+//변경사항 저장
+export const SaveButton = styled.button`
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+
+  background-color: ${({ theme }) => theme.logoColor};
+  color: ${({ theme }) => theme.bgColor};
+
+  transition: background-color 0.15s ease;
+`;
