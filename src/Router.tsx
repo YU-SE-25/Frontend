@@ -27,6 +27,7 @@ import MyPageScreen from "./screens/mypage/MypageScreen";
 import MyPageRedirect from "./screens/mypage/MypageRedirect";
 import CodeResult from "./screens/problem/CodeResult";
 import MySolvedProblem from "./screens/problem/MySolvedProblem";
+import BoardWrite from "./screens/board/BoardWrite";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +49,7 @@ const router = createBrowserRouter([
       },
 
       { path: "board/:category", element: <Board /> },
+      { path: "board/:category/write", element: <BoardWrite /> },
 
       { path: "studygroup-main", element: <StudyGroupMain /> },
       { path: "studygroup/:groupId", element: <StudyGroupDetail /> },
