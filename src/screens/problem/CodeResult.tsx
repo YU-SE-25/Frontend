@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { getSubmissionStatus } from "../../api/codeeditor_api";
 
 interface GradingResponse {
@@ -304,7 +304,8 @@ const ActionButton = styled.button<{ variant?: "primary" | "ghost" }>`
 `;
 
 export default function CodeResult() {
-  const { id } = useParams();
+  const [sp] = useSearchParams();
+  const id = sp.get("id");
   const navigate = useNavigate();
 
   const rawId = localStorage.getItem("lastSubmissionId");
@@ -371,163 +372,161 @@ export default function CodeResult() {
       : `실패한 테스트케이스: ${data?.failedTestCase ?? "-"} 번`;
 
   return (
-    <Page>
-      <ResultCard>
-        <HeaderRow>
-          <TitleBlock>
-            <ServiceTag>
-              <Dot />
-              채점 결과
-            </ServiceTag>
-            <Title>문제 #{id} 채점 리포트</Title>
-            <Subtitle>방금 제출한 코드에 대한 온라인 채점 결과입니다.</Subtitle>
-          </TitleBlock>
-          <MetaBlock>
-            <div>
-              언어: <Strong>C++</Strong>
-            </div>
-            <div>
-              시도 횟수: <Strong>1회</Strong>
-            </div>
-            <div>
-              제출 시간: <Strong>방금 전</Strong>
-            </div>
-          </MetaBlock>
-        </HeaderRow>
+    <ResultCard>
+      <HeaderRow>
+        <TitleBlock>
+          <ServiceTag>
+            <Dot />
+            채점 결과
+          </ServiceTag>
+          <Title>문제 #{id} 채점 리포트</Title>
+          <Subtitle>방금 제출한 코드에 대한 온라인 채점 결과입니다.</Subtitle>
+        </TitleBlock>
+        <MetaBlock>
+          <div>
+            언어: <Strong>C++</Strong>
+          </div>
+          <div>
+            시도 횟수: <Strong>1회</Strong>
+          </div>
+          <div>
+            제출 시간: <Strong>방금 전</Strong>
+          </div>
+        </MetaBlock>
+      </HeaderRow>
 
-        <StatusSection>
-          <StatusTextBlock>
-            <StatusLabelRow>
-              <StatusLabel tone={tone}>{statusLabelText}</StatusLabel>
-            </StatusLabelRow>
-            <StatusMain>{statusMainText}</StatusMain>
-            <StatusSub>{statusSubText}</StatusSub>
-          </StatusTextBlock>
+      <StatusSection>
+        <StatusTextBlock>
+          <StatusLabelRow>
+            <StatusLabel tone={tone}>{statusLabelText}</StatusLabel>
+          </StatusLabelRow>
+          <StatusMain>{statusMainText}</StatusMain>
+          <StatusSub>{statusSubText}</StatusSub>
+        </StatusTextBlock>
 
-          <ProgressWrapper>
-            <ProgressBar>
-              <ProgressInner
-                percent={status === "PENDING" ? 15 : progressPercent || 8}
-              />
-            </ProgressBar>
-            <ProgressLabel>
-              <span>
-                {status === "PENDING"
-                  ? "채점을 준비하고 있어요…"
-                  : status === "GRADING"
-                  ? `현재 ${currentCases} / ${totalCases} 테스트 진행중`
-                  : status === "CA"
-                  ? "모든 테스트를 통과했습니다"
-                  : `통과한 테스트: ${data?.passedTestCases ?? 0} / ${
-                      data?.totalTestCases ?? 0
-                    }`}
-              </span>
-              <span>
-                <GlowNumber>
-                  {status === "PENDING"
-                    ? "--"
-                    : status === "GRADING"
-                    ? `${progressPercent}%`
-                    : status === "CA"
-                    ? "100%"
-                    : `${progressPercent || 0}%`}
-                </GlowNumber>
-              </span>
-            </ProgressLabel>
-          </ProgressWrapper>
-        </StatusSection>
-
-        <StatsRow>
-          <StatCard>
-            <StatLabel>통과한 테스트</StatLabel>
-            <StatValue>
-              {data?.passedTestCases ?? 0}
-              {data?.totalTestCases
-                ? ` / ${data.totalTestCases}`
-                : status === "PENDING" || status === "GRADING"
-                ? " (집계 중)"
-                : ""}
-            </StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>실패한 테스트</StatLabel>
-            <StatValue>
-              {status === "CA"
-                ? "0"
-                : data?.failedTestCase
-                ? `#${data.failedTestCase}번`
-                : status === "PENDING" || status === "GRADING"
-                ? "집계 중"
-                : "-"}
-            </StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>실행 시간</StatLabel>
-            <StatValue>
-              {data?.runtime != null
-                ? `${data.runtime} ms`
-                : status === "PENDING" || status === "GRADING"
-                ? "측정 중"
-                : "-"}
-            </StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>메모리 사용량</StatLabel>
-            <StatValue>
-              {data?.memory != null
-                ? `${data.memory} KB`
-                : status === "PENDING" || status === "GRADING"
-                ? "측정 중"
-                : "-"}
-            </StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>채점 ID</StatLabel>
-            <StatValue>{submissionId ?? <span>정보 없음</span>}</StatValue>
-          </StatCard>
-          <StatCard>
-            <StatLabel>최종 결과</StatLabel>
-            <StatValue>
+        <ProgressWrapper>
+          <ProgressBar>
+            <ProgressInner
+              percent={status === "PENDING" ? 15 : progressPercent || 8}
+            />
+          </ProgressBar>
+          <ProgressLabel>
+            <span>
               {status === "PENDING"
-                ? "대기중"
+                ? "채점을 준비하고 있어요…"
                 : status === "GRADING"
-                ? "채점중"
+                ? `현재 ${currentCases} / ${totalCases} 테스트 진행중`
                 : status === "CA"
-                ? "맞았습니다!"
-                : "틀렸습니다"}
-            </StatValue>
-          </StatCard>
-        </StatsRow>
+                ? "모든 테스트를 통과했습니다"
+                : `통과한 테스트: ${data?.passedTestCases ?? 0} / ${
+                    data?.totalTestCases ?? 0
+                  }`}
+            </span>
+            <span>
+              <GlowNumber>
+                {status === "PENDING"
+                  ? "--"
+                  : status === "GRADING"
+                  ? `${progressPercent}%`
+                  : status === "CA"
+                  ? "100%"
+                  : `${progressPercent || 0}%`}
+              </GlowNumber>
+            </span>
+          </ProgressLabel>
+        </ProgressWrapper>
+      </StatusSection>
 
-        <FooterRow>
-          <HintText>
-            {status === "PENDING" &&
-              "채점 서버와 연결 중입니다. 잠시만 기다려 주세요."}
-            {status === "GRADING" &&
-              "테스트케이스 수가 많을수록 시간이 조금 더 걸릴 수 있어요."}
-            {status === "CA" &&
-              "이제 다른 난이도의 문제를 풀어보거나, 다른 언어로 다시 도전해 볼 수 있어요."}
-            {status !== "PENDING" &&
-              status !== "GRADING" &&
-              status !== "CA" &&
-              "실패한 테스트케이스의 입출력을 확인하고 코드를 수정해 보세요."}
-          </HintText>
-          <ButtonGroup>
-            <ActionButton
-              variant="ghost"
-              onClick={() => navigate(`/problem-list?ids=${id}`)}
-            >
-              비슷한 문제 보기
-            </ActionButton>
-            <ActionButton
-              variant="primary"
-              onClick={() => navigate(`/problems/${id}`)}
-            >
-              에디터로 돌아가기
-            </ActionButton>
-          </ButtonGroup>
-        </FooterRow>
-      </ResultCard>
-    </Page>
+      <StatsRow>
+        <StatCard>
+          <StatLabel>통과한 테스트</StatLabel>
+          <StatValue>
+            {data?.passedTestCases ?? 0}
+            {data?.totalTestCases
+              ? ` / ${data.totalTestCases}`
+              : status === "PENDING" || status === "GRADING"
+              ? " (집계 중)"
+              : ""}
+          </StatValue>
+        </StatCard>
+        <StatCard>
+          <StatLabel>실패한 테스트</StatLabel>
+          <StatValue>
+            {status === "CA"
+              ? "0"
+              : data?.failedTestCase
+              ? `#${data.failedTestCase}번`
+              : status === "PENDING" || status === "GRADING"
+              ? "집계 중"
+              : "-"}
+          </StatValue>
+        </StatCard>
+        <StatCard>
+          <StatLabel>실행 시간</StatLabel>
+          <StatValue>
+            {data?.runtime != null
+              ? `${data.runtime} ms`
+              : status === "PENDING" || status === "GRADING"
+              ? "측정 중"
+              : "-"}
+          </StatValue>
+        </StatCard>
+        <StatCard>
+          <StatLabel>메모리 사용량</StatLabel>
+          <StatValue>
+            {data?.memory != null
+              ? `${data.memory} KB`
+              : status === "PENDING" || status === "GRADING"
+              ? "측정 중"
+              : "-"}
+          </StatValue>
+        </StatCard>
+        <StatCard>
+          <StatLabel>채점 ID</StatLabel>
+          <StatValue>{submissionId ?? <span>정보 없음</span>}</StatValue>
+        </StatCard>
+        <StatCard>
+          <StatLabel>최종 결과</StatLabel>
+          <StatValue>
+            {status === "PENDING"
+              ? "대기중"
+              : status === "GRADING"
+              ? "채점중"
+              : status === "CA"
+              ? "맞았습니다!"
+              : "틀렸습니다"}
+          </StatValue>
+        </StatCard>
+      </StatsRow>
+
+      <FooterRow>
+        <HintText>
+          {status === "PENDING" &&
+            "채점 서버와 연결 중입니다. 잠시만 기다려 주세요."}
+          {status === "GRADING" &&
+            "테스트케이스 수가 많을수록 시간이 조금 더 걸릴 수 있어요."}
+          {status === "CA" &&
+            "이제 다른 난이도의 문제를 풀어보거나, 다른 언어로 다시 도전해 볼 수 있어요."}
+          {status !== "PENDING" &&
+            status !== "GRADING" &&
+            status !== "CA" &&
+            "실패한 테스트케이스의 입출력을 확인하고 코드를 수정해 보세요."}
+        </HintText>
+        <ButtonGroup>
+          <ActionButton
+            variant="ghost"
+            onClick={() => navigate(`/problem-list?ids=${id}`)}
+          >
+            비슷한 문제 보기
+          </ActionButton>
+          <ActionButton
+            variant="primary"
+            onClick={() => navigate(`/problems/${id}/solve`)}
+          >
+            에디터로 돌아가기
+          </ActionButton>
+        </ButtonGroup>
+      </FooterRow>
+    </ResultCard>
   );
 }

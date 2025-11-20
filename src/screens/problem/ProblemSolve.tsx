@@ -9,11 +9,9 @@ import {
   saveDraft,
   loadDraft,
   submitCode,
-  getSubmissionStatus,
 } from "../../api/codeeditor_api";
 
 import CodeEditorView from "./CodeEditorView";
-import CodeResult from "./CodeResult";
 
 import {
   ProblemSolveWrapper,
@@ -137,7 +135,7 @@ export default function ProblemSolvePage() {
       code,
       language,
     });
-    const submissionId = submission.submissionId;
+    //const submissionId = submission.submissionId;
 
     //deprecated
     /*
@@ -166,7 +164,7 @@ export default function ProblemSolvePage() {
     */
 
     // 🔹 제출 후 결과 페이지로 이동
-    nav("/problems/result");
+    nav("/problems/:username/solved?id=" + problemId + "&showResult=true");
   }, [code, language, problemId, nav]);
 
   if (loading) return <ProblemSolveWrapper>로딩 중...</ProblemSolveWrapper>;
