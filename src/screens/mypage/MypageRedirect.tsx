@@ -11,7 +11,6 @@ export default function MyPageRedirect() {
     // 로그인 정보가 없으면 로그인 페이지로 이동
     return <Navigate to="/login" replace />;
   }
-  console.log(userProfile);
   // 로그인되어 있으면 해당 유저의 마이페이지로 이동
   return <Navigate to={`/mypage/${encodeURIComponent(username)}`} replace />;
 }

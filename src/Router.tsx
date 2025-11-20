@@ -25,6 +25,7 @@ import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 import NotFound from "./screens/NotFound";
 import MyPageScreen from "./screens/mypage/MypageScreen";
 import MyPageRedirect from "./screens/mypage/MypageRedirect";
+import CodeResult from "./screens/problem/CodeResult";
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,8 @@ const router = createBrowserRouter([
       { path: "problem-detail/:problemId", element: <ProblemDetail /> },
       { path: "problem-add", element: <ProblemAdd /> },
       { path: "problems/:problemId/solve", element: <ProblemSolve /> },
+      { path: "problems/result", element: <CodeResult /> },
+
       //문제분석용 임시 라우터(그대로 써도되긴함)
       {
         path: "problems/:problemId/submissions/:submissionId",

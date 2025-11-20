@@ -8,6 +8,7 @@ import type { DefaultTheme } from "styled-components";
 
 **************************************************/
 export const darkTheme: DefaultTheme = {
+  mode: "dark",
   bgColor: "#191919",
   textColor: "#fefefe",
   focusColor: "#ffcb6b",
@@ -16,9 +17,13 @@ export const darkTheme: DefaultTheme = {
   authHoverBgColor: "#333333",
   authHoverTextColor: "#fefefe",
   authActiveBgColor: "#555555",
+  bgCardColor: "#242424",
+  cardColor: "#f0f0f0",
+  muteColor: "#6B7280",
 };
 
 export const lightTheme: DefaultTheme = {
+  mode: "light",
   textColor: "#191919",
   bgColor: "#fefefe",
   focusColor: "#ffcb6b",
@@ -27,4 +32,7 @@ export const lightTheme: DefaultTheme = {
   authHoverBgColor: "#c4c4c4",
   authHoverTextColor: "#fefefe",
   authActiveBgColor: "#555555",
+  bgCardColor: "#f7f7f7",
+  cardColor: "#1e1e1e",
+  muteColor: "#9ca3af",
 };
