@@ -1,4 +1,4 @@
-import axios from "axios";
+//import axios from "axios";
 import type { LoginResponse } from "../atoms";
 
 interface LoginPayload {
@@ -33,10 +33,11 @@ export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
   };
 }
 
-// ===== 실제 API 통신 (백엔드 준비 후 활성화) =====
 /*
+// ===== 실제 API 통신 (백엔드 준비 후 활성화) =====
+
 export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
   const response = await axios.post<LoginResponse>("/auth/login", data);
   return response.data;
 }
-*/
+  */

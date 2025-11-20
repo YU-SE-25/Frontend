@@ -12,6 +12,7 @@ import StudyGroupSidebar from "./StudyGroupSidebar";
 import ProblemListTab from "./ProblemListTab";
 import { DUMMY_GROUP_DETAIL } from "../../api/dummy/studygroupdetail_dummy";
 import type { StudyGroup } from "../../api/studygroup_api";
+import BoardList from "../board/BoardList";
 
 export default function StudyGroupDetailPage() {
   const group: StudyGroup = DUMMY_GROUP_DETAIL;
@@ -50,7 +51,9 @@ export default function StudyGroupDetailPage() {
 
           <TabContent>
             {activeTab === "problem" && <ProblemListTab />}
-            {activeTab === "discussion" && <div>📝 토론 게시판 준비 중...</div>}
+            {activeTab === "discussion" && (
+              <BoardList mode="study" groupId={group.group_id} />
+            )}
             {activeTab === "activity" && <div>📊 활동 기록 준비 중...</div>}
           </TabContent>
         </MainContentContainer>

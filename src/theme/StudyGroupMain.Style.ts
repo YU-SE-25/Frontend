@@ -102,8 +102,13 @@ export const MyGroupCard = styled(BaseCard)`
 `;
 
 export const GroupCard = styled(BaseCard)`
-  background-color: ${(props) => props.theme.headerBgColor};
-  border: 1px solid ${(props) => props.theme.authHoverBgColor};
+  background-color: ${({ theme }) => theme.headerBgColor};
+  border: 1px solid ${({ theme }) => theme.authHoverBgColor};
+
+  & p,
+  & strong {
+    color: ${({ theme }) => theme.textColor} !important;
+  }
 `;
 
 export const CardHeader = styled.div`
@@ -304,4 +309,13 @@ export const CloseButton = styled.button`
   &:hover {
     opacity: 0.7;
   }
+`;
+
+export const CardText = styled.p`
+  color: ${({ theme }) => theme.textColor};
+  margin: 6px 0;
+`;
+
+export const CardStrong = styled.strong`
+  color: ${({ theme }) => theme.textColor};
 `;
