@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudyGroup from "./StudyGroupCreate";
+
 import {
   Wrapper,
   HeaderContainer,
@@ -25,66 +26,72 @@ import {
   CancelButton,
   CloseButton,
 } from "../../theme/StudyGroupMain.Style";
-//import type { StudyGroup } from "../../api/studygroup_api";
-import { DUMMY_GROUPS, MY_GROUPS } from "../../api/dummy/studygroup_dummy";
+
+import {
+  fetchStudyGroups,
+  joinStudyGroup,
+  type StudyGroup,
+} from "../../api/studygroup_api";
 
 export default function StudyGroupListPage() {
   const navigate = useNavigate();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  // 내 소속 스터디 그룹을 상태로 관리 (가입 후 UI 갱신용)
-  const [myGroups, setMyGroups] = useState<typeof MY_GROUPS>(MY_GROUPS);
+  const [groups, setGroups] = useState<StudyGroup[]>([]);
+  const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<
-    (typeof DUMMY_GROUPS)[number] | null
-  >(null);
+  const [selectedGroup, setSelectedGroup] = useState<StudyGroup | null>(null);
 
-  //검색 필터링
+  //초기 데이터 로딩
+  useEffect(() => {
+    const load = async () => {
+      const all = await fetchStudyGroups();
+      setGroups(all);
+
+      const mine = all.filter((g) => g.myRole !== "NONE");
+      setMyGroups(mine);
+    };
+
+    load();
+  }, []);
+
+  // 검색 필터
   const filteredGroups = useMemo(() => {
     const lowered = searchTerm.toLowerCase();
-    if (!lowered) return DUMMY_GROUPS;
+    return lowered
+      ? groups.filter((g) => g.groupName.toLowerCase().includes(lowered))
+      : groups;
+  }, [searchTerm, groups]);
 
-    return DUMMY_GROUPS.filter((group) =>
-      group.group_name.toLowerCase().includes(lowered)
-    );
-  }, [searchTerm]);
-
-  //내가 가입한 그룹 ID 집합 (상세 화면 접근 가능 여부 판단용)
+  // 내가 가입한 그룹 id set
   const myGroupIds = useMemo(
-    () => new Set(myGroups.map((g) => g.group_id)),
+    () => new Set(myGroups.map((g) => g.groupId)),
     [myGroups]
   );
 
-  //그룹 카드 클릭
+  // 그룹 카드 클릭 시
   const handleGroupClick = (groupId: number) => {
     if (myGroupIds.has(groupId)) {
-      // 이미 가입된 그룹 → 바로 상세 페이지로 이동
       navigate(`/studygroup/${groupId}`);
       return;
     }
 
-    // 아직 가입 안 한 그룹 → 가입 확인 팝업
-    const target = DUMMY_GROUPS.find((g) => g.group_id === groupId);
+    const target = groups.find((g) => g.groupId === groupId);
     if (!target) return;
 
     setSelectedGroup(target);
     setShowJoinModal(true);
   };
 
-  //가입 팝업에서 "예" 눌렀을 때 동작 (FE 더미 기준)
-  const handleConfirmJoin = () => {
+  // "예, 가입하기"
+  const handleConfirmJoin = async () => {
     if (!selectedGroup) return;
-
-    // 이미 myGroups에 있는지 확인 후 없으면 추가
-    setMyGroups((prev) => {
-      if (prev.some((g) => g.group_id === selectedGroup.group_id)) {
-        return prev;
-      }
-      return [...prev, selectedGroup];
-    });
+    await joinStudyGroup(selectedGroup.groupId);
+    setMyGroups((prev) => [...prev, selectedGroup]);
 
     setShowJoinModal(false);
-    navigate(`/studygroup/${selectedGroup.group_id}`);
+    navigate(`/studygroup/${selectedGroup.groupId}`);
   };
 
   return (
@@ -105,30 +112,25 @@ export default function StudyGroupListPage() {
           {myGroups.length > 0 ? (
             myGroups.map((group) => (
               <MyGroupCard
-                key={group.group_id}
-                onClick={() => handleGroupClick(group.group_id)} // ⭐ 클릭 시 접근 제어
+                key={group.groupId}
+                onClick={() => handleGroupClick(group.groupId)}
               >
                 <CardHeader>
-                  <h3>{group.group_name}</h3>
-                  <p>{new Date(group.created_at).toLocaleDateString()}</p>
+                  <h3>{group.groupName}</h3>
                 </CardHeader>
-                <GroupLeader>그룹장: {group.leader_name}</GroupLeader>
-                <p>{group.group_description}</p>
 
-                <>
-                  <CardText>
-                    <CardStrong>목표:</CardStrong> {group.group_goal}
-                  </CardText>
+                <GroupLeader>그룹장: {group.leaderName}</GroupLeader>
+                <p>{group.groupDescription}</p>
 
-                  <CardText>
-                    <CardStrong>정원:</CardStrong> {group.groupmember_id.length}
-                    /{group.max_members}
-                  </CardText>
-                </>
+                <CardText>
+                  <CardStrong>정원:</CardStrong> {group.currentMembers}/
+                  {group.maxMembers}
+                </CardText>
 
                 <CardTags>
                   <span>{group.myRole === "LEADER" ? "리더" : "멤버"}</span>
                 </CardTags>
+
                 <JoinButton>입장하기</JoinButton>
               </MyGroupCard>
             ))
@@ -153,24 +155,23 @@ export default function StudyGroupListPage() {
           {filteredGroups.length > 0 ? (
             filteredGroups.map((group) => (
               <GroupCard
-                key={group.group_id}
-                onClick={() => handleGroupClick(group.group_id)} // ⭐ 클릭 시 접근 제어
+                key={group.groupId}
+                onClick={() => handleGroupClick(group.groupId)}
               >
                 <CardHeader>
-                  <h3>{group.group_name}</h3>
-                  <p>{new Date(group.created_at).toLocaleDateString()}</p>
+                  <h3>{group.groupName}</h3>
                 </CardHeader>
-                <GroupLeader>그룹장: {group.leader_name}</GroupLeader>
-                <p>{group.group_description}</p>
+
+                <GroupLeader>그룹장: {group.leaderName}</GroupLeader>
+                <p>{group.groupDescription}</p>
+
                 <p>
-                  <strong>목표:</strong> {group.group_goal}
+                  <strong>정원:</strong> {group.currentMembers}/
+                  {group.maxMembers}
                 </p>
-                <p>
-                  <strong>정원:</strong> {group.groupmember_id.length}/
-                  {group.max_members}
-                </p>
+
                 <JoinButton>
-                  {myGroupIds.has(group.group_id) ? "입장하기" : "가입하기"}
+                  {myGroupIds.has(group.groupId) ? "입장하기" : "가입하기"}
                 </JoinButton>
               </GroupCard>
             ))
@@ -180,22 +181,26 @@ export default function StudyGroupListPage() {
         </GroupGrid>
       </SectionContainer>
 
+      {/* 생성 모달 */}
       {showCreateModal && (
         <CreateStudyGroup onClose={() => setShowCreateModal(false)} />
       )}
 
+      {/* 가입 모달 */}
       {showJoinModal && selectedGroup && (
         <ModalOverlay>
           <ModalContent>
             <CloseButton onClick={() => setShowJoinModal(false)}>×</CloseButton>
             <h2>스터디 그룹 가입</h2>
+
             <p>
-              <strong>{selectedGroup.group_name}</strong> 그룹에
+              <strong>{selectedGroup.groupName}</strong> 그룹에
               가입하시겠습니까?
             </p>
+
             <p>
-              현재 인원: {selectedGroup.groupmember_id.length} /{" "}
-              {selectedGroup.max_members}
+              현재 인원: {selectedGroup.currentMembers}/
+              {selectedGroup.maxMembers}
             </p>
 
             <ButtonContainer>

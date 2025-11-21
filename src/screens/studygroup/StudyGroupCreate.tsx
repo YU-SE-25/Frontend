@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ModalOverlay,
   ModalContent,
@@ -12,8 +12,9 @@ import {
   CancelButton,
 } from "../../theme/StudyGroupMain.Style";
 
-import type { GroupCreatePayload } from "../../api/studygroup_api";
-import { DUMMY_GROUPS } from "../../api/dummy/studygroup_dummy";
+import { createStudyGroup, fetchStudyGroups } from "../../api/studygroup_api";
+
+import type { StudyGroup } from "../../api/studygroup_api";
 
 interface Props {
   onClose: () => void;
@@ -21,46 +22,52 @@ interface Props {
 
 export default function CreateStudyGroup({ onClose }: Props) {
   const [groupName, setGroupName] = useState("");
-  const [groupGoal, setGroupGoal] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [maxMembers, setMaxMembers] = useState(10);
   const [error, setError] = useState("");
 
-  //그룹명 중복 여부 체크 (더미 기준)
+  // 전체 그룹 받아오기
+  const [allGroups, setAllGroups] = useState<StudyGroup[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const list = await fetchStudyGroups(); // 지금은 더미, 나중엔 API, 따로 바꿀거없음
+      setAllGroups(list);
+    };
+    load();
+  }, []);
+
+  // 중복 검사
   const isDuplicateName = (name: string) => {
-    return DUMMY_GROUPS.some((g) => g.group_name.trim() === name.trim());
+    return allGroups.some((g) => g.groupName.trim() === name.trim());
   };
 
-  //생성 처리
-  const handleSubmit = () => {
+  // 생성 처리
+  const handleSubmit = async () => {
     setError("");
 
-    // 필수 검사
-    if (!groupName.trim() || !groupGoal.trim()) {
-      setError("필수 입력 값을 작성해주세요.");
+    if (!groupName.trim()) {
+      setError("그룹명을 입력해주세요.");
       return;
     }
 
-    // 중복 검사
     if (isDuplicateName(groupName)) {
       setError("이미 존재하는 그룹명입니다.");
       return;
     }
 
-    const payload: GroupCreatePayload = {
-      group_name: groupName.trim(),
-      group_goal: groupGoal.trim(),
-      group_description: groupDescription.trim(),
-      max_members: maxMembers,
+    const payload = {
+      groupName: groupName.trim(),
+      groupDescription: groupDescription.trim(),
+      maxMembers,
     };
 
-    console.log("생성 요청 payload:", payload);
+    console.log("payload:", payload);
 
-    //실제 API 연동 전까지 FE 더미 시뮬레이션
-    setTimeout(() => {
-      alert("스터디 그룹이 성공적으로 생성되었습니다!");
-      onClose();
-    }, 500);
+    await createStudyGroup(payload);
+
+    alert("스터디 그룹이 성공적으로 생성되었습니다!");
+    onClose();
   };
 
   return (
@@ -71,20 +78,11 @@ export default function CreateStudyGroup({ onClose }: Props) {
         <h2>스터디 그룹 생성</h2>
 
         <FormRow>
-          <Label>그룹명 *</Label>
+          <Label>그룹명</Label>
           <InputField
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
-            placeholder="예: 알고리즘 뽀개기"
-          />
-        </FormRow>
-
-        <FormRow>
-          <Label>그룹 목표 *</Label>
-          <InputField
-            value={groupGoal}
-            onChange={(e) => setGroupGoal(e.target.value)}
-            placeholder="예: 백준 골드 달성"
+            placeholder="예: 알고리즘 스터디"
           />
         </FormRow>
 
@@ -98,7 +96,7 @@ export default function CreateStudyGroup({ onClose }: Props) {
         </FormRow>
 
         <FormRow>
-          <Label>최대 인원 *</Label>
+          <Label>최대 인원</Label>
           <InputField
             type="number"
             min={1}
@@ -113,8 +111,15 @@ export default function CreateStudyGroup({ onClose }: Props) {
             {error}
           </p>
         )}
+        {error && (
+          <p style={{ color: "red", marginTop: -10, marginBottom: 10 }}>
+            {error}
+          </p>
+        )}
 
         <ButtonContainer>
+          <CancelButton onClick={onClose}>취소</CancelButton>
+          <AddButton onClick={handleSubmit}>생성하기</AddButton>
           <CancelButton onClick={onClose}>취소</CancelButton>
           <AddButton onClick={handleSubmit}>생성하기</AddButton>
         </ButtonContainer>

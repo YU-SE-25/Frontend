@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   TabContentHeader,
   ProblemListAddButton,
@@ -17,32 +17,55 @@ import {
 } from "../../theme/StudyGroupDetail.Style";
 
 import type { AssignedProblemList, GroupRole } from "../../api/studygroup_api";
-import { DUMMY_ASSIGNED_LISTS } from "../../api/dummy/studygroupdetail_dummy";
+import {
+  fetchAssignedProblemLists,
+  fetchAssignedProblemListDetail,
+} from "../../api/studygroup_api";
 
 interface Props {
   role: GroupRole | undefined;
+  groupId: number;
 }
 
-export default function ProblemListTab({ role }: Props) {
-  // 더미 데이터
-  const [assignedLists, setAssignedLists] =
-    useState<AssignedProblemList[]>(DUMMY_ASSIGNED_LISTS);
-
-  // 아코디언 펼침 여부
+export default function ProblemListTab({ role, groupId }: Props) {
+  const [lists, setLists] = useState<AssignedProblemList[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
 
-  const toggleExpand = (id: number) => {
-    setExpanded(expanded === id ? null : id);
+  // 전체 문제 리스트 불러오기
+  useEffect(() => {
+    const load = async () => {
+      const data = await fetchAssignedProblemLists(groupId);
+      setLists(data);
+    };
+    load();
+  }, [groupId]);
+
+  // 펼칠 때 문제 상세 데이터 가져오기
+  const toggleExpand = async (problemListId: number) => {
+    if (expanded === problemListId) {
+      setExpanded(null);
+      return;
+    }
+
+    // 상세 데이터를 불러와야 한다
+    const detail = await fetchAssignedProblemListDetail(groupId, problemListId);
+
+    if (!detail) return;
+
+    // 상세 데이터로 lists 갱신
+    setLists((prev) =>
+      prev.map((list) => (list.problemListId === problemListId ? detail : list))
+    );
+
+    setExpanded(problemListId);
   };
 
-  // 그룹장만 새로운 문제 리스트 추가 가능
   const handleAddProblemList = () => {
     if (role !== "LEADER") {
       alert("그룹장만 문제를 지정할 수 있습니다.");
       return;
     }
 
-    // 실제 기능은 나중에 구현 (검색 모달)
     alert("문제 리스트 추가 기능은 추후 구현 예정입니다!");
   };
 
@@ -51,7 +74,6 @@ export default function ProblemListTab({ role }: Props) {
       <TabContentHeader>
         <h3>지정된 문제 목록</h3>
 
-        {/* 그룹장일 때만 보임 */}
         {role === "LEADER" && (
           <ProblemListAddButton onClick={handleAddProblemList}>
             + 문제 리스트 추가
@@ -60,17 +82,17 @@ export default function ProblemListTab({ role }: Props) {
       </TabContentHeader>
 
       <ProblemAccordionContainer>
-        {assignedLists.map((list) => {
-          const isOpen = expanded === list.assignedId;
+        {lists.map((list) => {
+          const isOpen = expanded === list.problemListId;
 
           return (
-            <ProblemAccordionItem key={list.assignedId} $isExpanded={isOpen}>
-              <AccordionHeader onClick={() => toggleExpand(list.assignedId)}>
+            <ProblemAccordionItem key={list.problemListId} $isExpanded={isOpen}>
+              <AccordionHeader onClick={() => toggleExpand(list.problemListId)}>
                 <ProblemSummary>{list.listTitle}</ProblemSummary>
 
                 <ProblemListInfo>
                   <ProblemSummarySmall>
-                    {list.submittedCount}/{list.totalProblems}
+                    {list.submittedCount}/{list.problems.length}
                   </ProblemSummarySmall>
                   <ProblemSummarySmall>
                     마감: {list.dueDate}
@@ -78,27 +100,22 @@ export default function ProblemListTab({ role }: Props) {
                 </ProblemListInfo>
               </AccordionHeader>
 
-              {/* 상세 문제 목록 */}
               {isOpen && (
                 <ProblemDetailList>
-                  {list.problems.map((problem) => (
-                    <ProblemDetailItem key={problem.problem_id}>
+                  {list.problems.map((p) => (
+                    <ProblemDetailItem key={p.problemId}>
                       <ProblemListInfoContainer>
-                        <ProblemTitleLink>
-                          {problem.problem_title}
-                        </ProblemTitleLink>
+                        <ProblemTitleLink>{p.problemTitle}</ProblemTitleLink>
 
                         <SubmissionDateText>
-                          {new Date(problem.create_time).toLocaleDateString()}
+                          {new Date(p.createTime).toLocaleDateString()}
                         </SubmissionDateText>
                       </ProblemListInfoContainer>
 
                       <StatusBadge
-                        $status={
-                          problem.user_status === "제출완료" ? "ok" : "none"
-                        }
+                        $status={p.userStatus === "SUBMITTED" ? "ok" : "none"}
                       >
-                        {problem.user_status}
+                        {p.userStatus === "SUBMITTED" ? "제출완료" : "미제출"}
                       </StatusBadge>
                     </ProblemDetailItem>
                   ))}
@@ -109,7 +126,7 @@ export default function ProblemListTab({ role }: Props) {
         })}
       </ProblemAccordionContainer>
 
-      {assignedLists.length === 0 && (
+      {lists.length === 0 && (
         <p style={{ opacity: 0.7 }}>지정된 문제가 없습니다.</p>
       )}
     </>
