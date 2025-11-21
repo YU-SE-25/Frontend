@@ -111,8 +111,15 @@ export default function CreateStudyGroup({ onClose }: Props) {
             {error}
           </p>
         )}
+        {error && (
+          <p style={{ color: "red", marginTop: -10, marginBottom: 10 }}>
+            {error}
+          </p>
+        )}
 
         <ButtonContainer>
+          <CancelButton onClick={onClose}>취소</CancelButton>
+          <AddButton onClick={handleSubmit}>생성하기</AddButton>
           <CancelButton onClick={onClose}>취소</CancelButton>
           <AddButton onClick={handleSubmit}>생성하기</AddButton>
         </ButtonContainer>

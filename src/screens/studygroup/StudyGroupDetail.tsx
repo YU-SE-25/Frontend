@@ -122,12 +122,14 @@ export default function StudyGroupDetailPage() {
             >
               문제 목록
             </TabButton>
+
             <TabButton
               isActive={activeTab === "discussion"}
               onClick={() => setActiveTab("discussion")}
             >
               토론 게시판
             </TabButton>
+
             <TabButton
               isActive={activeTab === "activity"}
               onClick={() => setActiveTab("activity")}
