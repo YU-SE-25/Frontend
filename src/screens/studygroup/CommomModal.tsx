@@ -1,13 +1,9 @@
-//경고창
+import { useEffect } from "react";
 import styled from "styled-components";
 
-// 전체 오버레이
 const ModalOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
   justify-content: center;
@@ -15,7 +11,6 @@ const ModalOverlay = styled.div`
   z-index: 3000;
 `;
 
-// 팝업 박스
 const ModalBox = styled.div`
   background: ${({ theme }) => theme.bgColor};
   color: ${({ theme }) => theme.textColor};
@@ -26,7 +21,7 @@ const ModalBox = styled.div`
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 
   h2 {
-    margin: 0 0 12px 0;
+    margin: 0 0 12px;
     font-size: 22px;
     font-weight: 700;
   }
@@ -39,14 +34,12 @@ const ModalBox = styled.div`
   }
 `;
 
-// 버튼 묶음
 const ButtonRow = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 `;
 
-// 취소 버튼
 const CancelButton = styled.button`
   padding: 10px 16px;
   background: ${({ theme }) => theme.authHoverBgColor};
@@ -61,7 +54,6 @@ const CancelButton = styled.button`
   }
 `;
 
-// 위험 버튼
 const DangerButton = styled.button`
   padding: 10px 16px;
   background: #e45757;
@@ -80,10 +72,10 @@ const DangerButton = styled.button`
 interface Props {
   title: string;
   message: React.ReactNode;
-  dangerText?: string; // 기본값: "확인"
-  cancelText?: string; // 기본값: "취소"
-  onConfirm: () => void; // 위험 버튼 클릭
-  onCancel: () => void; // 닫기 버튼 클릭
+  dangerText?: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
 export default function CommonModal({
@@ -94,9 +86,20 @@ export default function CommonModal({
   onConfirm,
   onCancel,
 }: Props) {
+  // ESC 키로 닫기
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onCancel]);
+
   return (
-    <ModalOverlay>
-      <ModalBox>
+    <ModalOverlay onClick={onCancel}>
+      <ModalBox onClick={(e) => e.stopPropagation()}>
         <h2>{title}</h2>
         <div>{message}</div>
 

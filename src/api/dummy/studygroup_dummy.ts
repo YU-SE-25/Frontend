@@ -1,56 +1,160 @@
-export interface Group {
-  group_id: number;
-  group_name: string;
-  group_leader: number;
-  created_at: string;
-  group_goal: string;
-  group_description: string;
-  leader_name: string;
-  myRole: "LEADER" | "MEMBER";
-  max_members: number;
-  groupmember_id: number[];
-}
+// 스터디 그룹 리스트
+import type {
+  StudyGroup,
+  StudyGroupDetail,
+  AssignedProblem,
+  AssignedProblemList,
+  ActivityLog,
+} from "../studygroup_api";
 
-export const DUMMY_GROUPS: Group[] = [
+export const DUMMY_GROUPS: StudyGroup[] = [
   {
-    group_id: 1,
-    group_name: "알고리즘 뽀개기",
-    group_leader: 11111,
-    created_at: "2025-01-01T00:00:00Z",
-    group_goal: "프로그래머스 4단계 완료",
-    group_description: "DP와 그래프 알고리즘 스터디입니다.",
-    leader_name: "홍길동",
+    groupId: 1,
+    groupName: "알고리즘 스터디",
+    groupDescription: "백준 골드 이상 도전 스터디입니다.",
+    maxMembers: 10,
+    currentMembers: 6,
+    leaderName: "홍길동",
     myRole: "LEADER",
-    max_members: 10,
-    groupmember_id: [11111, 11112, 11113, 11114, 11115, 11116, 11117, 11118],
-  },
-
-  {
-    group_id: 2,
-    group_name: "C++ 문법 마스터",
-    group_leader: 22221,
-    created_at: "2025-03-15T00:00:00Z",
-    group_goal: "문법 완벽 이해",
-    group_description: "C++ 기초부터 심화까지 다룹니다.",
-    leader_name: "이서준",
-    myRole: "MEMBER",
-    max_members: 10,
-    groupmember_id: [22221, 22222, 22223, 22224, 22225],
   },
   {
-    group_id: 3,
-    group_name: "코테 입문 준비반",
-    group_leader: 33331,
-    created_at: "2025-05-20T00:00:00Z",
-    group_goal: "백준 150문제 해결",
-    group_description: "취업을 위한 코딩 테스트 입문반입니다.",
-    leader_name: "김지우",
+    groupId: 2,
+    groupName: "CS 복습 스터디",
+    groupDescription: "운영체제/네트워크 위주 복습",
+    maxMembers: 5,
+    currentMembers: 4,
+    leaderName: "김영희",
     myRole: "MEMBER",
-    max_members: 8,
-    groupmember_id: [33331, 33332, 33333, 33334, 33335, 33336, 33337],
+  },
+  {
+    groupId: 3,
+    groupName: "자료구조 입문반",
+    groupDescription: "스택/큐/트리로 기초 다지기",
+    maxMembers: 8,
+    currentMembers: 2,
+    leaderName: "최지훈",
+    myRole: "NONE",
   },
 ];
 
-export const MY_GROUPS: Group[] = [DUMMY_GROUPS[0]]; // 소속된 그룹 (1개로 가정)
+// 스터디 그룹 상세
+export const DUMMY_GROUP_DETAIL: StudyGroupDetail = {
+  groupId: 1,
+  groupName: "알고리즘 스터디",
+  groupDescription: "백준 골드 이상 도전 스터디입니다.",
+  maxMembers: 10,
+  currentMembers: 6,
 
-export const DUMMY_TAGS = ["알고리즘", "DP", "그래프", "입문", "심화"];
+  leader: {
+    userId: 3,
+    leaderName: "홍길동",
+  },
+
+  members: [
+    {
+      groupMemberId: 11,
+      userId: 3,
+      userName: "홍길동",
+      role: "LEADER",
+    },
+    {
+      groupMemberId: 12,
+      userId: 4,
+      userName: "이철수",
+      role: "MEMBER",
+    },
+  ],
+
+  myRole: "LEADER",
+};
+
+// 문제 A
+export const PROBLEMS_SET_A: AssignedProblem[] = [
+  {
+    problemId: 101,
+    problemTitle: "피보나치 수열",
+    anonymity: false,
+    likeCount: 1,
+    commentCount: 0,
+    createTime: "2025-10-25T10:00:00Z",
+    userStatus: "SUBMITTED",
+  },
+  {
+    problemId: 102,
+    problemTitle: "최단 거리",
+    anonymity: false,
+    likeCount: 0,
+    commentCount: 0,
+    createTime: "2025-10-25T10:00:00Z",
+    userStatus: "NOT_SUBMITTED",
+  },
+  {
+    problemId: 103,
+    problemTitle: "BFS 기본",
+    anonymity: false,
+    likeCount: 5,
+    commentCount: 2,
+    createTime: "2025-10-26T11:00:00Z",
+    userStatus: "SUBMITTED",
+  },
+];
+
+// 문제 B
+export const PROBLEMS_SET_B: AssignedProblem[] = [
+  {
+    problemId: 201,
+    problemTitle: "그리디 문제 1",
+    anonymity: false,
+    likeCount: 3,
+    commentCount: 0,
+    createTime: "2025-10-27T12:00:00Z",
+    userStatus: "SUBMITTED",
+  },
+  {
+    problemId: 202,
+    problemTitle: "투 포인터",
+    anonymity: false,
+    likeCount: 0,
+    commentCount: 0,
+    createTime: "2025-10-27T12:00:00Z",
+    userStatus: "NOT_SUBMITTED",
+  },
+];
+
+// 문제 리스트
+export const DUMMY_ASSIGNED_LISTS: AssignedProblemList[] = [
+  {
+    problemListId: 1,
+    listTitle: "이번주 문제",
+    dueDate: "2025-11-05",
+    submittedCount: 3,
+    problems: PROBLEMS_SET_A,
+  },
+  {
+    problemListId: 2,
+    listTitle: "다음주 DP 연습",
+    dueDate: "2025-11-12",
+    submittedCount: 1,
+    problems: PROBLEMS_SET_B,
+  },
+];
+
+// 활동 로그
+export const DUMMY_ACTIVITY_LOGS: ActivityLog[] = [
+  {
+    activityId: 1001,
+    type: "PROBLEM_SUBMIT",
+    userId: 4,
+    userName: "이철수",
+    description: "백준 101번 문제 풀이 제출",
+    createdAt: "2025-11-02T21:30:00",
+  },
+  {
+    activityId: 1002,
+    type: "JOIN",
+    userId: 5,
+    userName: "김영희",
+    description: "스터디 그룹에 가입",
+    createdAt: "2025-11-03T10:00:00",
+  },
+];

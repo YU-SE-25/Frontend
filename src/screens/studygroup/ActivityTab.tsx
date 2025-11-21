@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import type { ActivityLog } from "../../api/studygroup_api";
-import { DUMMY_ACTIVITY_LOGS } from "../../api/dummy/studygroupdetail_dummy";
+import { fetchActivityLogs } from "../../api/studygroup_api";
+
+// ⭐ Props 타입 정의
+interface Props {
+  groupId: number;
+}
 
 // 스타일
 const ActivityContainer = styled.div`
@@ -16,12 +21,8 @@ const ActivityItem = styled.div`
   padding: 15px 20px;
   border-radius: 8px;
   display: flex;
-  gap: 15px;
-  align-items: center;
-`;
-
-const Icon = styled.span`
-  font-size: 26px;
+  flex-direction: column;
+  gap: 8px;
 `;
 
 const ActivityContent = styled.div`
@@ -41,13 +42,21 @@ const LogDate = styled.div`
   color: ${({ theme }) => theme.textColor};
 `;
 
-export default function ActivityTab() {
+export default function ActivityTab({ groupId }: Props) {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
 
   useEffect(() => {
-    // ⭐ 나중에 fetchGroupActivity(groupId)로 교체하면 됨!
-    setLogs(DUMMY_ACTIVITY_LOGS);
-  }, []);
+    const load = async () => {
+      const data = await fetchActivityLogs(groupId);
+      data.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setLogs(data);
+    };
+    load();
+  }, [groupId]);
 
   if (logs.length === 0) {
     return <p style={{ opacity: 0.7 }}>활동 기록이 없습니다.</p>;
@@ -55,13 +64,14 @@ export default function ActivityTab() {
 
   return (
     <ActivityContainer>
-      {logs.map((log, index) => (
-        <ActivityItem key={index}>
-          <Icon>{log.icon}</Icon>
-
+      {logs.map((log) => (
+        <ActivityItem key={log.activityId}>
           <ActivityContent>
-            <LogText>{log.text}</LogText>
-            <LogDate>{log.date}</LogDate>
+            <LogText>
+              [{log.type}] {log.userName} — {log.description}
+            </LogText>
+
+            <LogDate>{new Date(log.createdAt).toLocaleString()}</LogDate>
           </ActivityContent>
         </ActivityItem>
       ))}
