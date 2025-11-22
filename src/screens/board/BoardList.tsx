@@ -172,6 +172,10 @@ export default function BoardList({
   };
 
   const handleWritePost = () => {
+    if (mode === "study" && groupId) {
+      navigate(`/studygroup/${groupId}/discuss/write`);
+      return;
+    }
     navigate(`/board/${currentCategory}/write`);
   };
 

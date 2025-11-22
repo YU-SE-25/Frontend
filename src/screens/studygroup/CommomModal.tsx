@@ -1,5 +1,9 @@
 import { useEffect } from "react";
 import styled from "styled-components";
+import {
+  SecondaryButton,
+  DangerButton,
+} from "../../theme/StudyGroupMain.Style";
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -40,35 +44,6 @@ const ButtonRow = styled.div`
   gap: 10px;
 `;
 
-const CancelButton = styled.button`
-  padding: 10px 16px;
-  background: ${({ theme }) => theme.authHoverBgColor};
-  border: none;
-  border-radius: 8px;
-  color: ${({ theme }) => theme.textColor};
-  cursor: pointer;
-  font-size: 15px;
-
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-const DangerButton = styled.button`
-  padding: 10px 16px;
-  background: #e45757;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-
-  &:hover {
-    opacity: 0.9;
-  }
-`;
-
 interface Props {
   title: string;
   message: React.ReactNode;
@@ -104,7 +79,7 @@ export default function CommonModal({
         <div>{message}</div>
 
         <ButtonRow>
-          <CancelButton onClick={onCancel}>{cancelText}</CancelButton>
+          <SecondaryButton onClick={onCancel}>{cancelText}</SecondaryButton>
           <DangerButton onClick={onConfirm}>{dangerText}</DangerButton>
         </ButtonRow>
       </ModalBox>

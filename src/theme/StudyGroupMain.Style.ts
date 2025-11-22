@@ -206,8 +206,9 @@ export const ModalContent = styled.div`
   color: ${(props) => props.theme.textColor};
   padding: 30px;
   border-radius: 12px;
+
   width: 90%;
-  max-width: 600px;
+  max-width: 750px;
   max-height: 90vh;
   overflow-y: auto;
 
@@ -221,29 +222,15 @@ export const ModalContent = styled.div`
 
 //폼 각 행
 export const FormRow = styled.div`
-  margin-bottom: 25px;
+  margin-bottom: 30px;
 `;
 
 export const Label = styled.label`
   display: block;
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   color: ${(props) => props.theme.textColor};
-`;
-
-//입력 필드 스타일
-export const InputField = styled.input`
-  ${SearchInput};
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-//텍스트 영역 필드
-export const TextAreaField = styled.textarea`
-  ${InputField};
-  height: 120px;
-  resize: vertical;
 `;
 
 //버튼 컨테이너
@@ -333,4 +320,95 @@ export const SaveButton = styled.button`
   color: ${({ theme }) => theme.bgColor};
 
   transition: background-color 0.15s ease;
+`;
+
+//입력 필드 스타일
+export const InputField = StyledInput;
+
+//텍스트 영역 필드
+export const TextAreaField = styled.textarea`
+  width: 100%;
+  min-height: 140px;
+  padding: 12px;
+  border: 1px solid ${(props) => props.theme.authHoverBgColor};
+  border-radius: 6px;
+  font-size: 16px;
+  color: ${(props) => props.theme.textColor};
+  background-color: ${(props) => props.theme.bgColor};
+  resize: vertical;
+  box-sizing: border-box;
+`;
+
+// 버튼 공통 베이스
+export const BaseButton = styled.button`
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+`;
+
+// 기본(주황/포커스색 등) - "저장", "생성하기" 같은 애들
+export const PrimaryButton = styled(BaseButton)`
+  background: ${({ theme }) => theme.focusColor};
+  color: ${({ theme }) => theme.bgColor};
+`;
+
+// 중립(회색) - "닫기", "취소"
+export const SecondaryButton = styled(BaseButton)`
+  background: ${({ theme }) => theme.authHoverBgColor};
+  color: ${({ theme }) => theme.textColor};
+`;
+
+// 위험(빨강) - "강퇴하기", "그룹 삭제", 진짜 위험한 애들
+export const DangerButton = styled(BaseButton)`
+  background: #e45757;
+  color: white;
+  font-weight: 600;
+`;
+
+// 문제 리스트 추가 버튼도 크기만 같게, 색은 알아서
+export const ProblemListAddButton = styled(BaseButton)`
+  background: ${({ theme }) => theme.authHoverBgColor};
+  color: ${({ theme }) => theme.textColor};
+`;
+
+//제목
+export const ModalTitle = styled.h2`
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+//서브타이틀
+export const ModalSubTitle = styled.h3`
+  margin-top: 28px;
+  margin-bottom: 15px;
+  font-size: 20px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+//맴버리스트
+export const MemberRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.authHoverBgColor};
+  color: ${({ theme }) => theme.textColor};
+  span {
+    color: ${({ theme }) => theme.textColor};
+  }
 `;

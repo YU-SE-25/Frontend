@@ -202,3 +202,9 @@ export const kickMember = async (groupId: number, memberId: number) => {
   // );
   // return res.data;
 };
+
+//문제 목록
+export interface SimpleProblem {
+  problemId: number;
+  problemTitle: string;
+}
