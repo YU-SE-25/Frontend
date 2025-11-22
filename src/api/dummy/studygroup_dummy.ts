@@ -5,6 +5,7 @@ import type {
   AssignedProblem,
   AssignedProblemList,
   ActivityLog,
+  SimpleProblem,
 } from "../studygroup_api";
 
 export const DUMMY_GROUPS: StudyGroup[] = [
@@ -157,4 +158,14 @@ export const DUMMY_ACTIVITY_LOGS: ActivityLog[] = [
     description: "스터디 그룹에 가입",
     createdAt: "2025-11-03T10:00:00",
   },
+];
+
+//문제 목록 더미
+export const DUMMY_PROBLEMS: SimpleProblem[] = [
+  { problemId: 1001, problemTitle: "Hello World!" },
+  { problemId: 1002, problemTitle: "A+B 문제" },
+  { problemId: 1003, problemTitle: "피보나치 수열" },
+  { problemId: 1004, problemTitle: "최단 경로" },
+  { problemId: 1005, problemTitle: "DFS와 BFS" },
+  { problemId: 1006, problemTitle: "DP 기초 문제" },
 ];

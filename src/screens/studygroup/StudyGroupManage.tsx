@@ -4,9 +4,14 @@ import {
   ModalContent,
   Label,
   InputField,
+  TextAreaField,
   ButtonContainer,
-  CancelButton,
-  SaveButton,
+  SecondaryButton,
+  PrimaryButton,
+  DangerButton,
+  ModalTitle,
+  ModalSubTitle,
+  MemberRow,
 } from "../../theme/StudyGroupMain.Style";
 
 import CommonModal from "./CommomModal";
@@ -63,13 +68,13 @@ export default function StudyGroupManageModal({ group, onClose }: Props) {
   return (
     <ModalOverlay>
       <ModalContent>
-        <h2>그룹 관리</h2>
+        <ModalTitle>그룹 관리</ModalTitle>
 
         <Label>그룹명</Label>
         <InputField value={name} onChange={(e) => setName(e.target.value)} />
 
         <Label>설명</Label>
-        <InputField value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <TextAreaField value={desc} onChange={(e) => setDesc(e.target.value)} />
 
         <Label>정원</Label>
         <InputField
@@ -78,61 +83,39 @@ export default function StudyGroupManageModal({ group, onClose }: Props) {
           onChange={(e) => setMaxMembers(Number(e.target.value))}
         />
 
-        <h3 style={{ marginTop: "25px" }}>멤버 관리</h3>
+        <ModalSubTitle>멤버 관리</ModalSubTitle>
 
         {group.members.map((m) => (
-          <div
-            key={m.groupMemberId}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "10px",
-            }}
-          >
+          <MemberRow key={m.groupMemberId}>
             <span>
               {m.userName} {m.role === "LEADER" && "(그룹장)"}
             </span>
 
             {m.role !== "LEADER" && (
-              <button
-                style={{
-                  padding: "6px 12px",
-                  background: "#e45757",
-                  color: "white",
-                  borderRadius: "6px",
-                }}
+              <DangerButton
                 onClick={() => {
                   setKickTarget(m.groupMemberId);
                   setShowKickModal(true);
                 }}
               >
                 강퇴하기
-              </button>
+              </DangerButton>
             )}
-          </div>
+          </MemberRow>
         ))}
 
         {isOnlyLeader && (
-          <button
-            style={{
-              padding: "12px",
-              background: "#e45757",
-              color: "white",
-              borderRadius: "8px",
-              width: "100%",
-              marginTop: "30px",
-              fontWeight: 600,
-            }}
+          <DangerButton
+            style={{ width: "100%", marginTop: 20 }}
             onClick={() => setShowDeleteModal(true)}
           >
             그룹 삭제하기
-          </button>
+          </DangerButton>
         )}
 
         <ButtonContainer>
-          <CancelButton onClick={onClose}>닫기</CancelButton>
-          <SaveButton onClick={handleSave}>저장</SaveButton>
+          <SecondaryButton onClick={onClose}>닫기</SecondaryButton>
+          <PrimaryButton onClick={handleSave}>저장</PrimaryButton>
         </ButtonContainer>
 
         {showKickModal && (

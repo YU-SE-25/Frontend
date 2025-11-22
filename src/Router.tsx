@@ -49,10 +49,17 @@ const router = createBrowserRouter([
       },
 
       { path: "board/:category", element: <Board /> },
-      { path: "board/:category/write", element: <BoardWrite /> },
+      {
+        path: "board/:category/write",
+        element: <BoardWrite mode="board" />,
+      },
 
       { path: "studygroup-main", element: <StudyGroupMain /> },
       { path: "studygroup/:groupId", element: <StudyGroupDetail /> },
+      {
+        path: "studygroup/:groupId/discuss/write",
+        element: <BoardWrite mode="study" />,
+      },
 
       { path: "login", element: <Login /> },
       { path: "oauth/callback", element: <OAuthCallback /> },

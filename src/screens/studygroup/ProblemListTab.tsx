@@ -21,6 +21,7 @@ import {
   fetchAssignedProblemLists,
   fetchAssignedProblemListDetail,
 } from "../../api/studygroup_api";
+import CreateProblemList from "./CreateProblemList";
 
 interface Props {
   role: GroupRole | undefined;
@@ -30,6 +31,7 @@ interface Props {
 export default function ProblemListTab({ role, groupId }: Props) {
   const [lists, setLists] = useState<AssignedProblemList[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // 전체 문제 리스트 불러오기
   useEffect(() => {
@@ -65,8 +67,7 @@ export default function ProblemListTab({ role, groupId }: Props) {
       alert("그룹장만 문제를 지정할 수 있습니다.");
       return;
     }
-
-    alert("문제 리스트 추가 기능은 추후 구현 예정입니다!");
+    setShowCreateModal(true);
   };
 
   return (
@@ -128,6 +129,13 @@ export default function ProblemListTab({ role, groupId }: Props) {
 
       {lists.length === 0 && (
         <p style={{ opacity: 0.7 }}>지정된 문제가 없습니다.</p>
+      )}
+
+      {showCreateModal && (
+        <CreateProblemList
+          onClose={() => setShowCreateModal(false)}
+          groupId={groupId}
+        />
       )}
     </>
   );
