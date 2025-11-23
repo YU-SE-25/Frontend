@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai";
 import React, { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 
@@ -218,7 +218,7 @@ export default function BoardWrite() {
     }
   };
   if (!user) {
-    navigate("/login");
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   return (

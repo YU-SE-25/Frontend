@@ -296,10 +296,6 @@ export default function Topbar() {
     runLogoutAction();
   };
 
-  const handleClickBoardMain = () => {
-    setIsBoardOpen((prev) => !prev);
-  };
-
   const handleSelectBoard = (path: string) => {
     setIsBoardOpen(false);
     navigate(path);
