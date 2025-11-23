@@ -1,74 +1,347 @@
-import { DUMMY_TAGS } from "./dummy/studygroup_dummy";
+export type GroupRole = "LEADER" | "MEMBER" | "NONE";
 
-export type GroupRole = "MEMBER" | "LEADER"; // 그룹 멤버 역할 타입
-
-//그룹 목록 및 상세 정보 타입
 export interface StudyGroup {
-  group_id: number;
-  group_name: string;
-  group_leader: number; // 리더의 ID
-  created_at: string; // ISO 날짜 문자열
-  group_goal: string;
-
-  group_description: string; // 💡 Frontend용 추가됨: 그룹 설명
-  max_members: number; // 💡 Frontend용 추가됨: 최대 인원
-  // 목록 조회 시에는 members가 단순 ID 배열로 올 수 있음
-  groupmember_id: number[];
-  // 💡 Frontend용 추가: 그룹장 이름 (BE에서 넘겨줘야 함)
-  leader_name?: string;
-  // 💡 Frontend용 추가: 현재 로그인한 사용자의 그룹 내 역할
-  myRole?: GroupRole;
+  groupId: number;
+  groupName: string;
+  groupDescription: string;
+  maxMembers: number;
+  currentMembers: number;
+  leaderName: string;
+  myRole: GroupRole;
 }
 
-//그룹 생성 요청 본문 타입
-export interface GroupCreatePayload {
-  group_name: string;
-  group_goal: string;
-  // 💡 필드 누락: description, maxMembers, tags 등을 FE에서 추가해야 함.
-  group_description: string; // 💡 Frontend용 추가됨
-  max_members: number; // 💡 Frontend용 추가됨
-  // 현재 API는 최소 필드만 받으므로, 이대로 유지합니다.
+// 상세 조회 타입
+export interface StudyGroupDetail {
+  groupId: number;
+  groupName: string;
+  groupDescription: string;
+  maxMembers: number;
+  currentMembers: number;
+
+  leader: {
+    userId: number;
+    leaderName: string;
+  };
+
+  members: {
+    groupMemberId: number;
+    userId: number;
+    userName: string;
+    role: "LEADER" | "MEMBER";
+  }[];
+
+  myRole: GroupRole;
 }
 
-//문제 리스트 응답 타입
+// 개별 문제
 export interface AssignedProblem {
-  problem_id: number;
-  problem_title: string;
+  problemId: number;
+  problemTitle: string;
   anonymity: boolean;
-  like_count: number;
-  comment_count: number;
-  create_time: string;
-  // 💡 필수 추가: 문제 풀이 상태 (FE 구현에 필요)
-  user_status: "제출완료" | "미제출";
+  likeCount: number;
+  commentCount: number;
+  createTime: string;
+
+  userStatus: "SUBMITTED" | "NOT_SUBMITTED";
 }
 
-//API 응답의 기본 구조 (페이지네이션 포함)
-export interface PaginatedResponse<T> {
-  page: number;
-  pageSize: number;
-  total: number;
-  // API 명세에 따라 필드명은 'study group' 또는 'posts'로 유연하게 처리
-  "study group"?: StudyGroup[];
-  posts?: AssignedProblem[];
-}
-// 💡 새로운 타입: 할당된 문제 목록을 묶는 상위 구조
+// 문제 리스트
 export interface AssignedProblemList {
-  assignedId: number; // 이 목록 자체의 고유 ID
-  listTitle: string; // 목록 제목 (예: DP 기본 문제)
-  dueDate: string; // 제출 기한
-  totalProblems: number; // 총 문제 수 (5)
-  submittedCount: number; // 제출한 문제 수 (3)
-  problems: AssignedProblem[]; // 하위 문제 배열
+  problemListId: number;
+  listTitle: string;
+  dueDate: string;
+
+  problems: AssignedProblem[];
+
+  submittedCount: number;
 }
 
-export async function fetchAvailableTags(): Promise<string[]> {
-  // 실제 API를 사용하지 않고 더미 데이터를 반환하는 경우:
-  return DUMMY_TAGS;
-}
-
-//활동 기록(추후 수정)
+// 활동 로그
 export interface ActivityLog {
-  icon: string; // 이모지
-  text: string; // 내용
-  date: string; // 날짜
+  activityId: number;
+  type: string;
+  userId: number;
+  userName: string;
+  description: string;
+  createdAt: string;
 }
+
+import {
+  DUMMY_GROUPS,
+  DUMMY_GROUP_DETAIL,
+  DUMMY_ASSIGNED_LISTS,
+  DUMMY_ACTIVITY_LOGS,
+} from "./dummy/studygroup_dummy";
+
+// import { api } from "./axios";
+
+// API
+
+// 그룹 리스트
+export const fetchStudyGroups = async () => {
+  return DUMMY_GROUPS;
+
+  // const res = await api.get("/api/studygroup", { params: { pageSize } });
+  // return res.data;
+};
+
+// 그룹 상세
+export const fetchStudyGroupDetail = async (groupId: number) => {
+  return DUMMY_GROUP_DETAIL;
+
+  // const res = await api.get(`/api/studygroup/list/${groupId}`);
+  // return res.data;
+};
+
+// 문제 리스트 전체
+export const fetchAssignedProblemLists = async (groupId: number) => {
+  return DUMMY_ASSIGNED_LISTS;
+
+  // const res = await api.get(`/api/studygroup/${groupId}/problem-lists`);
+  // return res.data;
+};
+
+// 특정 문제 리스트 상세
+export const fetchAssignedProblemListDetail = async (
+  groupId: number,
+  problemListId: number
+) => {
+  const found = DUMMY_ASSIGNED_LISTS.find(
+    (p) => p.problemListId === problemListId
+  );
+  return found ?? null;
+
+  // const res = await api.get(
+  //   `/api/studygroup/${groupId}/problem-lists/${problemListId}`
+  // );
+  // return res.data;
+};
+
+// 활동 로그
+export const fetchActivityLogs = async (groupId: number) => {
+  return DUMMY_ACTIVITY_LOGS;
+
+  // const res = await api.get(`/api/studygroup/${groupId}/activities`);
+  // return res.data;
+};
+
+// 그룹 생성
+export const createStudyGroup = async (data: {
+  groupName: string;
+  groupDescription: string;
+  maxMembers: number;
+}) => {
+  return { message: "study group이 성공적으로 생성되었습니다" };
+
+  // const res = await api.post("/api/studygroup", data);
+  // return res.data;
+};
+
+// 그룹 수정
+export const updateStudyGroup = async (
+  groupId: number,
+  data: {
+    groupName?: string;
+    groupDescription?: string;
+    maxMembers?: number;
+  }
+) => {
+  return { message: "그룹 수정이 완료 되었습니다!" };
+
+  // const res = await api.patch(`/api/studygroup/list/${groupId}`, data);
+  // return res.data;
+};
+
+// 그룹 삭제
+export const deleteStudyGroup = async (groupId: number) => {
+  return { message: "그룹이 삭제 되었습니다!" };
+
+  // const res = await api.delete(`/api/studygroup/list/${groupId}`);
+  // return res.data;
+};
+
+// 그룹 가입
+export const joinStudyGroup = async (groupId: number) => {
+  return {
+    membershipId: 9123,
+    groupId,
+    userId: 100200,
+    role: "MEMBER",
+    capacity: { max: 10, current: 8, waitlisted: 0 },
+    createdAt: "2025-11-03T06:35:00Z",
+  };
+
+  // const res = await api.post(`/api/studygroup/${groupId}/membership`);
+  // return res.data;
+};
+
+// 그룹 탈퇴
+export const leaveStudyGroup = async (groupId: number) => {
+  return {
+    groupId,
+    userId: 4,
+    status: "LEFT",
+  };
+
+  // const res = await api.delete(`/api/studygroup/${groupId}/members/me`);
+  // return res.data;
+};
+
+// 멤버 강퇴
+export const kickMember = async (groupId: number, memberId: number) => {
+  return {
+    groupId,
+    groupMemberId: memberId,
+    kickedUserId: 4,
+    kickedUserName: "이철수",
+    status: "KICKED",
+  };
+
+  // const res = await api.delete(
+  //   `/api/studygroup/${groupId}/members/${memberId}`
+  // );
+  // return res.data;
+};
+
+//문제 목록
+export interface SimpleProblem {
+  problemId: number;
+  problemTitle: string;
+}
+
+import {
+  DUMMY_GROUPS,
+  DUMMY_GROUP_DETAIL,
+  DUMMY_ASSIGNED_LISTS,
+  DUMMY_ACTIVITY_LOGS,
+} from "./dummy/studygroup_dummy";
+
+// import { api } from "./axios";
+
+// API
+
+// 그룹 리스트
+export const fetchStudyGroups = async () => {
+  return DUMMY_GROUPS;
+
+  // const res = await api.get("/api/studygroup", { params: { pageSize } });
+  // return res.data;
+};
+
+// 그룹 상세
+export const fetchStudyGroupDetail = async (groupId: number) => {
+  return DUMMY_GROUP_DETAIL;
+
+  // const res = await api.get(`/api/studygroup/list/${groupId}`);
+  // return res.data;
+};
+
+// 문제 리스트 전체
+export const fetchAssignedProblemLists = async (groupId: number) => {
+  return DUMMY_ASSIGNED_LISTS;
+
+  // const res = await api.get(`/api/studygroup/${groupId}/problem-lists`);
+  // return res.data;
+};
+
+// 특정 문제 리스트 상세
+export const fetchAssignedProblemListDetail = async (
+  groupId: number,
+  problemListId: number
+) => {
+  const found = DUMMY_ASSIGNED_LISTS.find(
+    (p) => p.problemListId === problemListId
+  );
+  return found ?? null;
+
+  // const res = await api.get(
+  //   `/api/studygroup/${groupId}/problem-lists/${problemListId}`
+  // );
+  // return res.data;
+};
+
+// 활동 로그
+export const fetchActivityLogs = async (groupId: number) => {
+  return DUMMY_ACTIVITY_LOGS;
+
+  // const res = await api.get(`/api/studygroup/${groupId}/activities`);
+  // return res.data;
+};
+
+// 그룹 생성
+export const createStudyGroup = async (data: {
+  groupName: string;
+  groupDescription: string;
+  maxMembers: number;
+}) => {
+  return { message: "study group이 성공적으로 생성되었습니다" };
+
+  // const res = await api.post("/api/studygroup", data);
+  // return res.data;
+};
+
+// 그룹 수정
+export const updateStudyGroup = async (
+  groupId: number,
+  data: {
+    groupName?: string;
+    groupDescription?: string;
+    maxMembers?: number;
+  }
+) => {
+  return { message: "그룹 수정이 완료 되었습니다!" };
+
+  // const res = await api.patch(`/api/studygroup/list/${groupId}`, data);
+  // return res.data;
+};
+
+// 그룹 삭제
+export const deleteStudyGroup = async (groupId: number) => {
+  return { message: "그룹이 삭제 되었습니다!" };
+
+  // const res = await api.delete(`/api/studygroup/list/${groupId}`);
+  // return res.data;
+};
+
+// 그룹 가입
+export const joinStudyGroup = async (groupId: number) => {
+  return {
+    membershipId: 9123,
+    groupId,
+    userId: 100200,
+    role: "MEMBER",
+    capacity: { max: 10, current: 8, waitlisted: 0 },
+    createdAt: "2025-11-03T06:35:00Z",
+  };
+
+  // const res = await api.post(`/api/studygroup/${groupId}/membership`);
+  // return res.data;
+};
+
+// 그룹 탈퇴
+export const leaveStudyGroup = async (groupId: number) => {
+  return {
+    groupId,
+    userId: 4,
+    status: "LEFT",
+  };
+
+  // const res = await api.delete(`/api/studygroup/${groupId}/members/me`);
+  // return res.data;
+};
+
+// 멤버 강퇴
+export const kickMember = async (groupId: number, memberId: number) => {
+  return {
+    groupId,
+    groupMemberId: memberId,
+    kickedUserId: 4,
+    kickedUserName: "이철수",
+    status: "KICKED",
+  };
+
+  // const res = await api.delete(
+  //   `/api/studygroup/${groupId}/members/${memberId}`
+  // );
+  // return res.data;
+};

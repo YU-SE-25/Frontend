@@ -325,3 +325,49 @@ export const SubmissionDateText = styled.span`
   color: ${(props) => props.theme.textColor};
   white-space: nowrap;
 `;
+
+//문제목록 생성 관련
+import { SecondaryButton as GlobalSecondaryButton } from "./StudyGroupMain.Style";
+
+export const PLWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+export const PLRow = styled.div`
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+`;
+
+export const PLLabel = styled.label`
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+export const ProblemListBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+export const ProblemItem = styled.div`
+  padding: 12px 14px;
+  background: ${({ theme }) => theme.headerBgColor};
+  border: 1px solid ${({ theme }) => theme.authHoverBgColor};
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  color: ${({ theme }) => theme.textColor};
+  font-size: 15px;
+`;
+
+export const RemoveButton = styled(GlobalSecondaryButton)`
+  padding: 4px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+`;
