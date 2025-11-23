@@ -375,8 +375,15 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
               const date = c.create_time.slice(0, 10);
               return (
                 <CommentItem key={c.id}>
-                  <CommentMeta>
-                    <strong>{commentAuthor}</strong> · {date}
+                  <CommentMeta isDisabled={c.anonymity}>
+                    <strong onClick={handleNavigateMypage(commentAuthor)}>
+                      {commentAuthor}
+                    </strong>{" "}
+                    · {date}
+                    <ReportButton
+                      targetContentId={c.id}
+                      targetContentType="comment"
+                    />
                   </CommentMeta>
                   <CommentContent>{c.contents}</CommentContent>
                 </CommentItem>
