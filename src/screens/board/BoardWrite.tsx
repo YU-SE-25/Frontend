@@ -1,6 +1,5 @@
 import { useAtomValue } from "jotai";
 import React, { useState, useEffect } from "react";
-import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";

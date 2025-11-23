@@ -22,7 +22,7 @@ export const PageLayout = styled.div`
   display: flex;
   gap: 30px;
   align-items: flex-start;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 `;
 
