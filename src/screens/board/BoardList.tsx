@@ -25,6 +25,8 @@ import {
 } from "../../theme/ProblemList.Style";
 import BoardDetail from "./BoardDetail";
 
+import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
+
 type BoardCategory = "free" | "discussion" | "qna";
 // 댓글(Comment)
 export interface BoardComment {
@@ -119,16 +121,28 @@ export default function BoardList({
   //스터디그룹 api 추가
   React.useEffect(() => {
     if (mode === "study" && groupId) {
-      // 스터디그룹 전용 토론게시판 API
-      /*
-      api.get(`/api/studygroup/${groupId}/discuss`)
-        .then(res => setPosts(res.data))
-        .catch(err => console.error(err));
-      */
-      //더미
-      setPosts(DUMMY_POSTS_BY_CATEGORY["discussion"]);
+      //스터디 그룹 API 호출
+      fetchStudyGroupPosts(groupId, 1) // page = 1
+        .then((res) => {
+          //StudyGroupPostSummary[] → BoardContent[] 변환
+          const converted: BoardContent[] = res.posts.map((p) => ({
+            post_id: p.post_id,
+            post_title: p.post_title,
+            author: p.author,
+            tag: p.tag,
+            anonymity: p.anonymity,
+            like_count: p.like_count,
+            comment_count: p.comment_count,
+            create_time: p.create_time,
+
+            //BoardContent에서 필요한데 API 요약에 없는 값들:
+            contents: "", // 상세내용은 없음 → 비워두기
+            comments: [], // 댓글 목록도 없음 → 빈 배열
+          }));
+          setPosts(converted);
+        })
+        .catch((err) => console.error(err));
     } else {
-      //기존 BoardList 더미 로직 그대로 유지
       setPosts(DUMMY_POSTS_BY_CATEGORY[currentCategory]);
     }
   }, [mode, groupId, currentCategory]);
