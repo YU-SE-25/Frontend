@@ -141,7 +141,7 @@ export default function ResetRequestPage() {
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
         </form>
         {step === "verify" && (
-          <p style={{ marginTop: "20px", fontSize: "12px", color: "gray" }}>
+          <p style={{ marginTop: "20px", fontSize: "20px", color: "gray" }}>
             * 인증번호는 10분간 유효하며, 이메일은 수정할 수 없습니다.
           </p>
         )}

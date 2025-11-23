@@ -66,7 +66,7 @@ export const MainButton = styled.button`
 `;
 export const ErrorMessage = styled.p`
   color: #ff3838;
-  font-size: 14px;
+  font-size: 18px;
   text-align: right;
   margin-bottom: 10px;
   margin-top: -10px;

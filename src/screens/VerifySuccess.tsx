@@ -11,6 +11,7 @@ const SuccessWrapper = styled.div`
   text-align: center;
   font-size: 24px;
 `;
+
 const SuccessCard = styled.div`
   width: min(90%, 800px);
   padding: 50px 30px;
@@ -23,6 +24,18 @@ const SuccessCard = styled.div`
   align-items: center;
   text-align: center;
   gap: 15px;
+  h2 {
+    color: ${(props) => props.theme.textColor};
+  }
+`;
+
+const SuccessText = styled.p`
+  font-size: 20px;
+  color: ${(props) => props.theme.textColor};
+  line-height: 1.5;
+  h2 {
+    color: ${(props) => props.theme.textColor};
+  }
 `;
 
 const LoginLink = styled(Link)`
@@ -43,13 +56,15 @@ export default function VerifySuccessPage() {
     <SuccessWrapper>
       <SuccessCard>
         <h2>🎉 인증 완료!</h2>
-        <p style={{ fontSize: "20px", color: "#555" }}>
-          이메일 인증이 성공적으로 완료되었습니다.
-        </p>
-        <p style={{ fontSize: "20px", color: "#555" }}>환영합니다 학습자님!</p>
-        <LoginLink to="/login" style={{ marginTop: "30px" }}>
-          로그인 하러가기
-        </LoginLink>
+
+        <SuccessText>이메일 인증이 성공적으로 완료되었습니다.</SuccessText>
+        <SuccessText>
+          강사 신청의 경우, 현재 일반 회원으로 가입되었으며, 강사 신청은 관리자
+          검토 후 승인됩니다.
+        </SuccessText>
+        <SuccessText>환영합니다 학습자님!</SuccessText>
+
+        <LoginLink to="/login">로그인 하러가기</LoginLink>
       </SuccessCard>
     </SuccessWrapper>
   );
