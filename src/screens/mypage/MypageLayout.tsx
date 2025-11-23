@@ -160,6 +160,7 @@ export default function MyPageLayout() {
   });
   if (isLoading) return <div>불러오는 중…</div>;
   if (isError || !user) return <div>에러가 발생했어요.</div>;
+  console.log("role in sidebar:", userProfile.role);
 
   return (
     <Page>
