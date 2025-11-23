@@ -16,10 +16,26 @@ import {
   ActionButton,
 } from "../../theme/ProblemSolve.Style";
 
+import styled from "styled-components";
+
 const DEFAULT_LANGUAGE = "C";
 
+//실행 결과 UI용 박스 스타일
+const OutputBox = styled.pre`
+  width: 100%;
+  min-height: 120px;
+  margin-top: 14px;
+  padding: 14px;
+  background: ${(p) => p.theme.bgColor};
+  color: ${(p) => p.theme.textColor};
+  border: 1px solid ${(p) => p.theme.textColor}33;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  font-size: 14px;
+`;
+
 interface CodeEditorViewProps {
-  problem: IProblem;
+  problem?: Partial<IProblem>;
   code: string;
   onCodeChange: (value: string) => void;
   onSaveTemp: () => void;
@@ -27,7 +43,11 @@ interface CodeEditorViewProps {
   onSubmit: () => void;
   language: string;
   onLanguageChange: (lang: string) => void;
-  isSubmitting: boolean;
+  isSubmitting?: boolean;
+  hideSubmit?: boolean;
+
+  //추가됨: 실행 기능 (IDE 에서 사용)
+  onExecute?: () => Promise<string>;
 }
 
 export default function CodeEditorView({
@@ -39,13 +59,13 @@ export default function CodeEditorView({
   onSubmit,
   language,
   onLanguageChange,
+  onExecute,
+  hideSubmit,
 }: CodeEditorViewProps) {
   const [isDark] = useAtom(isDarkAtom);
-
-  // 폰트 크기 상태 (기본 20)
   const [fontSize, setFontSize] = useState(20);
 
-  const availableLanguages = problem.allowedLanguages?.length
+  const availableLanguages = problem?.allowedLanguages?.length
     ? problem.allowedLanguages
     : [DEFAULT_LANGUAGE];
 
@@ -60,6 +80,27 @@ export default function CodeEditorView({
   };
 
   const monacoLanguage = monacoLangMap[language] || "plaintext";
+
+  // 실행 결과 상태
+  const [output, setOutput] = useState("");
+
+  const handleExecuteClick = async () => {
+    console.log("실행 버튼 눌림!");
+
+    if (!onExecute) {
+      console.log("onExecute 없음!!!!!");
+      return alert("실행 기능이 없습니다!");
+    }
+
+    try {
+      const result = await onExecute();
+      console.log("onExecute 결과:", result);
+      setOutput(result);
+    } catch (err: any) {
+      console.log("실행 중 오류:", err);
+      setOutput("실행 중 오류 발생:\n" + err?.message);
+    }
+  };
 
   return (
     <ViewContentWrapper>
@@ -89,7 +130,7 @@ export default function CodeEditorView({
         </FontSizeSelect>
       </LanguageDisplay>
 
-      {/* EditorWrapper로 모나코를 감싸서 배경 커스텀 */}
+      {/* 모나코 에디터 */}
       <EditorWrapper>
         <Editor
           height="100%"
@@ -111,10 +152,18 @@ export default function CodeEditorView({
       <ActionRow>
         <ActionButton onClick={onLoadTemp}>불러오기</ActionButton>
         <ActionButton onClick={onSaveTemp}>임시저장</ActionButton>
-        <ActionButton $main onClick={onSubmit}>
-          제출하기
-        </ActionButton>
+
+        {onExecute && (
+          <ActionButton onClick={handleExecuteClick}>실행</ActionButton>
+        )}
+
+        {!hideSubmit && (
+          <ActionButton onClick={onSubmit}>제출하기</ActionButton>
+        )}
       </ActionRow>
+
+      {/* 실행 결과 출력창 */}
+      {output && <OutputBox>{output}</OutputBox>}
     </ViewContentWrapper>
   );
 }

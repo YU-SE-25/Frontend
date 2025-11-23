@@ -79,10 +79,14 @@ export default function ProblemSolvePage() {
     load();
   }, [problemId]);
 
-  /* 코드 실행*/
-  const handleRun = useCallback(async () => {
-    if (!problemId) return;
+  /* 코드 실행(추후 api보고 수정)*/
+  const handleRun = useCallback<() => Promise<string>>(async () => {
+    // 1) problemId 없을 때도 문자열 리턴
+    if (!problemId) {
+      return "문제 ID가 없습니다.";
+    }
 
+    // 2) 실제 코드 실행
     const runResult = await runCode(code, language);
 
     const result: ExecutionResult = {
@@ -92,8 +96,20 @@ export default function ProblemSolvePage() {
       testCasesPassed: "0/0",
     };
 
+    // 기존처럼 모달에서 쓸 실행결과는 그대로 저장
     setExecutionResult(result);
     setIsModalOpen(true);
+
+    // 3) ✅ 여기서 '실행 결과창(OutputBox)에 보여줄 텍스트'를 리턴해 주는 게 핵심!!
+    const statusText = runResult.compileError ? "컴파일 에러(RE)" : "정상 실행";
+
+    return [
+      ">>> 실행 결과",
+      `상태: ${statusText}`,
+      `컴파일 시간: ${runResult.compileTimeMs}ms`,
+      `사용 메모리: 64MB`,
+      `통과 테스트: 0/0`,
+    ].join("\n");
   }, [code, language, problemId]);
 
   /*  임시 저장*/

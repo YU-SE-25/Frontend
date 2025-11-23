@@ -87,6 +87,9 @@ export const CheckboxLabel = styled.label`
   margin-bottom: 10px;
   cursor: pointer;
   color: ${(props) => props.theme.textColor};
+  span {
+    color: ${(props) => props.theme.textColor};
+  }
 `;
 
 //약관

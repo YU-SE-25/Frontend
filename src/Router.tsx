@@ -22,6 +22,8 @@ import Board from "./screens/board/BoardList";
 import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 
+import CodeScratchPage from "./screens/CodeScratchPage";
+
 import NotFound from "./screens/NotFound";
 import MyPageScreen from "./screens/mypage/MypageScreen";
 import MyPageRedirect from "./screens/mypage/MypageRedirect";
@@ -59,6 +61,11 @@ const router = createBrowserRouter([
       {
         path: "studygroup/:groupId/discuss/write",
         element: <BoardWrite mode="study" />,
+      },
+
+      {
+        path: "/scratch",
+        element: <CodeScratchPage />,
       },
 
       { path: "login", element: <Login /> },
