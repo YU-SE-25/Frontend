@@ -71,33 +71,37 @@ const scaleSmall = keyframes`
 	}
 `;
 
-const Blankdiv = styled.div<{ $show: boolean; $hasOpened: boolean }>`
-  opacity: ${({ $show, $hasOpened }) => (!$hasOpened && !$show ? 0 : 1)};
+const Blankdiv = styled.div<{
+  $show: boolean;
+  $animate: "none" | "open" | "close";
+}>`
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
 
   transform-origin: top;
+
   max-height: ${({ $show }) => ($show ? "600px" : "0")};
-  animation: ${({ $show, $hasOpened }) => {
-    if (!$show && $hasOpened) {
+
+  animation: ${({ $animate }) => {
+    if ($animate === "open") {
       return css`
-        ${scaleSmall} 0.7s cubic-bezier(0.368, 0.016, 0.491, 1.005) 0s 1 normal both
+        ${scaleBig} 0.7s cubic-bezier(0.368, 0.016, 0.491, 1.005) 0.2s 1 normal
+          both
       `;
     }
-
-    // 2) 열릴 때인데, 이미 한 번 열려본 상태라면 애니메이션 실행
-    if ($show && $hasOpened) {
+    if ($animate === "close") {
       return css`
-        ${scaleBig} 0.7s cubic-bezier(0.368, 0.016, 0.491, 1.005) 0s 1 normal both
+        ${scaleSmall} 0.7s cubic-bezier(0.368, 0.016, 0.491, 1.005) 0s 1 normal
+          both
       `;
     }
-
-    // 3) 처음 열릴 때 → 애니메이션 없음
+    // 첫 렌더 등, 아무 애니메이션도 안 걸고 싶은 순간
     return "none";
   }};
 `;
+
 export const ProblemListWrapper = styled.div`
   height: 100%;
   width: 80%;
@@ -122,7 +126,6 @@ export const WholeWrapper = styled.div`
 `;
 
 export default function MySolvedProblem() {
-  const [hasOpened, setHasOpened] = useState(false);
   const navigate = useNavigate();
   //문제 상세 -> 테그 연동
   const [searchParams, setSearchParams] = useSearchParams();
@@ -137,6 +140,8 @@ export default function MySolvedProblem() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const show = selectedProblemId !== null && showresult;
+  const [animate, setAnimate] = useState<"none" | "open" | "close">("none");
+  const firstRenderRef = React.useRef(true);
 
   const [filter, setFilter] = useState<
     "off" | "solved" | "attempted" | "tried"
@@ -198,7 +203,18 @@ export default function MySolvedProblem() {
   }, [sortType, isLoggedIn, searchTerm, selectedTags]);
 
   useEffect(() => {
-    if (show) setHasOpened(true);
+    // 첫 렌더에서는 애니메이션 안 건다
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false;
+      return;
+    }
+
+    // show 값이 변할 때만 애니메이션 방향 설정
+    if (show) {
+      setAnimate("open");
+    } else {
+      setAnimate("close");
+    }
   }, [show]);
   //태그 칩 클릭 핸들러
   const handleToggleTag = (tag: string) => {
@@ -307,7 +323,7 @@ export default function MySolvedProblem() {
 
   return (
     <WholeWrapper>
-      <Blankdiv $show={show} $hasOpened={hasOpened}>
+      <Blankdiv $show={show} $animate={animate}>
         <CodeResult />
       </Blankdiv>
 

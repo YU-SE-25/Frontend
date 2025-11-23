@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai";
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 
@@ -271,6 +271,10 @@ export default function BoardWrite({
       setIsSubmitting(false);
     }
   };
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
   return (
     <Page>
       <Wrapper as="form" onSubmit={handleSubmit}>
