@@ -66,6 +66,7 @@ export default function QnaList() {
   // URL의 ?no=값을 읽어서 선택된 글 ID로 사용
   const selectedPostId = searchParams.get("no");
   const problemId = searchParams.get("id");
+  const problemIdNum = problemId ? Number(problemId) : null;
   useEffect(() => {
     setPosts(QNA_DUMMY);
   }, []);
@@ -90,9 +91,38 @@ export default function QnaList() {
     window.scrollTo(0, 0);
   };
 
+  //검색
+  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (value.trim().length > 0) {
+      // 검색이 시작되면 id 필터 제거
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("id");
+        return next;
+      });
+      setCurrentPage(1); // 검색어 변경 시 페이지 1로 이동
+    }
+  };
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // 폼 새로고침 방지
+    // 글자수 제한 없음
+    setCurrentPage(1);
+    // 검색어 있으면 problemId 필터 제거
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("id"); // 문제번호 필터 제거
+      return next;
+    });
+  };
+
   // 게시글 필터링 및 정렬
   const filteredAndSortedPosts = useMemo(() => {
     let result = posts;
+    if (problemIdNum !== null && !Number.isNaN(problemIdNum)) {
+      result = result.filter((post) => post.problem_id === problemIdNum);
+    }
 
     const keyword = searchTerm.trim();
 
@@ -121,7 +151,7 @@ export default function QnaList() {
     });
 
     return result;
-  }, [posts, searchTerm, sortType]);
+  }, [posts, searchTerm, sortType, problemIdNum]);
 
   const totalItems = filteredAndSortedPosts.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
@@ -160,12 +190,14 @@ export default function QnaList() {
 
       <ControlBar>
         <SearchContainer>
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="제목 검색"
-          />
-          <SearchButton>검색</SearchButton>
+          <form onSubmit={handleSearchSubmit}>
+            <SearchInput
+              value={searchTerm}
+              onChange={handleSearchInput}
+              placeholder="제목 검색"
+            />
+            <SearchButton>검색</SearchButton>
+          </form>
         </SearchContainer>
 
         <SortSelect
