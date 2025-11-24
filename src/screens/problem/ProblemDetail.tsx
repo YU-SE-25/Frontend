@@ -141,11 +141,7 @@ export default function ProblemDetail() {
           </ViewCodeButton>
           <ViewCodeButton
             onClick={() => {
-              if (!isLoggedIn) {
-                alert("로그인 후 이용 가능합니다.");
-                return;
-              }
-              // navigate(`/problems/${problemId}/qna`);
+              navigate(`/qna?id=${problemId}`);
             }}
           >
             QnA
