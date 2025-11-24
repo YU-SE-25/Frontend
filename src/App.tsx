@@ -7,8 +7,8 @@ import { darkTheme, lightTheme } from "./theme/theme";
 import { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { isDarkAtom, refreshTokenAtom, refreshActionAtom } from "./atoms";
-import type { RefreshResponse } from "./atoms";
-import axios from "axios";
+import { userProfileAtom, type RefreshResponse } from "./atoms";
+import api from "./axiosInstance";
 
 const Container = styled.div`
   margin-top: ${TOPBAR_HEIGHT}px;
@@ -22,24 +22,31 @@ export default function App() {
   const storedRefreshToken = useAtomValue(refreshTokenAtom);
   const runRefreshAction = useSetAtom(refreshActionAtom);
 
-  // 앱 시작 시 refreshToken이 있으면 accessToken 갱신
+  const setUserProfile = useSetAtom(userProfileAtom);
+
+  // 앱 시작 시 refreshToken 있으면 accessToken + userProfile 복구
   useEffect(() => {
     if (!storedRefreshToken) return;
-    const refreshTokenAsync = async () => {
+
+    const restoreSession = async () => {
       try {
-        const res = await axios.post<RefreshResponse>(
-          "http://localhost:8080/api/auth/refresh",
-          {
-            refreshToken: storedRefreshToken,
-          }
-        );
-        runRefreshAction(res.data);
+        //accessToken 재발급
+        const refreshRes = await api.post<RefreshResponse>("/auth/refresh", {
+          refreshToken: storedRefreshToken,
+        });
+        runRefreshAction(refreshRes.data);
+
+        //userProfile 재조회
+        const meRes = await api.get("/auth/me");
+        // 백엔드의 현재 유저 조회 API 경로에 맞춰 수정해야 함
+        setUserProfile(meRes.data);
       } catch (err) {
-        console.error("토큰 갱신 실패:", err);
+        console.error("세션 복구 실패:", err);
       }
     };
-    refreshTokenAsync();
-  }, [storedRefreshToken, runRefreshAction]);
+
+    restoreSession();
+  }, [storedRefreshToken]);
 
   return (
     <>

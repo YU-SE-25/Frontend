@@ -1,4 +1,3 @@
-// src/api/auth_api.ts
 import { api } from "./axios";
 import type { RefreshResponse } from "../atoms";
 
@@ -20,8 +19,9 @@ export interface RegisterRequest {
 // Auth 관련 모든 요청을 한 곳에서 관리
 export const AuthAPI = {
   // 0. 블랙리스트 체크
-  checkBlacklist: (email: string, phone: string) =>
+  checkBlacklist: (name: string, email: string, phone: string) =>
     api.post<{ isBlacklisted: boolean }>("/auth/check/blacklist", {
+      name,
       email,
       phone,
     }),

@@ -27,7 +27,10 @@ export const toggleThemeActionAtom = atom(null, (get, set) => {
   set(isDarkAtom, (prev) => !prev);
 });
 
-export const accessTokenAtom = atom<string | null>(null);
+export const accessTokenAtom = atomWithStorage<string | null>(
+  "accessToken",
+  null
+);
 //만료 시간 (재발급 로직에 사용)
 export const accessTokenExpiresInAtom = atom<number | null>(null);
 // Local Storage에 영구 저장 (로그인 유지의 핵심!) 브라우저를 껐다 켜도 유지됨
@@ -36,7 +39,10 @@ export const refreshTokenAtom = atomWithStorage<string | null>(
   null
 );
 //사용자의 최소 정보
-export const userProfileAtom = atom<UserProfile | null>(null);
+export const userProfileAtom = atomWithStorage<UserProfile | null>(
+  "userProfile",
+  null
+);
 userProfileAtom.debugLabel = "User Profile";
 //로그인 여부 판단: accessToken이 존재하고 userProfile이 있으면 true
 export const isLoggedInAtom = atom((get) => {
