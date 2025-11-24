@@ -44,6 +44,19 @@ const DetailTitle = styled.h2`
   font-size: 20px;
   color: ${({ theme }) => theme.textColor};
 `;
+const ProblemTitle = styled.h2`
+  margin-right: 8px;
+  font-size: 24px;
+  font-weight: 800;
+  color: ${({ theme }) => theme.textColor};
+  display: inline;
+
+  &:hover {
+    text-decoration: underline;
+    color: ${({ theme }) => theme.focusColor};
+    cursor: pointer;
+  }
+`;
 
 const MetaRow = styled.div<{
   isDisabled?: boolean;
@@ -358,12 +371,20 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
   const handleNavigateMypage = (username: string) => () => {
     nav(`/mypage/${username}`);
   };
+  const handleNavigateProblem = (problemId: number) => () => {
+    nav(`/problem-detail/${problemId}`);
+  };
 
   return (
     <DetailCard>
       <DetailHeader>
         <TitleBlock>
-          <DetailTitle>{post.post_title}</DetailTitle>
+          <DetailTitle>
+            <ProblemTitle onClick={handleNavigateProblem(post.problem_id)}>
+              #{post.problem_id}번 문제
+            </ProblemTitle>
+            | {post.post_title}
+          </DetailTitle>
 
           <MetaRow isDisabled={post.anonymity}>
             <span onClick={handleNavigateMypage(displayAuthor)}>

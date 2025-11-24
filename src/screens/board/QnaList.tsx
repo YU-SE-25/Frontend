@@ -94,26 +94,28 @@ export default function QnaList() {
   const filteredAndSortedPosts = useMemo(() => {
     let result = posts;
 
-    if (problemId) {
-      const pid = Number(problemId);
-      if (!Number.isNaN(pid)) {
-        result = result.filter((post) => post.problem_id === pid);
-      }
-    }
-    //제목 검색
     const keyword = searchTerm.trim();
+
+    // 🔎 검색어가 있으면 제목 + 문제 번호 검색
     if (keyword.length > 0) {
-      result = result.filter((post) =>
-        post.post_title.toLowerCase().includes(keyword.toLowerCase())
-      );
+      const lower = keyword.toLowerCase();
+
+      result = result.filter((post) => {
+        const titleMatch = post.post_title.toLowerCase().includes(lower);
+
+        const problemMatch = post.problem_id?.toString().includes(lower);
+
+        return titleMatch || problemMatch;
+      });
     }
-    // 정렬
+
+    // 🔽 정렬
     result = [...result].sort((a, b) => {
       if (sortType === "latest") {
         return b.create_time.localeCompare(a.create_time);
       }
       if (sortType === "id") {
-        return (a.problem_id ?? 0) - (b.problem_id ?? 0);
+        return a.post_id - b.post_id;
       }
       return 0;
     });
