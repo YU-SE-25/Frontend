@@ -87,6 +87,9 @@ export const CheckboxLabel = styled.label`
   margin-bottom: 10px;
   cursor: pointer;
   color: ${(props) => props.theme.textColor};
+  span {
+    color: ${(props) => props.theme.textColor};
+  }
 `;
 
 //약관
@@ -117,4 +120,30 @@ export const CloseButton = styled.button`
   background: none;
   font-size: 20px;
   cursor: pointer;
+`;
+
+export const RoleSelectWrapper = styled.div`
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 16px;
+`;
+
+export const RoleOption = styled.label<{ $checked: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  border: 2px solid
+    ${(props) => (props.$checked ? props.theme.logoColor : props.theme.bgColor)};
+  background-color: ${(props) =>
+    props.$checked ? "rgba(76, 175, 80, 0.1)" : "transparent"};
+  color: ${(props) => props.theme.textColor};
+  input[type="radio"] {
+    accent-color: ${(props) => props.theme.logoColor};
+    cursor: pointer;
+    color: ${(props) => props.theme.textColor};
+  }
 `;

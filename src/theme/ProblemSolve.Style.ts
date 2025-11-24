@@ -287,14 +287,10 @@ export const LanguageSelect = styled.select`
 export const EditorWrapper = styled.div`
   width: 100%;
   height: 100%;
-  background-color: #141414; /* 모나코를 위한 어두운 톤 */
+  background-color: ${(props) => props.theme.bgColor};
   border-radius: 10px;
   padding: 10px;
   box-sizing: border-box;
-
-  @media (prefers-color-scheme: light) {
-    background-color: #f2f2f2; /* 라이트 모드일 때 */
-  }
 `;
 
 // 폰트 크기 선택 드롭다운

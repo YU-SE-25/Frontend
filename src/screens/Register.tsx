@@ -14,6 +14,8 @@ import {
   ModalContentBox,
   CloseButton,
   ModalBackdrop,
+  RoleSelectWrapper,
+  RoleOption,
 } from "../theme/Register.Style.ts";
 
 // 백엔드 API 연결용 axios 인스턴스
@@ -46,6 +48,7 @@ const validatePassword = (password: string) => {
 export default function Register() {
   const navigate = useNavigate();
 
+  const [role, setRole] = useState<"LEARNER" | "INSTRUCTOR">("LEARNER");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -56,6 +59,9 @@ export default function Register() {
   const [isTermsChecked, setIsTermsChecked] = useState(false);
   const [isPrivacyChecked, setIsPrivacyChecked] = useState(false);
 
+  const [portfolioLinks, setPortfolioLinks] = useState<string[]>([]);
+  const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
+
   const isValidEmailFormat = email.includes("@") && email.includes(".");
   const passwordValidationResult = validatePassword(password);
   const passwordsMatch = password === passwordConfirm;
@@ -65,6 +71,8 @@ export default function Register() {
   const [modalContent, setModalContent] = useState<"terms" | "privacy" | null>(
     null
   );
+  const isInstructorValid =
+    role === "LEARNER" || portfolioLinks.length > 0 || portfolioFile !== null;
 
   const isFormValid = useMemo(() => {
     return (
@@ -75,7 +83,8 @@ export default function Register() {
       passwordValidationResult.isValid &&
       isValidEmailFormat &&
       isValidPhone &&
-      isValidNicknameLength
+      isValidNicknameLength &&
+      isInstructorValid
     );
   }, [
     isTermsChecked,
@@ -86,6 +95,7 @@ export default function Register() {
     isValidEmailFormat,
     isValidPhone,
     isValidNicknameLength,
+    isInstructorValid,
   ]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,7 +136,7 @@ export default function Register() {
     // 1. 이메일 중복 체크 (/auth/check/email)
     try {
       console.log("1. 이메일 중복 체크 시작...");
-      //await api.post("/api/auth/check/email", { email }); // 백엔드 연결용
+      //await api.post("/auth/check/email", { email }); // 백엔드 연결용
       await AuthAPI.checkEmail(email);
     } catch (error) {
       alert("이미 사용 중인 이메일입니다. 1인 1계정만 생성 가능합니다.");
@@ -136,7 +146,7 @@ export default function Register() {
     // 2. 닉네임 중복 체크 (/auth/check/nickname)
     try {
       console.log("2. 닉네임 중복 체크 시작...");
-      //await api.post("/api/auth/check/nickname", { nickname }); // 백엔드 연결용
+      //await api.post("/auth/check/nickname", { nickname }); // 백엔드 연결용
       await AuthAPI.checkNickname(nickname);
     } catch (error) {
       alert("이미 사용 중인 닉네임입니다.");
@@ -146,7 +156,7 @@ export default function Register() {
     // 3. 전화번호 중복 체크 (/auth/check/phone)
     try {
       console.log("3. 전화번호 중복 체크 시작...");
-      //await api.post("/api/auth/check/phone", { phone: phoneNumber }); // 백엔드 연결용
+      //await api.post("/auth/check/phone", { phone: phoneNumber }); // 백엔드 연결용
       await AuthAPI.checkPhone(phoneNumber);
     } catch (error) {
       alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
@@ -172,21 +182,23 @@ export default function Register() {
       phone: phoneNumber,
       role: "LEARNER" as const,
       agreedTerms: ["TERMS_OF_SERVICE", "PRIVACY_POLICY"],
-      portfolioFileUrl: null,
-      originalFileName: null,
-      fileSize: null,
-      portfolioLinks: [],
+      // 강사일 때만 값 넣기
+      portfolioFileUrl: role === "INSTRUCTOR" ? "temp" : null,
+      originalFileName:
+        role === "INSTRUCTOR" ? portfolioFile?.name ?? null : null,
+      fileSize: role === "INSTRUCTOR" ? portfolioFile?.size ?? null : null,
+      portfolioLinks: role === "INSTRUCTOR" ? portfolioLinks : [],
     };
 
     // 5. 최종 회원가입 (/auth/register)
     try {
       console.log("5. 최종 회원가입 요청 전송...");
-      //await api.post("/api/auth/register", registerData);
+      //await api.post("/auth/register", registerData);
       await AuthAPI.register(registerData);
 
       // 6. 이메일 인증 링크 발송 (/auth/email/send-link)
       console.log("6. 이메일 인증 링크 발송 요청...");
-      //await api.post("/api/auth/email/send-link", { email });
+      //await api.post("/auth/email/send-link", { email });
       await AuthAPI.sendEmailVerify(email);
 
       navigate("/register-success");
@@ -207,6 +219,37 @@ export default function Register() {
     <RegisterPageWrapper>
       <RegisterBox>
         <Title>회원가입</Title>
+
+        <Label>회원 유형 :</Label>
+        <RoleSelectWrapper>
+          <RoleOption
+            $checked={role === "LEARNER"}
+            onClick={() => setRole("LEARNER")}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="LEARNER"
+              checked={role === "LEARNER"}
+              onChange={() => setRole("LEARNER")}
+            />
+            학습자
+          </RoleOption>
+
+          <RoleOption
+            $checked={role === "INSTRUCTOR"}
+            onClick={() => setRole("INSTRUCTOR")}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="INSTRUCTOR"
+              checked={role === "INSTRUCTOR"}
+              onChange={() => setRole("INSTRUCTOR")}
+            />
+            강사
+          </RoleOption>
+        </RoleSelectWrapper>
 
         <form onSubmit={handleRegister}>
           <InputGroup>
@@ -276,6 +319,33 @@ export default function Register() {
               placeholder="2글자 이상, 10글자 미만"
             />
           </InputGroup>
+
+          {role === "INSTRUCTOR" && (
+            <>
+              <InputGroup>
+                <Label>포트폴리오 URL :</Label>
+                <StyledInput
+                  type="text"
+                  placeholder="예: https://github.com/yourname"
+                  onChange={(e) => setPortfolioLinks([e.target.value])}
+                />
+              </InputGroup>
+
+              <InputGroup>
+                <Label>포트폴리오 파일 :</Label>
+                <StyledInput
+                  type="file"
+                  onChange={(e) =>
+                    setPortfolioFile(e.target.files?.[0] || null)
+                  }
+                />
+              </InputGroup>
+
+              <p style={{ fontSize: "14px", color: "#999" }}>
+                ※ URL 또는 파일 중 하나 이상 필수 제출
+              </p>
+            </>
+          )}
 
           <TermsGroup>
             <CheckboxLabel>
