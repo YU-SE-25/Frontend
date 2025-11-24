@@ -394,3 +394,8 @@ export async function getDummyProblemDetail(
 export async function increaseDummyView(problemId: string): Promise<void> {
   if (DUMMY_STORE[problemId]) DUMMY_STORE[problemId].views += 1;
 }
+
+export const PROBLEM_LIST = Object.entries(DUMMY_STORE).map(([id, prob]) => ({
+  id: Number(id),
+  title: prob.title,
+}));
