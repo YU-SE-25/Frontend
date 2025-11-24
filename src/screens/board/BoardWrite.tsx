@@ -271,6 +271,10 @@ export default function BoardWrite({
       setIsSubmitting(false);
     }
   };
+  if (!user) {
+    navigate("/login");
+  }
+
   return (
     <Page>
       <Wrapper as="form" onSubmit={handleSubmit}>

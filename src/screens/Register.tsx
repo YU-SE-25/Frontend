@@ -17,7 +17,11 @@ import {
 } from "../theme/Register.Style.ts";
 
 // 백엔드 API 연결용 axios 인스턴스
-import { api } from "../api/axios";
+//import { api } from "../api/axios";
+
+import { TERMS_OF_SERVICE } from "./terms/TermsOfService";
+import { PRIVACY_POLICY } from "./terms/PrivacyPolicy";
+import { AuthAPI } from "../api/auth_api";
 
 //비밀번호
 const validatePassword = (password: string) => {
@@ -100,30 +104,15 @@ export default function Register() {
     setPhoneNumber(formattedNumber);
   };
 
-  const handleOpenTerms = (type: "terms" | "privacy") => {
-    setModalContent(type);
-  };
-  const handleCloseModal = () => {
-    setModalContent(null);
-  };
-
+  //api쪽
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    //백엔드 연결용 API 호출 구간
     /*
     // 0. 블랙리스트 체크 (/auth/check/blacklist)
     try {
       console.log("0. 블랙리스트 체크 시작...");
-      const response = await api.post<{ isBlacklisted: boolean }>(
-        "/auth/check/blacklist",
-        {
-          email,
-          phone: phoneNumber,
-        }
-      );
-      // 백엔드 연결용
-
+      const response = await AuthAPI.checkBlacklist(email, phoneNumber);
       if (response.data.isBlacklisted) {
         alert("회원가입이 제한된 사용자입니다.");
         return;
@@ -132,11 +121,13 @@ export default function Register() {
       alert("블랙리스트 확인 중 오류가 발생했습니다.");
       return;
     }
-*/
+    */
+
     // 1. 이메일 중복 체크 (/auth/check/email)
     try {
       console.log("1. 이메일 중복 체크 시작...");
       //await api.post("/api/auth/check/email", { email }); // 백엔드 연결용
+      await AuthAPI.checkEmail(email);
     } catch (error) {
       alert("이미 사용 중인 이메일입니다. 1인 1계정만 생성 가능합니다.");
       return;
@@ -146,6 +137,7 @@ export default function Register() {
     try {
       console.log("2. 닉네임 중복 체크 시작...");
       //await api.post("/api/auth/check/nickname", { nickname }); // 백엔드 연결용
+      await AuthAPI.checkNickname(nickname);
     } catch (error) {
       alert("이미 사용 중인 닉네임입니다.");
       return;
@@ -155,33 +147,30 @@ export default function Register() {
     try {
       console.log("3. 전화번호 중복 체크 시작...");
       //await api.post("/api/auth/check/phone", { phone: phoneNumber }); // 백엔드 연결용
+      await AuthAPI.checkPhone(phoneNumber);
     } catch (error) {
       alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
 
-    // 4. 동일 인물 계정 확인 (/auth/check/duplicate-account)
-    // 백엔드 재확인 필요
     /*
-  try {
-    console.log("4. 동일 인물 계정 확인 시작...");
-    await api.post("/api/auth/check/duplicate-account", {
-      name,
-      phoneNumber,
-    }); // 백엔드 연결용
-  } catch (error) {
-    alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
-    return;
-  }
-  */
+    // 4. 동일 인물 계정 확인 (/auth/check/duplicate-account)
+    try {
+      console.log("4. 동일 인물 계정 확인 시작...");
+      await AuthAPI.checkDuplicateAccount(name, phoneNumber);
+    } catch (error) {
+      alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
+      return;
+    }
+    */
 
     const registerData = {
       email,
       password,
       name,
       nickname,
-      phone: phoneNumber, // 반드시 010-0000-0000 형태
-      role: "LEARNER",
+      phone: phoneNumber,
+      role: "LEARNER" as const,
       agreedTerms: ["TERMS_OF_SERVICE", "PRIVACY_POLICY"],
       portfolioFileUrl: null,
       originalFileName: null,
@@ -192,16 +181,26 @@ export default function Register() {
     // 5. 최종 회원가입 (/auth/register)
     try {
       console.log("5. 최종 회원가입 요청 전송...");
-      //await api.post("/api/auth/register", registerData); // 백엔드 연결용
+      //await api.post("/api/auth/register", registerData);
+      await AuthAPI.register(registerData);
 
       // 6. 이메일 인증 링크 발송 (/auth/email/send-link)
       console.log("6. 이메일 인증 링크 발송 요청...");
-      //await api.post("/api/auth/email/send-link", { email }); // 백엔드 연결용
+      //await api.post("/api/auth/email/send-link", { email });
+      await AuthAPI.sendEmailVerify(email);
 
       navigate("/register-success");
     } catch (error) {
       alert("서버 오류가 발생했습니다.");
     }
+  };
+
+  const handleOpenTerms = (type: "terms" | "privacy") => {
+    setModalContent(type);
+  };
+
+  const handleCloseModal = () => {
+    setModalContent(null);
   };
 
   return (
@@ -324,9 +323,7 @@ export default function Register() {
               {modalContent === "terms" ? "이용 약관" : "개인정보 처리방침"}
             </h3>
             <p style={{ whiteSpace: "pre-wrap" }}>
-              {modalContent === "terms"
-                ? `\n 내용 추가 예정`
-                : `\n 내용 추가 예정`}
+              {modalContent === "terms" ? TERMS_OF_SERVICE : PRIVACY_POLICY}
             </p>
           </ModalContentBox>
         </ModalBackdrop>
