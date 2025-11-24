@@ -1,16 +1,21 @@
+// src/pages/qna/QnaWrite.tsx
 import { useAtomValue } from "jotai";
-import React, { useState, useEffect } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 
-type BoardCategory = "discussion" | "qna";
-
-const CATEGORY_LABEL: Record<BoardCategory, string> = {
-  // free: "자유게시판",
-  discussion: "토론게시판",
-  qna: "Q&A 게시판",
-};
+// 🔹 문제 상세 타입 + 더미 API (ProblemSolvePage에서 쓰던 거 그대로)
+import type { IProblem } from "../../api/problem_api";
+import {
+  getDummyProblemDetail,
+  PROBLEM_LIST,
+} from "../../api/dummy/problem_dummy";
 
 const Page = styled.div`
   width: 100%;
@@ -23,7 +28,7 @@ const Page = styled.div`
 
 const Wrapper = styled.div`
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   background: ${({ theme }) => theme.bgCardColor ?? theme.bgColor};
   border-radius: 16px;
   padding: 24px 24px 28px;
@@ -37,6 +42,36 @@ const Title = styled.h1`
   font-size: 22px;
   font-weight: 700;
   color: ${({ theme }) => theme.textColor};
+`;
+
+const Layout = styled.div`
+  display: flex;
+  gap: 24px;
+  margin-top: 8px;
+
+  @media (max-width: 900px) {
+    flex-direction: column;
+  }
+`;
+
+const LeftPane = styled.div`
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  @media (max-width: 900px) {
+    width: 100%;
+  }
+`;
+
+const RightPane = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `;
 
 const FieldRow = styled.div`
@@ -59,20 +94,6 @@ const RequiredDot = styled.span`
 const TextInput = styled.input`
   width: auto;
   padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.textColor};
-  background: ${({ theme }) => theme.bgColor};
-  color: ${({ theme }) => theme.textColor};
-  font-size: 14px;
-  outline: none;
-  &:focus {
-    border-color: ${({ theme }) => theme.focusColor ?? "#4c6fff"};
-  }
-`;
-
-const Select = styled.select`
-  width: 220px;
-  padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid ${({ theme }) => theme.textColor};
   background: ${({ theme }) => theme.bgColor};
@@ -168,46 +189,233 @@ const ErrorText = styled.p`
   color: #ff4d4f;
 `;
 
-//-----스터디그룹 코드-----
-interface BoardWriteProps {
-  mode?: "board" | "study"; // 기본 게시판 / 스터디그룹 게시판 구분
-  groupId?: number; // study 모드에서 필요
-}
-//---------
+const ProblemBox = styled.div`
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.bgColor};
+  border: 1px solid ${({ theme }) => theme.textColor}33;
+  color: ${({ theme }) => theme.textColor};
+  font-size: 14px;
+  line-height: 1.5;
+  max-height: 360px;
+  overflow-y: auto;
 
-export default function BoardWrite({
-  mode = "board",
-  groupId,
-}: BoardWriteProps) {
+  pre {
+    margin: 4px 0;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: ${({ theme }) => theme.bgCardColor ?? "#111"};
+    font-size: 12px;
+    white-space: pre-wrap;
+  }
+`;
+
+const ProblemInfoBox = styled.div`
+  padding: 16px 20px;
+  background: ${({ theme }) => theme.bgCardColor ?? theme.bgColor};
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.textColor}22;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 12px;
+`;
+
+const ProblemHeader = styled.h2`
+  font-size: 18px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.textColor};
+  margin: 0;
+`;
+
+const ProblemSubText = styled.div`
+  font-size: 14px;
+  color: ${({ theme }) => theme.textColor}99;
+  margin-top: -6px;
+`;
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const SectionTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const SectionContent = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
+  line-height: 1.45;
+  white-space: pre-wrap;
+`;
+
+const ProblemMetaRow = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor}cc;
+`;
+
+const ExampleBlock = styled.div`
+  background: ${({ theme }) => theme.bgColor};
+  border: 1px solid ${({ theme }) => theme.textColor}33;
+  padding: 10px 12px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const ExampleLabel = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const ExampleCode = styled.pre`
+  background: ${({ theme }) => theme.bgCardColor};
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.textColor};
+  overflow-x: auto;
+  white-space: pre-wrap;
+`;
+const ProblemMeta = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.muteColor};
+  margin-bottom: 6px;
+`;
+
+const ResultList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.textColor}22;
+  max-height: 260px;
+  overflow-y: auto;
+`;
+
+const ResultItem = styled.li<{ $active?: boolean }>`
+  padding: 8px 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  cursor: pointer;
+  background: ${({ $active, theme }) =>
+    $active ? theme.focusColor + "22" : "transparent"};
+  color: ${({ theme }) => theme.textColor};
+
+  &:hover {
+    background: ${({ theme }) => theme.focusColor + "33"};
+  }
+
+  .pid {
+    font-weight: 600;
+    font-size: 12px;
+    color: ${({ theme }) => theme.muteColor};
+  }
+
+  .ptitle {
+    flex: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    color: ${({ theme }) => theme.textColor};
+  }
+`;
+
+type SimpleProblem = {
+  id: number;
+  title: string;
+};
+
+export default function QnaWrite() {
   const navigate = useNavigate();
-  const { p } = useParams();
-  const params = useParams();
-  const { category: routeCategory } = useParams();
-  //스터디그룹 재사용 용도의 코드, api 붙이면 빨간줄 사라짐
-  const effectiveGroupId = Number(params.groupId);
-  //스터디 그룹은 category를 강제로 'discussion'으로 고정
-  const isStudy = mode === "study";
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const user = useAtomValue(userProfileAtom);
 
-  const initialCategory: BoardCategory =
-    routeCategory === "qna" || routeCategory === "discussion"
-      ? (routeCategory as BoardCategory)
-      : "discussion";
-  const [category, setCategory] = useState<BoardCategory>(initialCategory);
+  // 🔹 ?id=문제번호로 들어온 경우 자동 선택
+  const initialProblemIdParam = searchParams.get("id");
+  const initialProblemId = initialProblemIdParam
+    ? Number(initialProblemIdParam)
+    : undefined;
+
+  const initialProblem =
+    initialProblemId != null
+      ? PROBLEM_LIST.find((p) => p.id === initialProblemId) ?? null
+      : null;
+
+  const [selectedProblem, setSelectedProblem] = useState<SimpleProblem | null>(
+    initialProblem
+  );
+  const [problemKeyword, setProblemKeyword] = useState(
+    initialProblem ? String(initialProblem.id) : ""
+  );
+
+  // 🔹 실제 문제 상세 (설명 + 예시용)
+  const [problemDetail, setProblemDetail] = useState<IProblem | null>(null);
+  const [problemLoading, setProblemLoading] = useState(false);
+
+  // 선택된 문제가 바뀔 때마다 상세 더미 로드
+  useEffect(() => {
+    if (!selectedProblem) {
+      setProblemDetail(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadDetail = async () => {
+      try {
+        setProblemLoading(true);
+        const data = await getDummyProblemDetail(String(selectedProblem.id));
+        if (!cancelled) {
+          setProblemDetail(data);
+        }
+      } catch (e) {
+        console.error("문제 정보 로드 실패:", e);
+        if (!cancelled) setProblemDetail(null);
+      } finally {
+        if (!cancelled) setProblemLoading(false);
+      }
+    };
+
+    loadDetail();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProblem]);
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
-  const user = useAtomValue(userProfileAtom);
 
-  // 스터디 모드는 토론게시판 고정
-  useEffect(() => {
-    if (isStudy) setCategory("discussion");
-    setIsPrivate(false);
-  }, [isStudy]);
+  const isValid =
+    !!selectedProblem && title.trim().length > 0 && content.trim().length > 0;
 
-  const isValid = title.trim().length > 0 && content.trim().length > 0;
+  const filteredProblems = useMemo(() => {
+    const q = problemKeyword.trim().toLowerCase();
+    if (!q) return PROBLEM_LIST;
+
+    return PROBLEM_LIST.filter(
+      (p) => p.id.toString().includes(q) || p.title.toLowerCase().includes(q)
+    );
+  }, [problemKeyword]);
+
+  const handleSelectProblem = (p: SimpleProblem) => {
+    setSelectedProblem(p);
+    setProblemKeyword(String(p.id));
+  };
 
   const handleCancel = () => {
     const ok = window.confirm("작성 중인 내용을 취소할까요?");
@@ -217,60 +425,40 @@ export default function BoardWrite({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedProblem) {
+      setError("질문을 남길 문제를 먼저 선택해 주세요.");
+      return;
+    }
     if (!isValid) {
       setError("제목과 내용을 모두 입력해 주세요.");
       return;
     }
     setError(null);
+
     try {
       setIsSubmitting(true);
-      //-----스터디그룹 코드-----
-      //스터디그룹인지 체크 (추가)
-      if (isStudy) {
-        const studyPayload = {
-          post_title: title.trim(),
-          contents: content.trim(),
-          tag: "discussion", // 강제 고정
-          anonymity: isAnonymous,
-          is_private: false, // 비밀글 삭제
-        };
 
-        console.log("스터디그룹 payload:", studyPayload);
-
-        // 여기서 나중에 실제 API 연결됨
-        /*
-      await api.post(`/api/studygroup/${effectiveGroupId}/discuss/1`, studyPayload);
-      */
-
-        alert("스터디그룹 글 작성 완료! (더미)");
-        if (effectiveGroupId) {
-          navigate(`/studygroup/${effectiveGroupId}`);
-        } else {
-          // fallback: 혹시라도 groupId 못 읽으면 기본 studygroup으로 이동
-          navigate("/studygroup");
-        }
-        return;
-      }
-      //----------
-      // 기존 '일반 게시판' 코드
       const payload = {
-        authorId: user?.userId ?? 0, //추가 요망
-        category,
+        authorId: user?.userId ?? 0,
+        problemId: selectedProblem.id,
         title: title.trim(),
         content: content.trim(),
-        isAnonymous: isAnonymous,
-        privatePost: isPrivate, //추가 요망
+        isAnonymous,
+        privatePost: isPrivate,
       };
-      console.log("게시글 전송 payload", payload);
+
+      console.log("QnA 질문 payload", payload);
 
       await new Promise((resolve) => setTimeout(resolve, 500));
-      navigate("/board/" + category);
+
+      navigate(`/qna?id=${selectedProblem.id}`);
     } catch (e) {
-      setError("글 작성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      setError("질문 작성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
@@ -278,34 +466,142 @@ export default function BoardWrite({
   return (
     <Page>
       <Wrapper as="form" onSubmit={handleSubmit}>
-        <Title>게시글 작성</Title>
-        {!isStudy && (
-          <FieldRow>
-            <Label>카테고리</Label>
+        <Title>Q&A 질문 작성</Title>
 
-            {/* 카테고리 드롭다운 + 익명 체크박스 row*/}
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <Select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as BoardCategory)}
+        <Layout>
+          {/* 🔹 왼쪽: 문제 선택 + 문제 상세/예시 */}
+          <LeftPane>
+            <FieldRow>
+              <Label>
+                문제 선택
+                <RequiredDot>*</RequiredDot>
+              </Label>
+              <TextInput
+                value={problemKeyword}
+                onChange={(e) => setProblemKeyword(e.target.value)}
+                placeholder="문제 번호 또는 제목으로 검색"
+              />
+            </FieldRow>
+
+            <ProblemBox>
+              {problemLoading && (
+                <ProblemMeta>문제 정보를 불러오는 중...</ProblemMeta>
+              )}
+              {!problemLoading && selectedProblem && problemDetail && (
+                <ProblemInfoBox>
+                  <ProblemHeader>
+                    #{selectedProblem.id} {problemDetail.title}
+                  </ProblemHeader>
+
+                  <ProblemSubText>
+                    이 문제에 대한 질문을 작성합니다.
+                  </ProblemSubText>
+
+                  <Section>
+                    <SectionTitle>설명</SectionTitle>
+                    <SectionContent>
+                      {problemDetail.description || "설명 없음"}
+                    </SectionContent>
+                  </Section>
+
+                  <Section>
+                    <ProblemMetaRow>
+                      입력: {problemDetail.inputDescription}
+                    </ProblemMetaRow>
+                    <ProblemMetaRow>
+                      출력: {problemDetail.outputDescription}
+                    </ProblemMetaRow>
+                  </Section>
+
+                  {problemDetail.examples?.length > 0 && (
+                    <Section>
+                      <SectionTitle>예제 1</SectionTitle>
+
+                      <ExampleBlock>
+                        <ExampleLabel>입력</ExampleLabel>
+                        <ExampleCode>
+                          {problemDetail.examples[0].input}
+                        </ExampleCode>
+
+                        <ExampleLabel>출력</ExampleLabel>
+                        <ExampleCode>
+                          {problemDetail.examples[0].output}
+                        </ExampleCode>
+                      </ExampleBlock>
+                    </Section>
+                  )}
+
+                  <ProblemMetaRow>
+                    제한: {problemDetail.timeLimit} /{" "}
+                    {problemDetail.memoryLimit}
+                  </ProblemMetaRow>
+                </ProblemInfoBox>
+              )}
+
+              {!problemLoading && !selectedProblem && (
+                <ProblemMeta>
+                  왼쪽 검색창에서 질문을 남길 문제를 선택해 주세요.
+                </ProblemMeta>
+              )}
+            </ProblemBox>
+
+            <ResultList>
+              {filteredProblems.map((p) => (
+                <ResultItem
+                  key={p.id}
+                  $active={selectedProblem?.id === p.id}
+                  onClick={() => handleSelectProblem(p)}
+                >
+                  <span className="pid">#{p.id}</span>
+                  <span className="ptitle">{p.title}</span>
+                </ResultItem>
+              ))}
+            </ResultList>
+          </LeftPane>
+
+          {/* 🔹 오른쪽: 질문 작성 폼 */}
+          <RightPane>
+            <FieldRow>
+              <Label>
+                제목
+                <RequiredDot>*</RequiredDot>
+              </Label>
+              <TextInput
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="제목을 입력해 주세요."
+              />
+            </FieldRow>
+
+            <FieldRow>
+              <Label>
+                내용
+                <RequiredDot>*</RequiredDot>
+              </Label>
+              <TextArea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="내용을 입력해 주세요."
+              />
+            </FieldRow>
+
+            <FieldRow>
+              <Label>옵션</Label>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "14px",
+                }}
               >
-                {(Object.keys(CATEGORY_LABEL) as BoardCategory[]).map((key) => (
-                  <option key={key} value={key}>
-                    {CATEGORY_LABEL[key]}
-                  </option>
-                ))}
-              </Select>
-
-              <CheckboxLabel>
-                <Checkbox
-                  type="checkbox"
-                  checked={isAnonymous}
-                  onChange={(e) => setIsAnonymous(e.target.checked)}
-                />
-                익명 작성
-              </CheckboxLabel>
-              {/*스터디그룹은 비밀글 없음*/}
-              {!isStudy && (
+                <CheckboxLabel>
+                  <Checkbox
+                    type="checkbox"
+                    checked={isAnonymous}
+                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                  />
+                  익명 작성
+                </CheckboxLabel>
                 <CheckboxLabel>
                   <Checkbox
                     type="checkbox"
@@ -314,48 +610,27 @@ export default function BoardWrite({
                   />
                   비밀글
                 </CheckboxLabel>
-              )}
-            </div>
-          </FieldRow>
-        )}
-        <FieldRow>
-          <Label>
-            제목
-            <RequiredDot>*</RequiredDot>
-          </Label>
-          <TextInput
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="제목을 입력해 주세요."
-          />
-        </FieldRow>
+              </div>
+            </FieldRow>
 
-        <FieldRow>
-          <Label>
-            내용
-            <RequiredDot>*</RequiredDot>
-          </Label>
-          <TextArea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="내용을 입력해 주세요."
-          />
-        </FieldRow>
+            {error && <ErrorText>{error}</ErrorText>}
 
-        {error && <ErrorText>{error}</ErrorText>}
-
-        <BottomRow>
-          <LeftOptions></LeftOptions>
-
-          <ButtonRow>
-            <GhostButton type="button" onClick={handleCancel}>
-              취소
-            </GhostButton>
-            <PrimaryButton type="submit" disabled={!isValid || isSubmitting}>
-              {isSubmitting ? "작성 중..." : "등록"}
-            </PrimaryButton>
-          </ButtonRow>
-        </BottomRow>
+            <BottomRow>
+              <LeftOptions />
+              <ButtonRow>
+                <GhostButton type="button" onClick={handleCancel}>
+                  취소
+                </GhostButton>
+                <PrimaryButton
+                  type="submit"
+                  disabled={!isValid || isSubmitting}
+                >
+                  {isSubmitting ? "작성 중..." : "등록"}
+                </PrimaryButton>
+              </ButtonRow>
+            </BottomRow>
+          </RightPane>
+        </Layout>
       </Wrapper>
     </Page>
   );

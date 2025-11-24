@@ -30,7 +30,7 @@ import { fetchBoardList } from "../../api/board_api";
 
 export interface BoardTag {
   id: number; // tag_id
-  name: string; // 예: "일상", "강의", "홍보", "오타"
+  name: string; // 예: "토론 게시판", "강의", "홍보", "오타"
 }
 // 댓글(Comment)
 export interface BoardComment {
@@ -49,6 +49,7 @@ export interface BoardContent {
   tag: BoardTag; //카테고리
   anonymity: boolean; // 익명 여부
   like_count: number;
+  is_private?: boolean;
   comment_count: number;
   create_time: string; // ISO 날짜
   contents: string; // 본문 내용 (상세 보기에서 추가됨)
@@ -63,7 +64,7 @@ interface BoardListProps {
 }
 
 const CATEGORY_LABEL = {
-  daily: "일상",
+  daily: "토론 게시판",
   lecture: "강의",
   promotion: "홍보",
   typo: "오타",
@@ -122,7 +123,7 @@ export default function BoardList({
 
   const currentCategory: BoardCategory = isBoardCategory(category)
     ? category
-    : "daily"; // 기본값: 일상
+    : "daily"; // 기본값: 토론 게시판
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
@@ -327,7 +328,11 @@ export default function BoardList({
               >
                 <TableCell>{post.post_id}</TableCell>
                 <TitleCell>
-                  <PostTitle>{post.post_title}</PostTitle>
+                  {post.is_private ? (
+                    <PostTitle>🔒 비공개 글입니다</PostTitle>
+                  ) : (
+                    <PostTitle>{post.post_title}</PostTitle>
+                  )}
                 </TitleCell>
                 <TableCell>{post.anonymity ? "익명" : post.author}</TableCell>
                 {/* 조회수 컬럼은 현재 like_count로 대체 */}

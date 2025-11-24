@@ -28,6 +28,8 @@ import MyPageRedirect from "./screens/mypage/MypageRedirect";
 import CodeResult from "./screens/problem/CodeResult";
 import MySolvedProblem from "./screens/problem/MySolvedProblem";
 import BoardWrite from "./screens/board/BoardWrite";
+import QnaList from "./screens/board/QnaList";
+import QnaWrite from "./screens/board/QnaWrite";
 
 const router = createBrowserRouter([
   {
@@ -52,6 +54,12 @@ const router = createBrowserRouter([
       {
         path: "board/:category/write",
         element: <BoardWrite mode="board" />,
+      },
+
+      { path: "qna", element: <QnaList /> },
+      {
+        path: "qna/write",
+        element: <QnaWrite />,
       },
 
       { path: "studygroup-main", element: <StudyGroupMain /> },

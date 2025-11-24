@@ -1,8 +1,7 @@
 // src/pages/board/BoardList.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
-import { BOARD_DUMMY } from "../../api/dummy/board_dummy";
 import {
   ProblemListWrapper as BoardListWrapper,
   PageTitle,
@@ -23,11 +22,17 @@ import {
   PageTitleContainer,
   AddButton,
 } from "../../theme/ProblemList.Style";
-import BoardDetail from "./BoardDetail";
+import BoardDetail from "./QnaDetail";
+import { QNA_DUMMY } from "../../api/dummy/qna_dummy";
+import { useQuery } from "@tanstack/react-query";
+import type { BoardContent } from "./BoardList";
 
-type BoardCategory = "free" | "discussion" | "qna";
+export interface BoardTag {
+  id: number;
+  name: string;
+}
 // 댓글(Comment)
-export interface BoardComment {
+export interface QnaComment {
   id: number; // 댓글 ID (API 제공 or 클라이언트 생성)
   author: string; // 작성자
   contents: string; // 댓글 내용
@@ -36,106 +41,34 @@ export interface BoardComment {
 }
 
 // 게시글(Post)
-export interface BoardContent {
-  post_id: number;
-  post_title: string;
-  author: string;
-  tag?: string; // 선택적
-  anonymity: boolean; // 익명 여부
-  like_count: number;
-  comment_count: number;
-  create_time: string; // ISO 날짜
-  contents: string; // 본문 내용 (상세 보기에서 추가됨)
-
-  comments: BoardComment[]; // 댓글 배열 포함 (상세용)
+export interface QnaContent extends Omit<BoardContent, "tag" | "comments"> {
+  problem_id: number;
+  comments: QnaComment[];
 }
 
-//스터디그룹용
-interface BoardListProps {
-  mode?: "global" | "study";
-  groupId?: number;
-}
-
-const CATEGORY_LABEL: Record<BoardCategory, string> = {
-  free: "자유게시판",
-  discussion: "토론게시판",
-  qna: "Q&A 게시판",
-};
-// 더미 데이터 임포트
-const DUMMY_POSTS_BY_CATEGORY: Record<BoardCategory, BoardContent[]> = {
-  free: BOARD_DUMMY["free"],
-  discussion: BOARD_DUMMY["discussion"],
-  qna: BOARD_DUMMY["qna"],
-};
-
-const CategoryTabs = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-`;
 const PostTitle = styled.span`
   font-size: 16px;
   color: ${(props) => props.theme.textColor};
 `;
 
-const CategoryTab = styled.button<{ $active?: boolean }>`
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid
-    ${({ theme, $active }) => ($active ? theme.focusColor : "rgba(0,0,0,0.12)")};
-  background: ${({ theme, $active }) =>
-    $active ? theme.focusColor : "transparent"};
-  color: ${({ theme, $active }) => ($active ? "white" : theme.textColor)};
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease,
-    transform 0.1s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
-`;
-
 // 기존 함수 선언 → props 형태로 변경됨
-export default function BoardList({
-  mode = "global",
-  groupId,
-}: BoardListProps) {
+export default function QnaList() {
   const navigate = useNavigate();
-  const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const currentCategory: BoardCategory =
-    category === "discussion" || category === "free" ? category : "qna";
-
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
+  const [sortType, setSortType] = useState<"latest" | "id">("id");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   //기존 posts 제거하고 상태로 관리하도록 변경됨
-  const [posts, setPosts] = useState<BoardContent[]>([]);
-
-  //스터디그룹 api 추가
-  React.useEffect(() => {
-    if (mode === "study" && groupId) {
-      // 스터디그룹 전용 토론게시판 API
-      /*
-      api.get(`/api/studygroup/${groupId}/discuss`)
-        .then(res => setPosts(res.data))
-        .catch(err => console.error(err));
-      */
-      //더미
-      setPosts(DUMMY_POSTS_BY_CATEGORY["discussion"]);
-    } else {
-      //기존 BoardList 더미 로직 그대로 유지
-      setPosts(DUMMY_POSTS_BY_CATEGORY[currentCategory]);
-    }
-  }, [mode, groupId, currentCategory]);
+  const [posts, setPosts] = useState<QnaContent[]>([]);
 
   // URL의 ?no=값을 읽어서 선택된 글 ID로 사용
   const selectedPostId = searchParams.get("no");
-
+  const problemId = searchParams.get("id");
+  useEffect(() => {
+    setPosts(QNA_DUMMY);
+  }, []);
   const selectedPost = useMemo(() => {
     if (!selectedPostId) return null;
     const idNum = Number(selectedPostId);
@@ -143,21 +76,7 @@ export default function BoardList({
     return posts.find((p) => p.post_id === idNum) ?? null;
   }, [selectedPostId, posts]);
 
-  const handleSearch = () => {
-    if (searchTerm.trim().length === 0) {
-      alert("검색어를 입력해 주세요.");
-      return;
-    }
-    if (searchTerm.trim().length < 2) {
-      alert("두 자 이상의 문자를 입력해 주세요.");
-      return;
-    }
-    setCurrentPage(1);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleSearch();
-  };
+  //함수 선언
 
   const handleViewDetails = (postId: number) => {
     setSearchParams(
@@ -171,39 +90,30 @@ export default function BoardList({
     window.scrollTo(0, 0);
   };
 
-  const handleWritePost = () => {
-    if (mode === "study" && groupId) {
-      navigate(`/studygroup/${groupId}/discuss/write`);
-      return;
-    }
-    navigate(`/board/${currentCategory}/write`);
-  };
-
-  const handleChangeCategory = (next: BoardCategory) => {
-    setSearchTerm("");
-    setCurrentPage(1);
-    navigate(`/board/${next}`);
-  };
-
+  // 게시글 필터링 및 정렬
   const filteredAndSortedPosts = useMemo(() => {
     let result = posts;
 
+    if (problemId) {
+      const pid = Number(problemId);
+      if (!Number.isNaN(pid)) {
+        result = result.filter((post) => post.problem_id === pid);
+      }
+    }
+    //제목 검색
     const keyword = searchTerm.trim();
-    if (keyword.length >= 2) {
+    if (keyword.length > 0) {
       result = result.filter((post) =>
         post.post_title.toLowerCase().includes(keyword.toLowerCase())
       );
     }
-
+    // 정렬
     result = [...result].sort((a, b) => {
       if (sortType === "latest") {
         return b.create_time.localeCompare(a.create_time);
       }
-      if (sortType === "views") {
-        return (b.like_count ?? 0) - (a.like_count ?? 0);
-      }
       if (sortType === "id") {
-        return a.post_id - b.post_id;
+        return (a.problem_id ?? 0) - (b.problem_id ?? 0);
       }
       return 0;
     });
@@ -219,13 +129,16 @@ export default function BoardList({
     indexOfFirstItem,
     indexOfLastItem
   );
+  const handleWritePost = () => {
+    navigate(`/qna/write`);
+  };
 
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
   };
 
   return (
-    <BoardListWrapper $fullWidth={mode === "study"}>
+    <BoardListWrapper>
       <PageTitleContainer
         style={{ flexDirection: "column", alignItems: "flex-start", gap: 8 }}
       >
@@ -237,31 +150,9 @@ export default function BoardList({
             alignItems: "center",
           }}
         >
-          <PageTitle>{CATEGORY_LABEL[currentCategory]}</PageTitle>
-          <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
+          <PageTitle>Q&A 게시판</PageTitle>
+          <AddButton onClick={handleWritePost}>질문 쓰기</AddButton>
         </div>
-        {mode !== "study" && (
-          <CategoryTabs>
-            {/* <CategoryTab
-            $active={currentCategory === "free"}
-            onClick={() => handleChangeCategory("free")}
-          >
-            자유게시판
-          </CategoryTab> */}
-            <CategoryTab
-              $active={currentCategory === "discussion"}
-              onClick={() => handleChangeCategory("discussion")}
-            >
-              토론게시판
-            </CategoryTab>
-            <CategoryTab
-              $active={currentCategory === "qna"}
-              onClick={() => handleChangeCategory("qna")}
-            >
-              Q&A 게시판
-            </CategoryTab>
-          </CategoryTabs>
-        )}
       </PageTitleContainer>
       {selectedPost && <BoardDetail post={selectedPost} />}
 
@@ -270,20 +161,16 @@ export default function BoardList({
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="제목 검색 (2자 이상)"
-            onKeyPress={handleKeyPress}
+            placeholder="제목 검색"
           />
-          <SearchButton onClick={handleSearch}>검색</SearchButton>
+          <SearchButton>검색</SearchButton>
         </SearchContainer>
 
         <SortSelect
           value={sortType}
-          onChange={(e) =>
-            setSortType(e.target.value as "latest" | "views" | "id")
-          }
+          onChange={(e) => setSortType(e.target.value as "latest" | "id")}
         >
           <option value="latest">최신순</option>
-          <option value="views">조회순</option>
           <option value="id">번호순</option>
         </SortSelect>
       </ControlBar>
@@ -291,10 +178,10 @@ export default function BoardList({
       <BoardTable>
         <TableHead>
           <tr>
-            <HeaderCell width="8%">번호</HeaderCell>
+            <HeaderCell width="8%">게시글</HeaderCell>
+            <HeaderCell width="12%">문제번호</HeaderCell>
             <HeaderCell width="50%">제목</HeaderCell>
-            <HeaderCell width="12%">작성자</HeaderCell>
-            <HeaderCell width="10%">조회수</HeaderCell>
+            <HeaderCell width="10%">작성자</HeaderCell>
             <HeaderCell width="15%">작성일</HeaderCell>
           </tr>
         </TableHead>
@@ -308,13 +195,16 @@ export default function BoardList({
                 style={{ cursor: "pointer" }}
               >
                 <TableCell>{post.post_id}</TableCell>
+                <TableCell>#{post.problem_id}</TableCell>
                 <TitleCell>
-                  <PostTitle>{post.post_title}</PostTitle>
+                  {post.is_private ? (
+                    <PostTitle>🔒 비공개 질문입니다</PostTitle>
+                  ) : (
+                    <PostTitle>{post.post_title}</PostTitle>
+                  )}
                 </TitleCell>
-                <TableCell>{post.author}</TableCell>
+                <TableCell>{post.anonymity ? "익명" : post.author}</TableCell>
                 {/* 조회수 컬럼은 현재 like_count로 대체 */}
-                <TableCell>{post.like_count}</TableCell>
-                {/* 작성일은 ISO 문자열에서 날짜만 잘라서 사용 */}
                 <TableCell>{post.create_time.slice(0, 10)}</TableCell>
               </TableRow>
             ))

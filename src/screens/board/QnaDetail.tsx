@@ -3,30 +3,10 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import ReportButton from "../ReportButton";
 import { useNavigate } from "react-router-dom";
+import type { QnaComment, QnaContent } from "./QnaList";
 
-export interface BoardComment {
-  id: number;
-  author: string;
-  contents: string;
-  anonymity: boolean;
-  create_time: string; // ISO 문자열
-}
-
-export interface BoardContent {
-  post_id: number;
-  post_title: string;
-  author: string;
-  tag?: string;
-  anonymity: boolean;
-  like_count: number;
-  comment_count: number;
-  create_time: string; // ISO 문자열
-  contents: string;
-  comments: BoardComment[];
-}
-
-interface BoardDetailProps {
-  post: BoardContent;
+interface QnaDetailProps {
+  post: QnaContent;
   onClose?: () => void;
 }
 
@@ -102,17 +82,45 @@ const MetaRow = styled.div<{
   }
 `;
 
-const TagChip = styled.span`
-  display: inline-flex;
+const VotePanel = styled.div`
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  margin-top: 4px;
-  width: fit-content;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 999px; /* 둥근 직사각형 */
+  border: 1px solid ${({ theme }) => theme.textColor}20;
+  background: ${({ theme }) => theme.bgCardColor};
+`;
 
-  background: rgba(148, 163, 184, 0.18);
-  color: ${({ theme }) => theme.textColor}70;
+const VoteButton = styled.button`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid
+    ${({ theme }) => theme.textColor ?? "rgba(255,255,255,0.15)"};
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  color: ${({ theme }) => theme.textColor};
+
+  &:hover {
+    background: ${({ theme }) => theme.bgColor}60;
+  }
+`;
+
+const VoteCount = styled.span`
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.textColor};
+`;
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const CloseButton = styled.button`
@@ -148,6 +156,17 @@ const ContentArea = styled.div`
     margin: 16px auto;
     border-radius: 8px;
   }
+`;
+const DetailBody = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 16px;
+`;
+
+const DetailMain = styled.div`
+  flex: 1;
+  min-width: 0;
 `;
 
 const StatsRow = styled.div`
@@ -290,26 +309,42 @@ const EmptyText = styled.p`
   text-align: left;
 `;
 
-export default function BoardDetail({ post, onClose }: BoardDetailProps) {
+export default function QnaDetail({ post, onClose }: QnaDetailProps) {
   const nav = useNavigate();
   const [anonymity, setAnonimity] = useState(false);
-  const [localComments, setLocalComments] = useState<BoardComment[]>(
+  const [localComments, setLocalComments] = useState<QnaComment[]>(
     post.comments ?? []
   );
+  const [vote, setVote] = useState(post.like_count); // 투표
+  const [voteState, setVoteState] = useState<"up" | "down" | null>(null);
   const [draft, setDraft] = useState("");
   useEffect(() => {
     setLocalComments(post.comments ?? []);
     window.scrollTo(0, 0);
   }, [post.post_id]);
+  useEffect(() => {
+    setVote(post.like_count);
+  }, [post.like_count]);
 
   const displayAuthor = post.anonymity ? "익명" : post.author;
+
+  //투표
+  const handleUpvote = () => {
+    setVoteState("up");
+    setVote((v) => (voteState === "down" ? v + 2 : v + 1));
+  };
+
+  const handleDownvote = () => {
+    setVoteState("down");
+    setVote((v) => (voteState === "up" ? v - 2 : v - 1));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
 
-    const next: BoardComment = {
+    const next: QnaComment = {
       id: Date.now(),
       author: "Guest", // TODO: 나중에 실제 로그인 유저 닉네임으로 교체
       contents: text,
@@ -338,83 +373,93 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
               <strong>작성일:</strong> {post.create_time.slice(0, 10)}
             </span>
             <span>
-              <strong>조회수:</strong> {post.like_count}
+              <strong>조회수:</strong> {vote}
             </span>
           </MetaRow>
-
-          {post.tag && <TagChip>#{post.tag}</TagChip>}
         </TitleBlock>
 
-        <div style={{ display: "flex", gap: "8px" }}>
+        <HeaderActions>
           <ReportButton
             targetContentId={post.post_id}
             targetContentType="post"
           />
           {onClose && <CloseButton onClick={onClose}>닫기</CloseButton>}
-        </div>
+        </HeaderActions>
       </DetailHeader>
 
-      <ContentArea>{post.contents}</ContentArea>
+      {/* 👇 여기부터 새로 감싼 부분 */}
+      <DetailBody>
+        <DetailMain>
+          <ContentArea>{post.contents}</ContentArea>
 
-      <StatsRow>
-        <span>👍 {post.like_count}</span>
-        <span>💬 {localComments.length}</span>
-      </StatsRow>
+          <StatsRow>
+            <span>👍 {post.like_count}</span>
+            <span>💬 {localComments.length}</span>
+          </StatsRow>
 
-      <CommentsSection>
-        <CommentsHeader>
-          <CommentCount>댓글 {localComments.length}</CommentCount>
-        </CommentsHeader>
+          <CommentsSection>
+            <CommentsHeader>
+              <CommentCount>댓글 {localComments.length}</CommentCount>
+            </CommentsHeader>
 
-        {localComments.length === 0 ? (
-          <EmptyText>첫 번째 댓글을 남겨보세요.</EmptyText>
-        ) : (
-          <CommentList>
-            {localComments.map((c) => {
-              const commentAuthor = c.anonymity ? "익명" : c.author;
-              const date = c.create_time.slice(0, 10);
-              return (
-                <CommentItem key={c.id}>
-                  <CommentMeta isDisabled={c.anonymity}>
-                    <strong onClick={handleNavigateMypage(commentAuthor)}>
-                      {commentAuthor}
-                    </strong>{" "}
-                    · {date}
-                    <ReportButton
-                      targetContentId={c.id}
-                      targetContentType="comment"
-                    />
-                  </CommentMeta>
-                  <CommentContent>{c.contents}</CommentContent>
-                </CommentItem>
-              );
-            })}
-          </CommentList>
-        )}
+            {localComments.length === 0 ? (
+              <EmptyText>첫 번째 댓글을 남겨보세요.</EmptyText>
+            ) : (
+              <CommentList>
+                {localComments.map((c) => {
+                  const commentAuthor = c.anonymity ? "익명" : c.author;
+                  const date = c.create_time.slice(0, 10);
+                  return (
+                    <CommentItem key={c.id}>
+                      <CommentMeta isDisabled={c.anonymity}>
+                        <strong onClick={handleNavigateMypage(commentAuthor)}>
+                          {commentAuthor}
+                        </strong>{" "}
+                        · {date}
+                        <ReportButton
+                          targetContentId={c.id}
+                          targetContentType="comment"
+                        />
+                      </CommentMeta>
+                      <CommentContent>{c.contents}</CommentContent>
+                    </CommentItem>
+                  );
+                })}
+              </CommentList>
+            )}
 
-        <CommentForm onSubmit={handleSubmit}>
-          <CommentTextarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="댓글을 입력하세요."
-          />
-
-          <CommentSubmitRow>
-            <label
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <span>익명</span>
-              <input
-                type="checkbox"
-                checked={anonymity}
-                onChange={(e) => setAnonimity(e.target.checked)}
+            <CommentForm onSubmit={handleSubmit}>
+              <CommentTextarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="댓글을 입력하세요."
               />
-            </label>
 
-            <CommentButton type="submit">댓글 작성</CommentButton>
-          </CommentSubmitRow>
-        </CommentForm>
-      </CommentsSection>
+              <CommentSubmitRow>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <span>익명</span>
+                  <input
+                    type="checkbox"
+                    checked={anonymity}
+                    onChange={(e) => setAnonimity(e.target.checked)}
+                  />
+                </label>
+
+                <CommentButton type="submit">댓글 작성</CommentButton>
+              </CommentSubmitRow>
+            </CommentForm>
+          </CommentsSection>
+        </DetailMain>
+
+        {/* 👉 오른쪽 투표 패널 */}
+        <VotePanel>
+          <VoteButton onClick={handleUpvote}>▲</VoteButton>
+          <VoteCount>{vote}</VoteCount>
+          <VoteButton onClick={handleDownvote}>▼</VoteButton>
+        </VotePanel>
+      </DetailBody>
     </DetailCard>
   );
 }
