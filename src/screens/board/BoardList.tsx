@@ -1,5 +1,5 @@
 // src/pages/board/BoardList.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import { BOARD_DUMMY } from "../../api/dummy/board_dummy";
@@ -24,10 +24,14 @@ import {
   AddButton,
 } from "../../theme/ProblemList.Style";
 import BoardDetail from "./BoardDetail";
-
+import { useQuery } from "@tanstack/react-query";
 import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
+import { fetchBoardList } from "../../api/board_api";
 
-type BoardCategory = "free" | "discussion" | "qna";
+export interface BoardTag {
+  id: number; // tag_id
+  name: string; // 예: "일상", "강의", "홍보", "오타"
+}
 // 댓글(Comment)
 export interface BoardComment {
   id: number; // 댓글 ID (API 제공 or 클라이언트 생성)
@@ -42,7 +46,7 @@ export interface BoardContent {
   post_id: number;
   post_title: string;
   author: string;
-  tag?: string; // 선택적
+  tag: BoardTag; //카테고리
   anonymity: boolean; // 익명 여부
   like_count: number;
   comment_count: number;
@@ -58,16 +62,21 @@ interface BoardListProps {
   groupId?: number;
 }
 
-const CATEGORY_LABEL: Record<BoardCategory, string> = {
-  free: "자유게시판",
-  discussion: "토론게시판",
-  qna: "Q&A 게시판",
-};
+const CATEGORY_LABEL = {
+  daily: "일상",
+  lecture: "강의",
+  promotion: "홍보",
+  typo: "오타",
+} as const;
+
+export type BoardCategory = keyof typeof CATEGORY_LABEL;
+
 // 더미 데이터 임포트
 const DUMMY_POSTS_BY_CATEGORY: Record<BoardCategory, BoardContent[]> = {
-  free: BOARD_DUMMY["free"],
-  discussion: BOARD_DUMMY["discussion"],
-  qna: BOARD_DUMMY["qna"],
+  daily: BOARD_DUMMY["daily"],
+  lecture: BOARD_DUMMY["lecture"],
+  promotion: BOARD_DUMMY["promotion"],
+  typo: BOARD_DUMMY["typo"],
 };
 
 const CategoryTabs = styled.div`
@@ -107,8 +116,13 @@ export default function BoardList({
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const currentCategory: BoardCategory =
-    category === "discussion" || category === "free" ? category : "qna";
+  //params로 받은 category가 유효한지 검사
+  const isBoardCategory = (value: string | undefined): value is BoardCategory =>
+    !!value && value in CATEGORY_LABEL;
+
+  const currentCategory: BoardCategory = isBoardCategory(category)
+    ? category
+    : "daily"; // 기본값: 일상
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
@@ -117,7 +131,6 @@ export default function BoardList({
 
   //기존 posts 제거하고 상태로 관리하도록 변경됨
   const [posts, setPosts] = useState<BoardContent[]>([]);
-
   //스터디그룹 api 추가
   React.useEffect(() => {
     if (mode === "study" && groupId) {
@@ -129,7 +142,7 @@ export default function BoardList({
             post_id: p.post_id,
             post_title: p.post_title,
             author: p.author,
-            tag: p.tag,
+            tag: { id: 0, name: "" }, // 스터디그룹에는 태그 개념이 없음
             anonymity: p.anonymity,
             like_count: p.like_count,
             comment_count: p.comment_count,
@@ -256,24 +269,15 @@ export default function BoardList({
         </div>
         {mode !== "study" && (
           <CategoryTabs>
-            {/* <CategoryTab
-            $active={currentCategory === "free"}
-            onClick={() => handleChangeCategory("free")}
-          >
-            자유게시판
-          </CategoryTab> */}
-            <CategoryTab
-              $active={currentCategory === "discussion"}
-              onClick={() => handleChangeCategory("discussion")}
-            >
-              토론게시판
-            </CategoryTab>
-            <CategoryTab
-              $active={currentCategory === "qna"}
-              onClick={() => handleChangeCategory("qna")}
-            >
-              Q&A 게시판
-            </CategoryTab>
+            {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
+              <CategoryTab
+                key={key}
+                $active={currentCategory === key}
+                onClick={() => handleChangeCategory(key as BoardCategory)}
+              >
+                {label}
+              </CategoryTab>
+            ))}
           </CategoryTabs>
         )}
       </PageTitleContainer>
@@ -325,7 +329,7 @@ export default function BoardList({
                 <TitleCell>
                   <PostTitle>{post.post_title}</PostTitle>
                 </TitleCell>
-                <TableCell>{post.author}</TableCell>
+                <TableCell>{post.anonymity ? "익명" : post.author}</TableCell>
                 {/* 조회수 컬럼은 현재 like_count로 대체 */}
                 <TableCell>{post.like_count}</TableCell>
                 {/* 작성일은 ISO 문자열에서 날짜만 잘라서 사용 */}

@@ -343,10 +343,10 @@ export default function Topbar() {
               </li> */}
               <li>
                 <BoardDropdownItem
-                  to="/board/discussion"
+                  to="/board/daily"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleSelectBoard("/board/discussion");
+                    handleSelectBoard("/board/daily");
                   }}
                 >
                   토론게시판
@@ -354,10 +354,10 @@ export default function Topbar() {
               </li>
               <li>
                 <BoardDropdownItem
-                  to="/board/qna"
+                  to="/qna"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleSelectBoard("/board/qna");
+                    handleSelectBoard("/qna");
                   }}
                 >
                   Q&A 게시판
