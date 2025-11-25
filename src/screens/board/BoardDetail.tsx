@@ -450,7 +450,6 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                 <CommentButton type="submit">댓글 작성</CommentButton>
               </CommentSubmitRow>
             </CommentForm>
-            <CommentButton type="submit">댓글 작성</CommentButton>
           </CommentsSection>
         </DetailMain>
 
