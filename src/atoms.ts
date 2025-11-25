@@ -43,7 +43,6 @@ export const userProfileAtom = atomWithStorage<UserProfile | null>(
   "userProfile",
   null
 );
-userProfileAtom.debugLabel = "User Profile";
 //로그인 여부 판단: accessToken이 존재하고 userProfile이 있으면 true
 export const isLoggedInAtom = atom((get) => {
   return !!get(accessTokenAtom) && !!get(userProfileAtom);
@@ -73,3 +72,18 @@ export const refreshActionAtom = atom(
     set(accessTokenExpiresInAtom, data.expiresIn);
   }
 );
+
+// **********************************************
+isDarkAtom.debugLabel = "Is Dark Mode";
+toggleThemeActionAtom.debugLabel = "Toggle Theme Action";
+
+accessTokenAtom.debugLabel = "Access Token";
+refreshTokenAtom.debugLabel = "Refresh Token";
+accessTokenExpiresInAtom.debugLabel = "Access Token ExpiresIn";
+
+userProfileAtom.debugLabel = "User Profile";
+isLoggedInAtom.debugLabel = "Is Logged In";
+
+loginActionAtom.debugLabel = "Login Action";
+logoutActionAtom.debugLabel = "Logout Action";
+refreshActionAtom.debugLabel = "Refresh Action";
