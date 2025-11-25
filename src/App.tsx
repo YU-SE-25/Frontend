@@ -7,7 +7,11 @@ import { darkTheme, lightTheme } from "./theme/theme";
 import { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { isDarkAtom, refreshTokenAtom, refreshActionAtom } from "./atoms";
-import { userProfileAtom, type RefreshResponse } from "./atoms";
+import {
+  userProfileAtom,
+  type RefreshResponse,
+  type UserProfile,
+} from "./atoms";
 import api from "./axiosInstance";
 
 const Container = styled.div`
@@ -37,8 +41,7 @@ export default function App() {
         runRefreshAction(refreshRes.data);
 
         //userProfile 재조회
-        const meRes = await api.get("/auth/me");
-        // 백엔드의 현재 유저 조회 API 경로에 맞춰 수정해야 함
+        const meRes = await api.get<UserProfile>("/api/mypage");
         setUserProfile(meRes.data);
       } catch (err) {
         console.error("세션 복구 실패:", err);
@@ -46,7 +49,7 @@ export default function App() {
     };
 
     restoreSession();
-  }, [storedRefreshToken]);
+  }, [storedRefreshToken, runRefreshAction, setUserProfile]);
 
   return (
     <>

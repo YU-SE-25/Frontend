@@ -1,4 +1,4 @@
-//import { api } from "./axios";
+import { api } from "./axios";
 import type { LoginResponse } from "../atoms";
 
 interface LoginPayload {
@@ -6,7 +6,7 @@ interface LoginPayload {
   password: string;
   keepLogin: boolean;
 }
-
+/*
 //MOCK API
 export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
   console.log(`[MOCK API] Post Login Called with: ${JSON.stringify(data)}`);
@@ -32,12 +32,11 @@ export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
     user: { userId: 1, nickname: "gamppe", role: "LEARNER" },
   };
 }
+*/
 
-/*
 // ===== 실제 API 통신 (백엔드 준비 후 활성화) =====
 
 export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
-  const response = await api.post<LoginResponse>("/auth/login", data);
+  const response = await api.post<LoginResponse>("auth/login", data);
   return response.data;
 }
-*/
