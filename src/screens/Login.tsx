@@ -155,7 +155,7 @@ export default function Login() {
           }
         }}
       >
-        ⚡ 슈퍼 초강력 로그인 강사 버튼(테스트 계정) ⚡
+        ⚡ 슈퍼 초강력 로그인 학습자 버튼(테스트 계정) ⚡
       </SuperForceLoginButton>
       <SuperForceLoginButton
         type="button"
