@@ -4,6 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getDummyUserProfile } from "../../api/dummy/mypage_dummy";
 import { getUserProfile } from "../../api/mypage_api";
+import UserManagementScreen from "./Manage/User";
+import ReportManageScreen from "./Manage/Report";
+import ProblemManagementScreen from "./Manage/Problem";
 
 const USE_DUMMY = true;
 
@@ -76,24 +79,13 @@ const DebugDiv = styled.div`
 function ManageScreen({ index }: { index: number }) {
   switch (index) {
     case 0:
-      return (
-        <div>
-          <h3>유저 관리 화면</h3>
-          <p>여기에 유저 관리 화면이 표시됩니다.</p>
-        </div>
-      );
+      return <UserManagementScreen />;
     case 1:
-      return (
-        <div>
-          <h3>신고 관리 화면</h3>
-          <p>여기에 신고 관리 화면이 표시됩니다.</p>
-        </div>
-      );
+      return <ReportManageScreen />;
     case 2:
       return (
         <div>
-          <h3>문제 관리 화면</h3>
-          <p>여기에 문제 관리 화면이 표시됩니다.</p>
+          <ProblemManagementScreen />;
         </div>
       );
     default:
