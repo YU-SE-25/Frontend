@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import type { IProblem } from "../../api/problem_api";
 
 // ▶ 실제 API 사용
 //import { getProblemDetail, increaseView,  } from "../api/problemdetail_api";
 // ▶ 더미 사용하려면 위 import 대신 이 두 줄로 바꿔서 사용
-import type { IProblem } from "../../api/problem_api";
 import {
   getDummyProblemDetail as getProblemDetail,
   increaseDummyView as increaseView,
