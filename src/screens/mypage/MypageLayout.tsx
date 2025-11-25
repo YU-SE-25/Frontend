@@ -146,7 +146,6 @@ export default function MyPageLayout() {
   const isMypage = userProfile.nickname === username ? true : false;
 
   const userId = "23"; //여기서 뭔가 문제가 있는거 같아요...
-
   //fetch user profile data
   const {
     data: user,
@@ -158,6 +157,7 @@ export default function MyPageLayout() {
       USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId!),
     staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
   });
+  const isPublic = user?.isPublic !== false;
   if (isLoading) return <div>불러오는 중…</div>;
   if (isError || !user) return <div>에러가 발생했어요.</div>;
 
@@ -167,25 +167,46 @@ export default function MyPageLayout() {
         <UserImg src={user.avatarUrl} alt="User Profile" />
         <UserInfo>
           <Username>{user.username}</Username>
-          <Bio>{user.bio}</Bio>
-          <Chips>
-            {user.prefferred_language?.slice(0, 5).map((lang) => (
-              <LangChip key={lang} tone={lang}>
-                {LangIcon(lang)}
-                <span>{lang}</span>
-              </LangChip>
-            ))}
-            {(user.prefferred_language?.length ?? 0) > 5 && (
-              <LangChip tone="more">
-                + {(user.prefferred_language?.length ?? 0) - 5}..
-              </LangChip>
-            )}
-          </Chips>
+
+          {isPublic ? (
+            <>
+              <Bio>{user.bio}</Bio>
+              <Chips>
+                {user.prefferred_language?.slice(0, 5).map((lang) => (
+                  <LangChip key={lang} tone={lang}>
+                    {LangIcon(lang)}
+                    <span>{lang}</span>
+                  </LangChip>
+                ))}
+                {(user.prefferred_language?.length ?? 0) > 5 && (
+                  <LangChip tone="more">
+                    + {(user.prefferred_language?.length ?? 0) - 5}..
+                  </LangChip>
+                )}
+              </Chips>
+            </>
+          ) : (
+            <>
+              <Bio>이 프로필은 비공개입니다.</Bio>
+              {/* Chips 숨김 */}
+            </>
+          )}
         </UserInfo>
       </Head>
+
       <Body>
-        <Sidebar isMyPage={isMypage} role={userProfile.role} />
-        <Outlet />
+        {isPublic ? (
+          <>
+            <Sidebar isMyPage={isMypage} role={userProfile.role} />
+            <Outlet />
+          </>
+        ) : (
+          <div
+            style={{ width: "100%", textAlign: "center", padding: "40px 0" }}
+          >
+            {/* 비공개 시 Body는 비어있지만, 너무 텅 비어 보이지 않게 여백 줌 */}
+          </div>
+        )}
       </Body>
     </Page>
   );
