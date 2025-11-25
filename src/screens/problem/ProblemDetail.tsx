@@ -30,6 +30,8 @@ import {
   ViewCodeButton,
   TagLink,
 } from "../../theme/ProblemDetail.Style";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "../../atoms";
 
 export default function ProblemDetail() {
   const navigate = useNavigate();
@@ -37,6 +39,7 @@ export default function ProblemDetail() {
 
   const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
+  const userRole = useAtomValue(userProfileAtom)?.role;
   const isLoggedIn = true;
 
   useEffect(() => {
@@ -65,10 +68,14 @@ export default function ProblemDetail() {
     }
     navigate(`/problems/${problemId}/solve`);
   };
-
+  //내 코드보기
   const handleViewMyCode = () => {
     if (!isLoggedIn) return;
     // navigate(`/submissions?problemId=${problemId}&userId=me`);
+  };
+  //문제 수정
+  const handleEditProblem = () => {
+    navigate(`/problem-edit/${problemId}`);
   };
 
   if (loading) return <ProblemWrapper>로딩 중...</ProblemWrapper>;
@@ -159,6 +166,12 @@ export default function ProblemDetail() {
           </ViewCodeButton>
 
           <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
+          {isLoggedIn &&
+            (userRole === "MANAGER" || userRole === "INSTRUCTOR") && (
+              <ViewCodeButton onClick={handleEditProblem}>
+                문제 수정
+              </ViewCodeButton>
+            )}
         </ActionSection>
         <DescriptionSection>
           <SectionHeader>

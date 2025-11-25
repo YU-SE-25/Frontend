@@ -1,5 +1,6 @@
 // 타입과 인터페이스 정의
 import { ALL_AVAILABLE_TAGS } from "./dummy/problem_dummy";
+import axios from "axios";
 export type UserProblemStatus = "solved" | "attempted" | "none";
 export interface IProblem {
   // 공통 / 요약 정보
@@ -16,16 +17,16 @@ export interface IProblem {
   summary?: string;
 
   // ProblemDetail 전용 필드
-  author?: string;
-  timeLimit?: string;
-  memoryLimit?: string;
-  allowedLanguages?: string[];
-  description?: string;
-  inputDescription?: string;
-  outputDescription?: string;
+  author: string;
+  timeLimit: string;
+  memoryLimit: string;
+  allowedLanguages: string[];
+  description: string;
+  inputDescription: string;
+  outputDescription: string;
   examples: IIOExample[];
-  hint?: string;
-  source?: string;
+  hint: string;
+  source: string;
   userAttempts?: number;
   userSuccessRate?: string;
   tags?: string[];

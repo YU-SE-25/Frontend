@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   RegisterWrapper,
   MainContent,
@@ -19,10 +20,18 @@ import {
   RemoveTagButton,
 } from "../../theme/ProblemAdd.Style";
 
+// ▶ 실제 API 사용
+//import { getProblemDetail  } from "../api/problemdetail_api";
+// ▶ 더미 사용하려면 위 import 대신 이 두 줄로 바꿔서 사용
+import { getDummyProblemDetail as getProblemDetail } from "../../api/dummy/problem_dummy";
+
 //태그 api에서 fetch
-import { fetchAvailableTags } from "../../api/problem_api";
+import { fetchAvailableTags, type IProblem } from "../../api/problem_api";
 //태그 더미 사용
 import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
+import NotFound from "../NotFound";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "../../atoms";
 const USE_DUMMY = true;
 
 //임시용 폼 데이터 타입 정의 (추후 api 맞춰서 연동할겁니다)
@@ -45,25 +54,15 @@ interface ProblemFormData {
 //임시 난이도 옵션
 const DIFFICULTY_OPTIONS = ["하", "중", "상", "최상"];
 
-export default function ProblemAdd() {
+export default function ProblemEdit() {
   const navigate = useNavigate();
+  const params = useParams<{ problemId: string }>();
+  const problemId = params.problemId;
 
-  const [formData, setFormData] = useState<ProblemFormData>({
-    title: "",
-    description: "",
-    inputDescription: "",
-    outputDescription: "",
-    timeLimit: "",
-    memoryLimit: "",
-    difficulty: "하",
-    tags: "",
-    keywords: "",
-    hint: "",
-    source: "",
-    lectureLink: "",
-    curriculum: "",
-  });
+  const userRole = useAtomValue(userProfileAtom)?.role;
 
+  const [loading, setLoading] = useState(true);
+  const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [examples, setExamples] = useState([{ input: "", output: "" }]);
   const [testCases, setTestCases] = useState<FileList | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -71,11 +70,61 @@ export default function ProblemAdd() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  //태그 불러오기
+  // formData도 훅으로 *위에서* 선언
+  const [formData, setFormData] = useState<ProblemFormData | null>(null);
+
+  // 1) 문제 정보 불러오기
+  useEffect(() => {
+    if (!problemId) return;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await getProblemDetail(problemId);
+        setProblemData(data);
+      } catch (e) {
+        console.error("문제 정보 로드 실패", e);
+        setProblemData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [problemId]);
+
+  // 2) problemData → formData 초기화
+  useEffect(() => {
+    if (!problemData) return;
+    setExamples(
+      problemData.examples.map((ex) => ({
+        input: ex.input,
+        output: ex.output,
+      }))
+    );
+
+    // 🔥 formData 초기화
+    setFormData({
+      title: problemData.title,
+      description: problemData.description,
+      inputDescription: problemData.inputDescription,
+      outputDescription: problemData.outputDescription,
+      timeLimit: problemData.timeLimit,
+      memoryLimit: problemData.memoryLimit,
+      difficulty: problemData.difficulty,
+      tags: problemData.tags ? problemData.tags.join(", ") : "",
+      keywords: "",
+      hint: problemData.hint,
+      source: problemData.source,
+      lectureLink: "",
+      curriculum: "",
+    });
+  }, [problemData]);
+
+  // 3) 태그 목록 불러오기
   useEffect(() => {
     const loadAvailableTags = async () => {
       try {
-        // 더미 데이터 사용
         const fetchedTags = USE_DUMMY
           ? ALL_AVAILABLE_TAGS
           : await fetchAvailableTags();
@@ -86,8 +135,7 @@ export default function ProblemAdd() {
     };
     loadAvailableTags();
   }, []);
-
-  //태그 추가/삭제 핸들러
+  // ------------------- 태그 추가/삭제 -------------------
   const handleTagSelect = (tag: string) => {
     if (!selectedTags.includes(tag)) {
       setSelectedTags([...selectedTags, tag]);
@@ -98,8 +146,17 @@ export default function ProblemAdd() {
     setSelectedTags(selectedTags.filter((t) => t !== tag));
   };
 
-  // 필수 유효성 검사 (제목, 설명, 예제 1개, 시간/메모리)
+  // ---------------- 예제 삭제 ----------------
+  const handleRemoveExample = (index: number) => {
+    if (examples.length > 1) {
+      setExamples(examples.filter((_, i) => i !== index));
+    }
+  };
+
+  // 4) 유효성 검사 (formData가 null일 수도 있으니까 가드)
   const isFormValid = useMemo(() => {
+    if (!formData) return false;
+
     return (
       formData.title.trim() !== "" &&
       formData.description.trim() !== "" &&
@@ -112,12 +169,34 @@ export default function ProblemAdd() {
     );
   }, [formData, examples]);
 
-  const handleRemoveExample = (index: number) => {
-    if (examples.length > 1) {
-      // 최소 1개 유지를 위해 1개 초과일 때만 삭제
-      setExamples(examples.filter((_, i) => i !== index));
-    }
-  };
+  // ---------- 여기까지 훅 선언, 여기서부터 조건부 렌더 ----------
+
+  // 0) URL 자체가 이상
+  if (!problemId) {
+    return <NotFound />;
+  }
+
+  // 1) userRole 아직 못 받음 → 잠깐 로딩 상태로
+  if (!userRole) {
+    return <div>권한 정보를 확인하는 중입니다…</div>;
+  }
+
+  // 2) 권한 없음
+  if (userRole !== "MANAGER" && userRole !== "INSTRUCTOR") {
+    return <NotFound />;
+  }
+
+  // 3) 문제 로딩 중
+  if (loading) {
+    return <div>문제 정보를 불러오는 중입니다…</div>;
+  }
+
+  // 4) 문제 없음
+  if (!problemData || !formData) {
+    return <NotFound />;
+  }
+
+  // ---------- 실제 화면 렌더링 ----------
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,13 +209,10 @@ export default function ProblemAdd() {
       return;
     }
 
-    // TODO: FormData를 사용하여 문제 정보와 테스트 파일을 API로 전송 (Axios)
-
-    //저장 성공 시: 완료 메시지 출력 후 문제 목록 이동
+    // TODO: API로 전송
     alert("문제 등록이 성공적으로 완료되었습니다.");
     navigate("/problem-list");
   };
-
   return (
     <RegisterWrapper>
       <MainContent>
