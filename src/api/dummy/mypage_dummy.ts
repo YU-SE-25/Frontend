@@ -1,44 +1,6 @@
 // src/api/mypage.ts
 // ⚡️ 실제 서버 연동 전까지 더미데이터로 사용
-
-export type Submission = {
-  id: number;
-  submissionId: number;
-  problemId: number;
-  verdict: "AC" | "WA" | "TLE" | "MLE" | "RE";
-  language: string;
-  runtimeMs: number;
-  submittedAt: string;
-};
-
-export type Achievement = {
-  id: string;
-  title: string;
-  icon: string;
-  earnedAt: string;
-};
-
-export type UserProfile = {
-  userId: number;
-  username: string;
-  avatarUrl: string;
-  bio: string;
-  joinedAt: string;
-  solvedProblems: number[];
-  bookmarkedProblems: number[];
-  recentSubmissions: Submission[];
-  prefferred_language?: string[];
-  role: string;
-  stats: {
-    totalSolved: number;
-    totalSubmitted: number;
-    acceptanceRate: number;
-    streakDays: number;
-    rank: number;
-    rating: number;
-  };
-  achievements: Achievement[];
-};
+import type { UserProfile } from "../mypage_api";
 
 // 🧩 가짜 유저 데이터 (김형섭 예시)
 const dummyUser: UserProfile = {
@@ -55,7 +17,7 @@ const dummyUser: UserProfile = {
     {
       id: 1,
       submissionId: 9001,
-      problemId: 34,
+      problemId: 2,
       verdict: "AC",
       language: "C++17",
       runtimeMs: 74,
@@ -64,7 +26,7 @@ const dummyUser: UserProfile = {
     {
       id: 2,
       submissionId: 9000,
-      problemId: 55,
+      problemId: 5,
       verdict: "WA",
       language: "Python 3",
       runtimeMs: 203,
@@ -73,7 +35,7 @@ const dummyUser: UserProfile = {
     {
       id: 3,
       submissionId: 8999,
-      problemId: 21,
+      problemId: 7,
       verdict: "AC",
       language: "Java 11",
       runtimeMs: 92,
@@ -88,6 +50,17 @@ const dummyUser: UserProfile = {
     streakDays: 7,
     rank: 155,
     rating: 1420,
+  },
+
+  goals: {
+    studyTimeByLanguage: {
+      Python: 120, // Python 2시간
+      "C++": 90, // C++ 1.5시간
+      JavaScript: 60, // JS 1시간
+    },
+    dailyMinimumStudyMinutes: 30, // 하루 최소 공부 30분
+    weeklyStudyGoalMinutes: 600, // 주간 목표 10시간
+    reminderTimes: ["09:00", "21:30"], // 매일 오전 9시, 밤 9시 30분 알림
   },
 
   achievements: [
@@ -144,6 +117,7 @@ const managerUser: UserProfile = {
     rank: 82,
     rating: 1580,
   },
+
   achievements: [
     {
       id: "mentor_badge",
