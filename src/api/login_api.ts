@@ -25,12 +25,28 @@ export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
   }
 
   // 성공 응답 Mock
+
+  // debugging용
+  // return {
+  //   accessToken: "mock_access_token_123",
+  //   refreshToken: "mock_refresh_token_xyz",
+  //   expiresIn: 3600,
+  //   user: { userId: 1, nickname: "gamppe", role: "LEARNER" },
+  // };
+
   return {
     accessToken: "mock_access_token_123",
     refreshToken: "mock_refresh_token_xyz",
     expiresIn: 3600,
-    user: { userId: 1, nickname: "gamppe", role: "LEARNER" },
+    user: { userId: 1, nickname: "gamppe", role: "INSTRUCTOR" },
   };
+
+  //  return {
+  //   accessToken: "mock_access_token_123",
+  //   refreshToken: "mock_refresh_token_xyz",
+  //   expiresIn: 3600,
+  //   user: { userId: 1, nickname: "gamppe", role: "MANAGER" },
+  // };
 }
 */
 
