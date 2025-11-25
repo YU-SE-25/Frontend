@@ -86,6 +86,7 @@ export const MainButton = styled.button`
   border: none;
   border-radius: 4px;
   transition: background-color 0.2s;
+  cursor: pointer;
 
   &:hover {
     background-color: ${(props) => props.theme.focusColor};
@@ -136,6 +137,7 @@ export const SocialButton = styled.button<SocialButtonProps>`
   font-size: 16px;
   border-radius: 4px;
   border: none;
+  cursor: pointer;
 
   /*소셜 로그인 색상은 플랫폼 고유색*/
   background-color: ${(props) =>

@@ -336,9 +336,9 @@ export default function EditPage() {
         weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
 
         // --- 설정 섹션 ---
-        enableStudyReminder: (user.goals?.reminderTimes?.length ?? 0) > 0,
+        enableStudyReminder: user.goals?.isReminderEnabled ?? false,
         preferDarkMode: /*user.preferences?.preferDarkMode ??*/ isDark,
-        hideMyPage: user.isPublic ?? false,
+        hideMyPage: user.isPublic ?? true,
       });
     }
   }, [user]);
@@ -394,9 +394,9 @@ export default function EditPage() {
       weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
 
       // --- 설정 섹션 ---
-      enableStudyReminder: (user.goals?.reminderTimes?.length ?? 0) > 0,
+      enableStudyReminder: user.goals?.isReminderEnabled ?? false,
       preferDarkMode: isDark, // 나중에 user.preferences 추가되면 교체
-      hideMyPage: user.isPublic ?? false,
+      hideMyPage: user.isPublic ?? true,
     });
   };
 

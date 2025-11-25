@@ -48,6 +48,8 @@ export type UserProfile = {
 
     // 4. 학습 알림 / 리마인더 시간 목록
     reminderTimes?: string[]; // "18:00", "21:30" 같은 HH:mm 형식
+    // 5. 리마인더 활성화 여부
+    isReminderEnabled?: boolean;
   };
   achievements?: Achievement[];
 };
