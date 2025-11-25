@@ -27,6 +27,7 @@ export type UserProfile = {
   recentSubmissions: Submission[];
   prefferred_language?: string[];
   role: string;
+  isPublic?: boolean;
   stats: {
     totalSolved: number;
     totalSubmitted: number;
