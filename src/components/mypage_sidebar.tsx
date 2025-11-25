@@ -101,18 +101,12 @@ export default function MyPageSidebar({
         )}
         {isMyPage && (role === "MANAGER" || role === "INSTRUCTOR") && (
           <NavItem
-            onClick={() => go("manager-page")}
-            $active={active === "manager-page"}
+            onClick={() => go("manage-page")}
+            $active={active === "manage-page"}
           >
             - 관리자 페이지
           </NavItem>
         )}
-        <NavItem
-          onClick={() => go("manage-page")}
-          $active={active === "manage-page"}
-        >
-          - 관리자 페이지
-        </NavItem>
 
         <NavLink to="/studygroup-main">- 내 스터디그룹</NavLink>
       </NavList>
