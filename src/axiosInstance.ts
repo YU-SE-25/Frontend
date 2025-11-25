@@ -2,12 +2,13 @@
 import axios from "axios";
 import { getDefaultStore } from "jotai";
 import { accessTokenAtom, refreshTokenAtom, refreshActionAtom } from "./atoms";
-import { postRefresh } from "./api/auth_api"; // 토큰 재발급 API
+import { AuthAPI } from "./api/auth_api"; // 토큰 재발급 API
 
 const store = getDefaultStore();
 // axios 기본 인스턴스 생성
 const api = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "/api",
+  withCredentials: true,
 });
 
 // 모든 요청이 서버로 나가기 전에 이 함수가 먼저 실행
@@ -31,7 +32,7 @@ api.interceptors.response.use(
       if (!refreshToken) throw error;
 
       // refreshToken으로 새 accessToken 발급 요청
-      const refreshResponse = await postRefresh(refreshToken);
+      const refreshResponse = await AuthAPI.refresh(refreshToken);
       // 새로 받은 토큰을 jotai 상태에 반영
       store.set(refreshActionAtom, refreshResponse);
       // 요청 헤더 갱신
