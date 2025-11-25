@@ -27,6 +27,7 @@ export type UserProfile = {
   recentSubmissions: Submission[];
   prefferred_language?: string[];
   role: string;
+  isPublic?: boolean;
   stats: {
     totalSolved: number;
     totalSubmitted: number;
@@ -35,7 +36,22 @@ export type UserProfile = {
     rank: number;
     rating: number;
   };
-  achievements: Achievement[];
+  goals?: {
+    // 1. 언어별 학습 시간 설정 (예: { javascript: 120, python: 90 })
+    studyTimeByLanguage?: Record<string, number>; // 단위: 분(minutes)
+
+    // 2. 하루 최소 학습 시간 설정
+    dailyMinimumStudyMinutes?: number;
+
+    // 3. 주간 학습 목표 (총 학습 시간)
+    weeklyStudyGoalMinutes?: number;
+
+    // 4. 학습 알림 / 리마인더 시간 목록
+    reminderTimes?: string[]; // "18:00", "21:30" 같은 HH:mm 형식
+    // 5. 리마인더 활성화 여부
+    isReminderEnabled?: boolean;
+  };
+  achievements?: Achievement[];
 };
 
 const USERS_API_BASE = "/api/users";

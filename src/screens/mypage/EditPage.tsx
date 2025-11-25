@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getDummyUserProfile } from "../../api/dummy/mypage_dummy";
 import { getUserProfile } from "../../api/mypage_api";
+import { useAtom, useSetAtom } from "jotai";
+import { isDarkAtom, toggleThemeActionAtom } from "../../atoms";
 
 const USE_DUMMY = true;
 
@@ -138,6 +140,98 @@ const LangChip = styled.button<{ $selected?: boolean }>`
   cursor: pointer;
 `;
 
+const GoalRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+`;
+
+const GoalBox = styled.div`
+  padding: 12px 14px;
+  border-radius: 14px;
+  background-color: ${({ theme }) => theme.bgCardColor};
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const GoalLabel = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const GoalInputRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const GoalUnit = styled.span`
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+// 설정 섹션
+const SettingsList = styled.div`
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const SettingItem = styled.div`
+  padding: 10px 12px;
+  border-radius: 12px;
+  background-color: ${({ theme }) => theme.bgCardColor};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+`;
+
+const SettingTextGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+`;
+
+const SettingTitle = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const SettingDescription = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.muteColor};
+`;
+
+// 토글 버튼
+const ToggleButton = styled.div<{ $enable: boolean }>`
+  width: 44px;
+  height: 24px;
+  background-color: ${(props) =>
+    props.$enable ? props.theme.focusColor : props.theme.authHoverBgColor};
+  border-radius: 12px;
+  position: relative;
+  transition: background-color 0.3s;
+`;
+
+// 스위치 핸들 (동그란 부분)
+const ToggleThumb = styled.div<{ $enable: boolean }>`
+  width: 18px;
+  height: 18px;
+  background-color: ${(props) => props.theme.bgColor};
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: ${(props) => (props.$enable ? "23px" : "3px")};
+  transition: left 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+`;
+
 const ButtonRow = styled.div`
   margin-top: 10px;
   display: flex;
@@ -188,6 +282,11 @@ type EditableProfile = {
   bio: string;
   prefferred_language: string[];
   extralanguage?: string;
+  dailyMinimumStudyMinutes?: number | string;
+  weeklyStudyGoalMinutes?: number | string;
+  enableStudyReminder: boolean;
+  preferDarkMode: boolean;
+  hideMyPage: boolean;
 };
 
 const ALL_LANGS = ["Python", "Java", "C++", "JavaScript"];
@@ -195,6 +294,8 @@ const ALL_LANGS = ["Python", "Java", "C++", "JavaScript"];
 export default function EditPage() {
   const { username } = useParams<{ username: string }>();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDark] = useAtom(isDarkAtom);
+  const runToggleTheme = useSetAtom(toggleThemeActionAtom);
   const {
     data: user,
     isLoading,
@@ -212,6 +313,13 @@ export default function EditPage() {
     bio: "",
     prefferred_language: [],
     extralanguage: "",
+
+    dailyMinimumStudyMinutes: "",
+    weeklyStudyGoalMinutes: "",
+
+    enableStudyReminder: false,
+    preferDarkMode: isDark,
+    hideMyPage: false,
   });
 
   useEffect(() => {
@@ -221,6 +329,16 @@ export default function EditPage() {
         username: user.username ?? "",
         bio: user.bio ?? "",
         prefferred_language: user.prefferred_language ?? [],
+        extralanguage: "",
+
+        // --- 학습목표 (goals) ---
+        dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
+        weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
+
+        // --- 설정 섹션 ---
+        enableStudyReminder: user.goals?.isReminderEnabled ?? false,
+        preferDarkMode: /*user.preferences?.preferDarkMode ??*/ isDark,
+        hideMyPage: user.isPublic ?? true,
       });
     }
   }, [user]);
@@ -263,11 +381,22 @@ export default function EditPage() {
 
   const handleReset = () => {
     if (!user) return;
+
     setForm({
       avatarUrl: user.avatarUrl ?? "",
       username: user.username ?? "",
       bio: user.bio ?? "",
       prefferred_language: user.prefferred_language ?? [],
+      extralanguage: "",
+
+      // --- 학습목표 (goals) ---
+      dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
+      weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
+
+      // --- 설정 섹션 ---
+      enableStudyReminder: user.goals?.isReminderEnabled ?? false,
+      preferDarkMode: isDark, // 나중에 user.preferences 추가되면 교체
+      hideMyPage: user.isPublic ?? true,
     });
   };
 
@@ -362,6 +491,105 @@ export default function EditPage() {
               />
             </form>
           )}
+        </FieldGroup>
+
+        {/* --- 학습 목표 섹션  --- */}
+        <FieldGroup>
+          <Label>학습 목표</Label>
+          <Hint>
+            하루 / 주간 학습 시간을 설정하면 대시보드에서 진척도를 확인할 수
+            있어요.
+          </Hint>
+
+          <GoalRow>
+            <GoalBox>
+              <GoalLabel>하루 최소 학습 시간</GoalLabel>
+              <GoalInputRow>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.dailyMinimumStudyMinutes ?? ""}
+                  onChange={handleChange("dailyMinimumStudyMinutes")}
+                  placeholder="예: 30"
+                />
+                <GoalUnit>분</GoalUnit>
+              </GoalInputRow>
+            </GoalBox>
+
+            <GoalBox>
+              <GoalLabel>주간 학습 목표</GoalLabel>
+              <GoalInputRow>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.weeklyStudyGoalMinutes ?? ""}
+                  onChange={handleChange("weeklyStudyGoalMinutes")}
+                  placeholder="예: 600"
+                />
+                <GoalUnit>분</GoalUnit>
+              </GoalInputRow>
+            </GoalBox>
+          </GoalRow>
+        </FieldGroup>
+
+        {/* --- 설정 섹션 --- */}
+        <FieldGroup>
+          <Label>설정</Label>
+          <Hint>계정과 마이페이지에 대한 기본 설정입니다.</Hint>
+
+          <SettingsList>
+            <SettingItem>
+              <SettingTextGroup>
+                <SettingTitle>학습 알림</SettingTitle>
+                <SettingDescription>
+                  설정한 시간에 학습 알림을 받아요.
+                </SettingDescription>
+              </SettingTextGroup>
+              <ToggleButton
+                $enable={form.enableStudyReminder}
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    enableStudyReminder: !prev.enableStudyReminder,
+                  }))
+                }
+              >
+                <ToggleThumb $enable={form.enableStudyReminder} />
+              </ToggleButton>
+            </SettingItem>
+
+            <SettingItem>
+              <SettingTextGroup>
+                <SettingTitle>다크 모드 사용</SettingTitle>
+                <SettingDescription>
+                  기본 테마를 다크 모드로 사용할지 설정해요.
+                </SettingDescription>
+              </SettingTextGroup>
+              <ToggleButton $enable={isDark} onClick={runToggleTheme}>
+                <ToggleThumb $enable={isDark} />
+              </ToggleButton>
+            </SettingItem>
+
+            <SettingItem>
+              <SettingTextGroup>
+                <SettingTitle>마이페이지 비공개</SettingTitle>
+                <SettingDescription>
+                  다른 사용자에게 마이페이지를 공개하지 않아요.
+                </SettingDescription>
+              </SettingTextGroup>
+              <ToggleButton
+                $enable={form.hideMyPage}
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    hideMyPage: !prev.hideMyPage,
+                  }))
+                }
+              >
+                <ToggleThumb $enable={form.hideMyPage} />
+              </ToggleButton>
+            </SettingItem>
+          </SettingsList>
         </FieldGroup>
 
         <ButtonRow>

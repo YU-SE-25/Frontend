@@ -62,10 +62,12 @@ export const ActionButton = styled.button<{ $main?: boolean }>`
 export const FullWidthButton = styled(ActionButton)`
   width: 100%;
   margin: 20px 0 0 0;
+  cursor: pointer;
   &:disabled {
     /*조건 미만족 시 회색 계열(authHoverBgColor)로 변경*/
     background-color: ${(props) => props.theme.authHoverBgColor};
     color: ${(props) => props.theme.textColor};
+    cursor: not-allowed;
   }
 `;
 export const ErrorMessage = styled.p`

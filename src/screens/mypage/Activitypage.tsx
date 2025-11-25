@@ -86,14 +86,13 @@ const Button = styled.button<{ variant?: "primary" | "soft" | "ghost" }>`
       case "primary":
         return `
           background: ${theme.focusColor};
-          color: ${theme.bgColor};
+          color: white;
           border-color: ${theme.focusColor};
         `;
       case "soft":
         return `
-          background: ${theme.authHoverBgColor};
-          color: ${theme.textColor};
-          border-color: ${theme.authActiveBgColor}40; 
+          background: ${theme.logoColor};
+          color:white;
         `;
       default:
         return `
@@ -118,11 +117,42 @@ const Button = styled.button<{ variant?: "primary" | "soft" | "ghost" }>`
     background: ${({ theme }) => theme.authActiveBgColor};
   }
 `;
+const ReputationWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0 20px;
+`;
+
+const ReputationCircle = styled.div`
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 3px solid ${({ theme }) => theme.focusColor};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+`;
+
+const ReputationScore = styled.div`
+  font-size: 32px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const StreakText = styled.div`
+  font-size: 14px;
+  color: ${({ theme }) => theme.textColor};
+  text-align: center;
+`;
+
 // 내가 푼 문제 번호
 const Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  max-height: 50px;
 `;
 
 const Chip = styled.span`
@@ -214,6 +244,87 @@ const Pill = styled.span<{ tone?: "ok" | "bad" | "neutral" }>`
       ? `background:#ffecec;border-color:#f3b5b5;`
       : `background:#f3f4f6;`}
 `;
+// 학습 목표 스타일
+const GoalsLayout = styled.div`
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+  gap: 20px;
+
+  @media (max-width: 840px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const GoalsHighlight = styled.div`
+  border-radius: 20px;
+  padding: 20px 22px;
+  background: radial-gradient(
+    circle at top left,
+    ${({ theme }) => theme.focusColor}33,
+    transparent 55%
+  );
+  border: 1px solid ${({ theme }) => theme.focusColor}55;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const HighlightLabel = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const HighlightValue = styled.div`
+  font-size: 26px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const HighlightSub = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.muteColor};
+`;
+
+const GoalsListGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+`;
+
+const MiniGoalBox = styled.div`
+  border-radius: 16px;
+  padding: 12px 14px;
+  background-color: ${({ theme }) => theme.bgCardColor};
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+`;
+
+const MiniGoalIcon = styled.div`
+  font-size: 18px;
+  line-height: 1;
+  margin-top: 2px;
+`;
+
+const MiniGoalTextGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const MiniGoalLabel = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const MiniGoalValue = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.textColor};
+  line-height: 1.4;
+`;
 
 export default function ActivityPage() {
   const userId = "123";
@@ -232,28 +343,26 @@ export default function ActivityPage() {
   });
 
   const solvedIds = user?.solvedProblems ?? [];
-  const bookmarkedIds = user?.bookmarkedProblems ?? [];
+  //const bookmarkedIds = user?.bookmarkedProblems ?? []; //not used
   const submissions: Submission[] = user?.recentSubmissions ?? [];
+  const stat = user?.stats;
+  const goal = user?.goals;
 
   const solvedPreview = useMemo(() => solvedIds.slice(0, 10), [solvedIds]);
-  const bookmarkedPreview = useMemo(
-    () => bookmarkedIds.slice(0, 10),
-    [bookmarkedIds]
-  );
+  // const bookmarkedPreview = useMemo(() => bookmarkedIds.slice(0, 10),[bookmarkedIds]);
 
   // 내가 푼 문제 페이지로 이동
+  // const goBookmarked = () =>bookmarkedIds.length && nav(`/problem-list?ids=${bookmarkedIds.join(",")}`);
   const goSolved = () =>
     solvedIds.length &&
     nav(`/problems/${user?.username}/solved?showResult=false`);
-  const goBookmarked = () =>
-    bookmarkedIds.length && nav(`/problem-list?ids=${bookmarkedIds.join(",")}`);
   const goAll = () => nav("/problem-list");
   const goDetail = (problemId: number) => nav(`/problem-detail/${problemId}`);
 
-  const acRate = useMemo(() => {
-    if (!submissions.length) return 0;
-    const ac = submissions.filter((s) => s.verdict === "AC").length;
-    return Math.round((ac / submissions.length) * 100);
+  const solvedCount = useMemo(() => {
+    const acSubs = submissions.filter((s) => s.verdict === "AC");
+    const uniqueIds = new Set(acSubs.map((s) => s.problemId));
+    return uniqueIds.size;
   }, [submissions]);
 
   if (isError) {
@@ -279,19 +388,19 @@ export default function ActivityPage() {
   }
   return (
     <Page>
-      {/* 푼문제수, 북마크, 정답률 */}
+      {/* 푼문제수, 맞힌 문제 수, 정답률 */}
       <StatGrid>
         <Stat>
           <StatLabel>푼 문제 수</StatLabel>
-          <StatValue>{solvedIds.length}</StatValue>
+          <StatValue>{stat?.totalSolved ?? solvedIds.length}</StatValue>
         </Stat>
         <Stat>
-          <StatLabel>북마크</StatLabel>
-          <StatValue>{bookmarkedIds.length}</StatValue>
+          <StatLabel>최근 푼 문제 수</StatLabel>
+          <StatValue>{submissions.length}</StatValue>
         </Stat>
         <Stat>
-          <StatLabel>최근 제출 정답률</StatLabel>
-          <StatValue>{acRate}%</StatValue>
+          <StatLabel>정답률</StatLabel>
+          <StatValue>{stat?.acceptanceRate}%</StatValue>
         </Stat>
       </StatGrid>
 
@@ -331,32 +440,21 @@ export default function ActivityPage() {
 
         <Card>
           <CardTitleRow>
-            <CardTitle>북마크한 문제</CardTitle>
+            <CardTitle>평판</CardTitle>
             <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
           </CardTitleRow>
-          <Row>
-            <Button
-              onClick={goBookmarked}
-              disabled={isLoading || !bookmarkedIds.length}
-            >
-              북마크 목록 보기
-            </Button>
-            <Button onClick={() => refetch()} variant="ghost">
-              새로고침
-            </Button>
-          </Row>
-          <Chips>
-            {bookmarkedPreview.map((id) => (
-              <Chip key={id} onClick={() => goDetail(id)}>
-                ★ {id}
-              </Chip>
-            ))}
-            {bookmarkedIds.length > bookmarkedPreview.length && (
-              <Muted>
-                + {bookmarkedIds.length - bookmarkedPreview.length} 더보기
-              </Muted>
-            )}
-          </Chips>
+
+          <ReputationWrapper>
+            <ReputationCircle>
+              <ReputationScore>{stat?.rating ?? 0}</ReputationScore>
+            </ReputationCircle>
+
+            <StreakText>
+              {stat?.streakDays && stat.streakDays > 0
+                ? `🔥${stat.streakDays}일 째 연속 학습중이에요!`
+                : "오늘부터 1일째 학습 시작!"}
+            </StreakText>
+          </ReputationWrapper>
         </Card>
       </Grid>
 
@@ -392,6 +490,82 @@ export default function ActivityPage() {
             ))}
           </List>
         )}
+      </Card>
+      {/* 학습 목표 */}
+      <Card>
+        <CardTitleRow>
+          <CardTitle>학습 목표</CardTitle>
+          <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
+        </CardTitleRow>
+
+        <GoalsLayout>
+          <GoalsHighlight>
+            <HighlightLabel>이번 주 학습 목표</HighlightLabel>
+            <HighlightValue>
+              {goal?.weeklyStudyGoalMinutes
+                ? `${goal.weeklyStudyGoalMinutes}분`
+                : "아직 설정하지 않았어요"}
+            </HighlightValue>
+            <HighlightSub>
+              {goal?.dailyMinimumStudyMinutes
+                ? `하루 최소 ${goal.dailyMinimumStudyMinutes}분씩 공부해봐요.`
+                : "하루 최소 학습 시간을 설정해보세요."}
+            </HighlightSub>
+          </GoalsHighlight>
+
+          <GoalsListGrid>
+            <MiniGoalBox>
+              <MiniGoalIcon>⏱️</MiniGoalIcon>
+              <MiniGoalTextGroup>
+                <MiniGoalLabel>언어별 학습 시간</MiniGoalLabel>
+                <MiniGoalValue>
+                  {goal?.studyTimeByLanguage &&
+                  Object.keys(goal.studyTimeByLanguage).length > 0
+                    ? Object.entries(goal.studyTimeByLanguage)
+                        .map(([lang, min]) => `${lang}: ${min}분`)
+                        .join(" · ")
+                    : "언어별 목표를 추가해보세요."}
+                </MiniGoalValue>
+              </MiniGoalTextGroup>
+            </MiniGoalBox>
+
+            <MiniGoalBox>
+              <MiniGoalIcon>📅</MiniGoalIcon>
+              <MiniGoalTextGroup>
+                <MiniGoalLabel>하루 최소 학습</MiniGoalLabel>
+                <MiniGoalValue>
+                  {goal?.dailyMinimumStudyMinutes
+                    ? `${goal.dailyMinimumStudyMinutes}분`
+                    : "미설정"}
+                </MiniGoalValue>
+              </MiniGoalTextGroup>
+            </MiniGoalBox>
+
+            <MiniGoalBox>
+              <MiniGoalIcon>📈</MiniGoalIcon>
+              <MiniGoalTextGroup>
+                <MiniGoalLabel>주간 학습 목표</MiniGoalLabel>
+                <MiniGoalValue>
+                  {goal?.weeklyStudyGoalMinutes
+                    ? `${goal.weeklyStudyGoalMinutes}분`
+                    : "미설정"}
+                </MiniGoalValue>
+              </MiniGoalTextGroup>
+            </MiniGoalBox>
+
+            <MiniGoalBox>
+              <MiniGoalIcon>⏰</MiniGoalIcon>
+              <MiniGoalTextGroup>
+                <MiniGoalLabel>학습 알림 시간</MiniGoalLabel>
+                <MiniGoalValue>
+                  {goal?.reminderTimes && goal.reminderTimes.length > 0
+                    ? goal.reminderTimes.join(", ")
+                    : "알림 시간을 설정해보세요."}
+                </MiniGoalValue>
+              </MiniGoalTextGroup>
+            </MiniGoalBox>
+          </GoalsListGrid>
+        </GoalsLayout>
       </Card>
     </Page>
   );
