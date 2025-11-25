@@ -5,7 +5,7 @@ import styled, { ThemeProvider } from "styled-components";
 import { darkTheme, lightTheme } from "./theme/theme";
 
 import { useEffect } from "react";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { isDarkAtom, refreshTokenAtom, refreshActionAtom } from "./atoms";
 import { userProfileAtom, type RefreshResponse } from "./atoms";
 import api from "./axiosInstance";
@@ -21,8 +21,26 @@ export default function App() {
   const isDark = useAtomValue(isDarkAtom);
   const storedRefreshToken = useAtomValue(refreshTokenAtom);
   const runRefreshAction = useSetAtom(refreshActionAtom);
-
   const setUserProfile = useSetAtom(userProfileAtom);
+
+  const [, setIsDark] = useAtom(isDarkAtom);
+
+  // 테마 변경시 로컬스토리지에 저장된 테마 읽기
+  useEffect(() => {
+    const saved = localStorage.getItem("theme:isDark");
+
+    if (saved === "true") {
+      setIsDark(true);
+    } else if (saved === "false") {
+      setIsDark(false);
+    }
+    // 그 외 (null, "undefined", 기타 이상한 값) → 무시
+  }, [setIsDark]);
+
+  // 테마 변경 시 로컬스토리지에 저장
+  useEffect(() => {
+    localStorage.setItem("theme:isDark", JSON.stringify(isDark));
+  }, [isDark]);
 
   // 앱 시작 시 refreshToken 있으면 accessToken + userProfile 복구
   useEffect(() => {
@@ -30,15 +48,12 @@ export default function App() {
 
     const restoreSession = async () => {
       try {
-        //accessToken 재발급
         const refreshRes = await api.post<RefreshResponse>("/auth/refresh", {
           refreshToken: storedRefreshToken,
         });
         runRefreshAction(refreshRes.data);
 
-        //userProfile 재조회
         const meRes = await api.get("/auth/me");
-        // 백엔드의 현재 유저 조회 API 경로에 맞춰 수정해야 함
         setUserProfile(meRes.data);
       } catch (err) {
         console.error("세션 복구 실패:", err);
