@@ -96,6 +96,10 @@ int main() {
   const handleEditProblem = () => {
     navigate(`/problem-edit/${problemId}`);
   };
+  //문제 수정
+  const handleEditProblem = () => {
+    navigate(`/problem-edit/${problemId}`);
+  };
 
   if (loading) return <ProblemWrapper>로딩 중...</ProblemWrapper>;
   if (!problemData)
