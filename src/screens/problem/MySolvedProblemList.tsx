@@ -296,14 +296,14 @@ export default function MySolvedProblemList() {
     if (filter === "off") return true;
     if (filter === "tried")
       return (
-        problem.userStatus === "solved" || problem.userStatus === "attempted"
+        problem.userStatus === "SOLVED" || problem.userStatus === "ATTEMPTED"
       );
 
     if (filter === "solved") {
-      return problem.userStatus === "solved";
+      return problem.userStatus === "SOLVED";
     }
     if (filter === "attempted") {
-      return problem.userStatus === "attempted";
+      return problem.userStatus === "ATTEMPTED";
     }
     return true;
   });
@@ -412,19 +412,19 @@ export default function MySolvedProblemList() {
           <tbody>
             {currentProblems.length > 0 ? (
               currentProblems.map((problem) => (
-                <React.Fragment key={problem.id}>
+                <React.Fragment key={problem.problemId}>
                   <TableRow
                     $userStatus={problem.userStatus as UserProblemStatus}
                   >
-                    <TableCell>{problem.id}</TableCell>
+                    <TableCell>{problem.problemId}</TableCell>
                     <TitleCell>
                       <TitleContainer>
                         <ProblemLink
-                          to={`/problem-detail/${problem.id}`}
+                          to={`/problem-detail/${problem.problemId}`}
                           as="span"
                           onClick={() => {
-                            handleToggleExpand(problem.id);
-                            handleAddIdParams(problem.id);
+                            handleToggleExpand(problem.problemId);
+                            handleAddIdParams(problem.problemId);
                           }}
                           style={{ cursor: "pointer" }}
                         >
@@ -441,26 +441,26 @@ export default function MySolvedProblemList() {
                       </TagDisplayContainer>
                     </TableCell>
                     <TableCell>{problem.difficulty}</TableCell>
-                    <TableCell>{problem.views}</TableCell>
-                    <TableCell>{problem.uploadDate}</TableCell>
+                    <TableCell>{problem.viewCount}</TableCell>
+                    <TableCell>{problem.createdAt}</TableCell>
 
                     <TableCell style={{ textAlign: "center" }}>
-                      {problem.userStatus !== "none" && (
+                      {problem.userStatus !== "NONE" && (
                         <StatusIndicator
                           style={{ cursor: "pointer" }}
                           $userStatus={problem.userStatus}
                           onClick={() => {
                             searchParams.set("showResult", "true");
-                            handleAddIdParams(problem.id);
+                            handleAddIdParams(problem.problemId);
                           }}
                         >
-                          {problem.userStatus === "solved" ? "맞춤" : "시도"}
+                          {problem.userStatus === "SOLVED" ? "맞춤" : "시도"}
                         </StatusIndicator>
                       )}
                     </TableCell>
                   </TableRow>
 
-                  {selectedProblemId === problem.id && isExpanded && (
+                  {selectedProblemId === problem.problemId && isExpanded && (
                     <SummaryRow>
                       <TableCell colSpan={7}>
                         <SummaryBox>
@@ -478,12 +478,16 @@ export default function MySolvedProblemList() {
                               채점 결과
                             </DetailsButton>
                             <DetailsButton
-                              onClick={() => handleViewDetails(problem.id)}
+                              onClick={() =>
+                                handleViewDetails(problem.problemId)
+                              }
                             >
                               문제보기
                             </DetailsButton>
                             <ActionInSummaryButton
-                              onClick={() => handleDirectSolve(problem.id)}
+                              onClick={() =>
+                                handleDirectSolve(problem.problemId)
+                              }
                             >
                               바로 코드 작성
                             </ActionInSummaryButton>

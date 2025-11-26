@@ -117,7 +117,7 @@ export default function ProblemDetail() {
       return;
     }
 
-    // 임시 코드 (원본 그대로 복구함)
+    // 임시 코드 더미데이터
     const code = `
 #include <stdio.h>
 int main() {
@@ -127,11 +127,11 @@ int main() {
 }
 `.trim();
 
-    navigate("/my-code-preview", {
+    navigate(`sovled/mycode`, {
       state: {
         code,
         language: "C++",
-        problemTitle: problem.title,
+        problem,
       },
     });
   };
@@ -191,10 +191,8 @@ int main() {
             QnA
           </ViewCodeButton>
 
-          <ViewCodeButton
-            onClick={() => navigate(`/reviews?problem=${problemId}`)}
-          >
-            코드 리뷰
+          <ViewCodeButton onClick={() => navigate(`solved`)}>
+            공유된 풀이 보기
           </ViewCodeButton>
 
           <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
