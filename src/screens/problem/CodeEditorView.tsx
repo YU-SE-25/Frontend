@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Editor from "@monaco-editor/react";
+import Editor, { type Monaco } from "@monaco-editor/react";
 import { useAtom } from "jotai";
 import { isDarkAtom } from "../../atoms";
 
@@ -50,6 +50,74 @@ interface CodeEditorViewProps {
   onExecute?: () => Promise<string>;
 }
 
+// ⭐ 우리가 직접 정의할 언어 ID들
+const JAVA_LANG_ID = "java-simple";
+const CPP_LANG_ID = "cpp-simple";
+const PY_LANG_ID = "python-simple";
+
+// ⭐ 언어 토큰 규칙 등록 (키워드/문자열/주석/숫자 정도)
+const setupLanguages = (monaco: Monaco) => {
+  const already = monaco.languages.getLanguages().map((l) => l.id);
+
+  if (!already.includes(JAVA_LANG_ID)) {
+    monaco.languages.register({ id: JAVA_LANG_ID });
+    monaco.languages.setMonarchTokensProvider(JAVA_LANG_ID, {
+      tokenizer: {
+        root: [
+          [
+            /\b(class|public|private|protected|static|void|int|long|double|float|boolean|if|else|for|while|return|new|try|catch|finally|import|package|extends|implements|this|super)\b/,
+            "keyword",
+          ],
+          [/\/\/.*$/, "comment"],
+          [/\/\*.*\*\//, "comment"],
+          [/".*?"/, "string"],
+          [/'.*?'/, "string"],
+          [/\b\d+(\.\d+)?\b/, "number"],
+        ],
+      },
+    });
+  }
+
+  if (!already.includes(CPP_LANG_ID)) {
+    monaco.languages.register({ id: CPP_LANG_ID });
+    monaco.languages.setMonarchTokensProvider(CPP_LANG_ID, {
+      tokenizer: {
+        root: [
+          [
+            /\b(int|long|double|float|char|void|bool|if|else|for|while|return|class|struct|namespace|using|std|include|new|delete|public|private|protected)\b/,
+            "keyword",
+          ],
+          [/\/\/.*$/, "comment"],
+          [/\/\*.*\*\//, "comment"],
+          [/".*?"/, "string"],
+          [/'.*?'/, "string"],
+          [/\b\d+(\.\d+)?\b/, "number"],
+        ],
+      },
+    });
+  }
+
+  if (!already.includes(PY_LANG_ID)) {
+    monaco.languages.register({ id: PY_LANG_ID });
+    monaco.languages.setMonarchTokensProvider(PY_LANG_ID, {
+      tokenizer: {
+        root: [
+          [
+            /\b(def|class|return|if|elif|else|for|while|import|from|as|try|except|finally|with|lambda|yield|pass|break|continue|True|False|None)\b/,
+            "keyword",
+          ],
+          [/#.*$/, "comment"],
+          [/""".*?"""/, "string"],
+          [/'''.*?'''/, "string"],
+          [/".*?"/, "string"],
+          [/'.*?'/, "string"],
+          [/\b\d+(\.\d+)?\b/, "number"],
+        ],
+      },
+    });
+  }
+};
+
 export default function CodeEditorView({
   problem,
   code,
@@ -69,12 +137,13 @@ export default function CodeEditorView({
     ? problem.allowedLanguages
     : [DEFAULT_LANGUAGE];
 
+  // ⭐ 화면에서 선택하는 문자열 -> 우리가 만든 커스텀 언어 ID
   const monacoLangMap: Record<string, string> = {
-    C: "c",
-    "C++": "cpp",
-    Java: "java",
-    Python: "python",
-    Python3: "python",
+    C: CPP_LANG_ID, // C도 C++룰로 색칠
+    "C++": CPP_LANG_ID,
+    Java: JAVA_LANG_ID,
+    Python: PY_LANG_ID,
+    Python3: PY_LANG_ID,
     JS: "javascript",
     TS: "typescript",
   };
@@ -85,19 +154,14 @@ export default function CodeEditorView({
   const [output, setOutput] = useState("");
 
   const handleExecuteClick = async () => {
-    console.log("실행 버튼 눌림!");
-
     if (!onExecute) {
-      console.log("onExecute 없음!!!!!");
       return alert("실행 기능이 없습니다!");
     }
 
     try {
       const result = await onExecute();
-      console.log("onExecute 결과:", result);
       setOutput(result);
     } catch (err: any) {
-      console.log("실행 중 오류:", err);
       setOutput("실행 중 오류 발생:\n" + err?.message);
     }
   };
@@ -137,6 +201,7 @@ export default function CodeEditorView({
           language={monacoLanguage}
           value={code}
           theme={isDark ? "vs-dark" : "vs-light"}
+          beforeMount={setupLanguages} // ⭐ 여기서 언어/색 규칙 전부 등록
           onChange={(value) => onCodeChange(value || "")}
           options={{
             minimap: { enabled: false },

@@ -125,7 +125,6 @@ export const ViewContentWrapper = styled.div`
   height: 500px;
   display: flex;
   flex-direction: column;
-  color: ${(props) => props.theme.textColor};
 `;
 
 /* 언어 표시 */
