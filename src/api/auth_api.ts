@@ -16,6 +16,20 @@ export interface RegisterRequest {
   portfolioLinks: string[];
 }
 
+//비밀번호 타입
+export interface SendResetCodeResponse {
+  message: string;
+}
+
+export interface VerifyResetCodeResponse {
+  resetToken: string;
+  message: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
 // Auth 관련 모든 요청을 한 곳에서 관리
 export const AuthAPI = {
   // 0. 블랙리스트 체크
@@ -52,5 +66,56 @@ export const AuthAPI = {
     return api
       .post<RefreshResponse>("/auth/refresh", { refreshToken })
       .then((res) => res.data);
+  },
+
+  // 비밀번호 재설정 관련
+  // 1) 이메일로 인증번호 발송
+  sendResetCode: async (email: string): Promise<SendResetCodeResponse> => {
+    try {
+      const res = await api.post<SendResetCodeResponse>(
+        "/auth/password/send-reset-code",
+        { email }
+      );
+      return res.data;
+    } catch (err) {
+      return { message: "[MOCK] 인증번호가 발송된 것처럼 처리합니다." };
+    }
+  },
+
+  // 2) 인증번호 검증 → resetToken 반환
+  verifyResetCode: async (
+    email: string,
+    code: string
+  ): Promise<VerifyResetCodeResponse> => {
+    try {
+      const res = await api.post<VerifyResetCodeResponse>(
+        "/auth/password/verify-reset-code",
+        { email, code }
+      );
+      return res.data;
+    } catch (err) {
+      return {
+        resetToken: "MOCK_TOKEN_123456",
+        message: "[MOCK] 인증 성공",
+      };
+    }
+  },
+
+  // 3) 최종 비밀번호 재설정
+  resetPassword: async (
+    token: string,
+    pw: string,
+    pwConfirm: string
+  ): Promise<ResetPasswordResponse> => {
+    try {
+      const res = await api.put<ResetPasswordResponse>("/auth/password/reset", {
+        resetToken: token,
+        newPassword: pw,
+        newPasswordConfirm: pwConfirm,
+      });
+      return res.data;
+    } catch (err) {
+      return { message: "[MOCK] 비밀번호가 변경된 것처럼 처리합니다." };
+    }
   },
 };

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-// import axios from 'axios'; // API 통신용 라이브러리
 
 import {
   ResetPageWrapper,
@@ -13,14 +12,11 @@ import {
   ErrorMessage,
 } from "../theme/ResetPassword.Style";
 
-// API 베이스 주소 정의
-// const API_BASE = " ";
+import { AuthAPI } from "../api/auth_api"; // ★ 추가됨
 
-//비밀번호 규칙
+// 비밀번호 규칙 검사
 const validatePassword = (password: string) => {
-  //최소 8자, 대문자(A-Z), 소문자(a-z), 숫자(0-9) 각각 1개 이상 포함
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
   const isValid = regex.test(password);
 
   let message = "";
@@ -41,64 +37,38 @@ export default function NewPasswordPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 이전 페이지에서 전달받은 토큰과 이메일
   const resetToken = location.state?.resetToken || "";
-  const userEmail = location.state?.email || "사용자 이메일 정보 없음"; // 이메일은 안내용
+  const userEmail = location.state?.email || "사용자 이메일 정보 없음";
 
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  //1. 비밀번호 보안 규칙 검사 결과
   const passwordValidationResult = validatePassword(newPassword);
 
-  //2. 최종 유효성: 보안 규칙 만족 && 비밀번호 일치
   const isNewPasswordValid =
     passwordValidationResult.isValid && newPassword === newPasswordConfirm;
 
-  const handleGoBack = () => navigate(-1);
-
-  // 토큰 유효성 검사 및 오류 처리 (첫 렌더링 시)
-  // 재설정 확인용으로 일단 주석처리함. 실제로는 사용하는 코드
-  /* if (!resetToken) {
-    return (
-      <ResetPageWrapper>
-        <LoginBox>
-          <ResetTitle>오류</ResetTitle>
-          <p style={{ marginTop: "20px" }}>
-            잘못된 접근이거나 인증 시간이 만료되었습니다.
-          </p>
-          <Link to="/forget-password">재발급 요청 페이지로</Link>
-        </LoginBox>
-      </ResetPageWrapper>
-    );
-  } 
-  */
-
-  // 비밀번호 최종 설정 및 API 호출
+  // 3. 비밀번호 최종 업데이트
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
-    //최종 유효성 검사
     if (!isNewPasswordValid) {
       setErrorMessage("비밀번호가 일치하지 않거나 규칙을 위반했습니다.");
       return;
     }
 
     try {
-      // 3. API 호출: /api/auth/password/reset
-      console.log("API 3: 새 비밀번호 최종 설정 요청 전송");
-      const resetData = {
-        resetToken: resetToken,
-        newPassword: newPassword,
-        newPasswordConfirm: newPasswordConfirm,
-      };
-      // await axios.post(`${API_BASE}/reset`, resetData);
+      const result = await AuthAPI.resetPassword(
+        resetToken,
+        newPassword,
+        newPasswordConfirm
+      ); // API 연결
 
-      alert("비밀번호가 성공적으로 변경되었습니다! 로그인해 주세요.");
+      alert(result.message);
       navigate("/login");
-    } catch (error) {
+    } catch (error: any) {
       const errorMsg =
         error?.response?.data?.message ||
         "비밀번호 저장 중 알 수 없는 오류가 발생했습니다.";
@@ -110,6 +80,7 @@ export default function NewPasswordPage() {
     <ResetPageWrapper>
       <LoginBox>
         <ResetTitle>새 비밀번호 설정</ResetTitle>
+
         <p style={{ marginBottom: "20px", color: "green" }}>
           인증 완료: {userEmail}
         </p>
@@ -125,9 +96,11 @@ export default function NewPasswordPage() {
               placeholder="최소 8자, 대/소문자 숫자 포함"
             />
           </InputGroup>
+
           {newPassword.length > 0 && !passwordValidationResult.isValid && (
             <ErrorMessage>{passwordValidationResult.message}</ErrorMessage>
           )}
+
           <InputGroup>
             <Label htmlFor="confirm-pw">비밀번호 확인 :</Label>
             <StyledInput
@@ -137,6 +110,7 @@ export default function NewPasswordPage() {
               onChange={(e) => setNewPasswordConfirm(e.target.value)}
             />
           </InputGroup>
+
           {newPasswordConfirm.length > 0 &&
             newPassword !== newPasswordConfirm && (
               <ErrorMessage>비밀번호가 일치하지 않습니다.</ErrorMessage>

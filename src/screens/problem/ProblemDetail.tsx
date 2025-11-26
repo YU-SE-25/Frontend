@@ -1,5 +1,3 @@
-// ✔ API 타입 맞춘 완전 수정본
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchProblemDetail } from "../../api/problem_api";
