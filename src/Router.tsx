@@ -96,7 +96,10 @@ const router = createBrowserRouter([
       { path: "reset-password", element: <ResetPassword /> },
       { path: "register", element: <Register /> },
       { path: "register-success", element: <RegisterSuccess /> },
-      { path: "verify-success", element: <VerifySuccess /> },
+      {
+        path: "auth/verify-success",
+        element: <VerifySuccess />,
+      },
       {
         path: "mypage",
         element: <MyPageRedirect />,

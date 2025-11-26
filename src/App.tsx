@@ -7,7 +7,11 @@ import { darkTheme, lightTheme } from "./theme/theme";
 import { useEffect } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { isDarkAtom, refreshTokenAtom, refreshActionAtom } from "./atoms";
-import { userProfileAtom, type RefreshResponse } from "./atoms";
+import {
+  userProfileAtom,
+  type RefreshResponse,
+  type UserProfile,
+} from "./atoms";
 import api from "./axiosInstance";
 
 const Container = styled.div`
@@ -53,7 +57,8 @@ export default function App() {
         });
         runRefreshAction(refreshRes.data);
 
-        const meRes = await api.get("/auth/me");
+        //userProfile 재조회
+        const meRes = await api.get<UserProfile>("/api/mypage");
         setUserProfile(meRes.data);
       } catch (err) {
         console.error("세션 복구 실패:", err);
@@ -61,7 +66,7 @@ export default function App() {
     };
 
     restoreSession();
-  }, [storedRefreshToken]);
+  }, [storedRefreshToken, runRefreshAction, setUserProfile]);
 
   return (
     <>
