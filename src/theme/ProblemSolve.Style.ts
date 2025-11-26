@@ -125,7 +125,6 @@ export const ViewContentWrapper = styled.div`
   height: 500px;
   display: flex;
   flex-direction: column;
-  color: ${(props) => props.theme.textColor};
 `;
 
 /* 언어 표시 */
@@ -291,10 +290,6 @@ export const EditorWrapper = styled.div`
   border-radius: 10px;
   padding: 10px;
   box-sizing: border-box;
-
-  * {
-    color: unset !important;
-  }
 `;
 
 // 폰트 크기 선택 드롭다운

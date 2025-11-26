@@ -1,15 +1,17 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import monacoEditorPlugin from "vite-plugin-monaco-editor";
 
 export default defineConfig({
-  plugins: [
-    react(),
-    monacoEditorPlugin({
-      languageWorkers: ["editorWorkerService", "java", "cpp"],
-    }),
-  ],
-
+  plugins: [react()],
+  define: {
+    "process.env": {},
+  },
+  worker: {
+    format: "es",
+  },
+  optimizeDeps: {
+    include: ["monaco-editor"],
+  },
   server: {
     host: "0.0.0.0",
     port: 5173,
