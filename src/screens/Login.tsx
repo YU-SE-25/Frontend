@@ -134,11 +134,16 @@ export default function Login() {
         type="button"
         onClick={async () => {
           try {
-            const response = await postLogin({
-              email: "test@test.com",
-              password: "1234",
-              keepLogin: true,
-            });
+            const response = {
+              accessToken: "mock_access_token_123",
+              refreshToken: "mock_refresh_token_xyz",
+              expiresIn: 3600,
+              user: {
+                userId: 1,
+                nickname: "gamppe",
+                role: "LEARNER" as const,
+              },
+            };
 
             runLoginAction(response);
             navigate(-1);
@@ -150,7 +155,61 @@ export default function Login() {
           }
         }}
       >
-        ⚡ 슈퍼 초강력 로그인 버튼(테스트 계정) ⚡
+        ⚡ 슈퍼 초강력 로그인 학습자 버튼(테스트 계정) ⚡
+      </SuperForceLoginButton>
+      <SuperForceLoginButton
+        type="button"
+        onClick={async () => {
+          try {
+            const response = {
+              accessToken: "mock_access_token_123",
+              refreshToken: "mock_refresh_token_xyz",
+              expiresIn: 3600,
+              user: {
+                userId: 1,
+                nickname: "gamppe",
+                role: "INSTRUCTOR" as const,
+              },
+            };
+
+            runLoginAction(response);
+            navigate(-1);
+          } catch (error) {
+            console.error("슈퍼 로그인 실패:", error);
+            setErrorMessage(
+              "슈퍼 로그인에도 실패했습니다… 서버 상태를 확인해주세요."
+            );
+          }
+        }}
+      >
+        ⚡ 슈퍼 초강력 로그인 강사 버튼(테스트 계정) ⚡
+      </SuperForceLoginButton>
+      <SuperForceLoginButton
+        type="button"
+        onClick={async () => {
+          try {
+            const response = {
+              accessToken: "mock_access_token_123",
+              refreshToken: "mock_refresh_token_xyz",
+              expiresIn: 3600,
+              user: {
+                userId: 1,
+                nickname: "gamppe",
+                role: "MANAGER" as const,
+              },
+            };
+
+            runLoginAction(response);
+            navigate(-1);
+          } catch (error) {
+            console.error("슈퍼 로그인 실패:", error);
+            setErrorMessage(
+              "슈퍼 로그인에도 실패했습니다… 서버 상태를 확인해주세요."
+            );
+          }
+        }}
+      >
+        ⚡ 슈퍼 초강력 로그인 관리자 버튼(테스트 계정) ⚡
       </SuperForceLoginButton>
     </LoginPageWrapper>
   );

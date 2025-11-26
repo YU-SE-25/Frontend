@@ -2,8 +2,15 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-export const isDarkAtom = atom<boolean>(true);
+const getInitialIsDark = () => {
+  if (typeof window === "undefined") return false; // SSR 대비용 (선택)
+  const saved = localStorage.getItem("theme:isDark");
+  if (saved === "true") return true;
+  if (saved === "false") return false;
+  return false; // 기본값: 라이트 모드
+};
 
+export const isDarkAtom = atom<boolean>(getInitialIsDark());
 //사용자 프로필 정보
 export interface UserProfile {
   userId: number;

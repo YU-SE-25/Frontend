@@ -1,6 +1,8 @@
 import { useState } from "react";
 import styled from "styled-components";
 import ReportModal from "./ReportModal";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "../atoms";
 
 interface Props {
   targetContentId: number;
@@ -12,6 +14,26 @@ export default function ReportButton({
   targetContentType,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const userRole = useAtomValue(userProfileAtom)?.role;
+
+  if (userRole === "MANAGER") {
+    return (
+      <>
+        <Btn
+          onClick={() => {
+            const yes = window.confirm("정말로 삭제하시겠습니까?");
+            if (yes) {
+              alert(
+                "삭제되었습니다. (실제 삭제 기능은 구현되어 있지 않습니다.)"
+              );
+            }
+          }}
+        >
+          🚨삭제
+        </Btn>
+      </>
+    );
+  }
 
   return (
     <>
