@@ -8,7 +8,7 @@ export interface RegisterRequest {
   name: string;
   nickname: string;
   phone: string;
-  role: "LEARNER" | "INSTRUCTOR" | "ADMIN";
+  role: "LEARNER" | "INSTRUCTOR" | "MANAGER";
   agreedTerms: string[];
   portfolioFileUrl: string | null;
   originalFileName: string | null;

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   RegisterWrapper,
   MainContent,
@@ -9,9 +10,9 @@ import {
   Label,
   StyledInput,
   StyledTextArea,
-  ExampleGrid,
+  //ExampleGrid,
   MainButton,
-  ActionButton,
+  //ActionButton,
   ErrorMessage,
   StyledSelect,
   TagDisplayContainer,
@@ -19,122 +20,88 @@ import {
   RemoveTagButton,
 } from "../../theme/ProblemAdd.Style";
 
-//태그 api에서 fetch
-import { fetchAvailableTags } from "../../api/problem_api";
-//태그 더미 사용
+import { fetchAvailableTags, registerProblem } from "../../api/problem_api";
 import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
+
 const USE_DUMMY = true;
 
-//임시용 폼 데이터 타입 정의 (추후 api 맞춰서 연동할겁니다)
-interface ProblemFormData {
-  title: string;
-  description: string;
-  inputDescription: string;
-  outputDescription: string;
-  timeLimit: string;
-  memoryLimit: string;
-  difficulty: string;
-  tags?: string;
-  keywords: string;
-  hint: string;
-  source: string;
-  lectureLink: string;
-  curriculum: string;
-}
-
-//임시 난이도 옵션
-const DIFFICULTY_OPTIONS = ["하", "중", "상", "최상"];
+const DIFFICULTY_OPTIONS = [
+  { ko: "하", value: "EASY" },
+  { ko: "중", value: "MEDIUM" },
+  { ko: "상", value: "HARD" },
+];
 
 export default function ProblemAdd() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<ProblemFormData>({
+  const [form, setForm] = useState({
     title: "",
     description: "",
-    inputDescription: "",
-    outputDescription: "",
+    inputOutputExample: "",
     timeLimit: "",
     memoryLimit: "",
-    difficulty: "하",
-    tags: "",
-    keywords: "",
+    difficulty: "EASY",
     hint: "",
     source: "",
-    lectureLink: "",
-    curriculum: "",
+    visibility: "PUBLIC",
   });
 
-  const [examples, setExamples] = useState([{ input: "", output: "" }]);
+  const [tags, setTags] = useState<string[]>([]);
   const [testCases, setTestCases] = useState<FileList | null>(null);
-  const [errorMessage, setErrorMessage] = useState("");
-
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [errorMessage, setError] = useState("");
 
-  //태그 불러오기
   useEffect(() => {
-    const loadAvailableTags = async () => {
-      try {
-        // 더미 데이터 사용
-        const fetchedTags = USE_DUMMY
-          ? ALL_AVAILABLE_TAGS
-          : await fetchAvailableTags();
-        setAvailableTags(fetchedTags);
-      } catch (e) {
-        console.error("사용 가능한 태그 목록을 불러오는 데 실패했습니다.", e);
-      }
+    const load = async () => {
+      const fetched = USE_DUMMY
+        ? ALL_AVAILABLE_TAGS
+        : await fetchAvailableTags();
+      setAvailableTags(fetched);
     };
-    loadAvailableTags();
+    load();
   }, []);
 
-  //태그 추가/삭제 핸들러
-  const handleTagSelect = (tag: string) => {
-    if (!selectedTags.includes(tag)) {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
-
-  const handleTagRemove = (tag: string) => {
-    setSelectedTags(selectedTags.filter((t) => t !== tag));
-  };
-
-  // 필수 유효성 검사 (제목, 설명, 예제 1개, 시간/메모리)
-  const isFormValid = useMemo(() => {
+  const isValid = useMemo(() => {
     return (
-      formData.title.trim() !== "" &&
-      formData.description.trim() !== "" &&
-      formData.inputDescription.trim() !== "" &&
-      formData.outputDescription.trim() !== "" &&
-      formData.timeLimit.trim() !== "" &&
-      formData.memoryLimit.trim() !== "" &&
-      examples.length >= 1 &&
-      examples.every((ex) => ex.input.trim() !== "" && ex.output.trim() !== "")
+      form.title.trim() &&
+      form.description.trim() &&
+      form.inputOutputExample.trim() &&
+      form.timeLimit &&
+      form.memoryLimit
     );
-  }, [formData, examples]);
-
-  const handleRemoveExample = (index: number) => {
-    if (examples.length > 1) {
-      // 최소 1개 유지를 위해 1개 초과일 때만 삭제
-      setExamples(examples.filter((_, i) => i !== index));
-    }
-  };
+  }, [form]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage("");
+    setError("");
 
-    if (!isFormValid) {
-      setErrorMessage(
-        "제목, 설명, 제약 조건, 최소 1개 이상의 예제는 필수 항목입니다."
-      );
+    if (!isValid) {
+      setError("필수 항목을 모두 입력해야 합니다.");
       return;
     }
 
-    // TODO: FormData를 사용하여 문제 정보와 테스트 파일을 API로 전송 (Axios)
+    const payload = {
+      title: form.title,
+      description: form.description,
+      inputOutputExample: form.inputOutputExample,
+      difficulty: form.difficulty as "EASY" | "MEDIUM" | "HARD",
+      timeLimit: Number(form.timeLimit),
+      memoryLimit: Number(form.memoryLimit),
+      visibility: form.visibility as "PUBLIC" | "PRIVATE",
+      tags,
+      hint: form.hint,
+      source: form.source,
+      testcases: testCases ? Array.from(testCases) : undefined,
+    };
 
-    //저장 성공 시: 완료 메시지 출력 후 문제 목록 이동
-    alert("문제 등록이 성공적으로 완료되었습니다.");
-    navigate("/problem-list");
+    try {
+      await registerProblem(payload);
+      alert("문제 등록이 완료되었습니다.");
+      navigate("/problem-list");
+    } catch (e) {
+      console.error(e);
+      alert("등록 실패!");
+    }
   };
 
   return (
@@ -145,259 +112,136 @@ export default function ProblemAdd() {
         </TitleRow>
 
         <form onSubmit={handleSubmit}>
-          <SectionTitle>기본 정보 (필수)</SectionTitle>
+          <SectionTitle>기본 정보</SectionTitle>
+
           <InputGroup>
-            <Label htmlFor="title">문제 제목:</Label>
+            <Label>문제 제목</Label>
             <StyledInput
-              id="title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
-              }
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
           </InputGroup>
 
           <InputGroup>
-            <Label htmlFor="difficulty">난이도:</Label>
+            <Label>난이도</Label>
             <StyledSelect
-              id="difficulty"
-              value={formData.difficulty}
-              onChange={(e) =>
-                setFormData({ ...formData, difficulty: e.target.value })
-              }
+              value={form.difficulty}
+              onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
             >
-              {DIFFICULTY_OPTIONS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
+              {DIFFICULTY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.ko}
                 </option>
               ))}
             </StyledSelect>
           </InputGroup>
 
-          <InputGroup style={{ alignItems: "flex-start" }}>
-            <Label htmlFor="tagSelect">태그 선택:</Label>
+          <InputGroup>
+            <Label>태그</Label>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                flex: 1,
-                gap: "10px",
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
+            <StyledSelect
+              onChange={(e) => setTags([...tags, e.target.value])}
+              value=""
             >
-              <StyledSelect
-                id="tagSelect"
-                onChange={(e) => handleTagSelect(e.target.value)}
-                value=""
-                style={{ maxWidth: "200px" }}
-              >
-                <option value="" disabled>
-                  태그를 선택하세요
-                </option>
-                {availableTags
-                  .filter((tag) => !selectedTags.includes(tag))
-                  .map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
-              </StyledSelect>
-
-              <TagDisplayContainer>
-                {selectedTags.map((tag) => (
-                  <TagChip key={tag}>
-                    {tag}
-                    <RemoveTagButton
-                      type="button"
-                      onClick={() => handleTagRemove(tag)}
-                    >
-                      &times;
-                    </RemoveTagButton>
-                  </TagChip>
+              <option value="" disabled>
+                태그 선택
+              </option>
+              {availableTags
+                .filter((t) => !tags.includes(t))
+                .map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
-              </TagDisplayContainer>
-            </div>
-          </InputGroup>
+            </StyledSelect>
 
-          <InputGroup>
-            <Label htmlFor="keywords">키워드:</Label>
-            <StyledInput
-              id="keywords"
-              value={formData.keywords}
-              onChange={(e) =>
-                setFormData({ ...formData, keywords: e.target.value })
-              }
-            />
-          </InputGroup>
-
-          <SectionTitle>문제 상세 설명</SectionTitle>
-          <InputGroup>
-            <Label htmlFor="desc">문제 설명:</Label>
-            <StyledTextArea
-              id="desc"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-            />
-          </InputGroup>
-          <InputGroup>
-            <Label htmlFor="inputDesc">입력 형식 설명:</Label>
-            <StyledTextArea
-              id="inputDesc"
-              value={formData.inputDescription}
-              onChange={(e) =>
-                setFormData({ ...formData, inputDescription: e.target.value })
-              }
-            />
-          </InputGroup>
-          <InputGroup>
-            <Label htmlFor="outputDesc">출력 형식 설명:</Label>
-            <StyledTextArea
-              id="outputDesc"
-              value={formData.outputDescription}
-              onChange={(e) =>
-                setFormData({ ...formData, outputDescription: e.target.value })
-              }
-            />
-          </InputGroup>
-
-          <SectionTitle>제약 조건 및 테스트 케이스</SectionTitle>
-          <InputGroup>
-            <Label htmlFor="timeLimit">시간 제한 (초):</Label>
-            <StyledInput
-              id="timeLimit"
-              value={formData.timeLimit}
-              onChange={(e) =>
-                setFormData({ ...formData, timeLimit: e.target.value })
-              }
-            />
-          </InputGroup>
-          <InputGroup>
-            <Label htmlFor="memoryLimit">공간 제한 (MB):</Label>
-            <StyledInput
-              id="memoryLimit"
-              value={formData.memoryLimit}
-              onChange={(e) =>
-                setFormData({ ...formData, memoryLimit: e.target.value })
-              }
-            />
-          </InputGroup>
-
-          <InputGroup>
-            <Label htmlFor="testCaseFile">테스트 케이스 파일 업로드:</Label>
-            <StyledInput
-              id="testCaseFile"
-              type="file"
-              onChange={(e) => setTestCases(e.target.files)}
-              multiple
-            />
-          </InputGroup>
-
-          <SectionTitle>
-            입출력 예제
-            <ActionButton
-              type="button"
-              onClick={() =>
-                setExamples([...examples, { input: "", output: "" }])
-              }
-            >
-              + 예제 추가
-            </ActionButton>
-          </SectionTitle>
-
-          {examples.map((example, index) => (
-            <div
-              key={index}
-              style={{
-                marginBottom: "20px",
-                border: "1px dashed #ccc",
-                padding: "15px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "10px",
-                }}
-              >
-                <h4>예제 {index + 1}</h4>
-                {examples.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveExample(index)}
-                    style={{
-                      color: "red",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
+            <TagDisplayContainer>
+              {tags.map((t) => (
+                <TagChip key={t}>
+                  {t}
+                  <RemoveTagButton
+                    onClick={() => setTags(tags.filter((x) => x !== t))}
                   >
-                    삭제
-                  </button>
-                )}
-              </div>
-              <ExampleGrid>
-                <div>
-                  <Label>입력:</Label>
-                  <StyledTextArea
-                    value={example.input}
-                    onChange={(e) => {
-                      const newEx = [...examples];
-                      newEx[index].input = e.target.value;
-                      setExamples(newEx);
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label>출력:</Label>
-                  <StyledTextArea
-                    value={example.output}
-                    onChange={(e) => {
-                      const newEx = [...examples];
-                      newEx[index].output = e.target.value;
-                      setExamples(newEx);
-                    }}
-                  />
-                </div>
-              </ExampleGrid>
-            </div>
-          ))}
+                    ×
+                  </RemoveTagButton>
+                </TagChip>
+              ))}
+            </TagDisplayContainer>
+          </InputGroup>
 
-          <SectionTitle>추가 항목</SectionTitle>
+          <SectionTitle>문제 설명</SectionTitle>
+
           <InputGroup>
-            <Label htmlFor="hint">힌트:</Label>
-            <StyledInput
-              id="hint"
-              value={formData.hint}
+            <Label>설명</Label>
+            <StyledTextArea
+              value={form.description}
               onChange={(e) =>
-                setFormData({ ...formData, hint: e.target.value })
+                setForm({ ...form, description: e.target.value })
               }
             />
           </InputGroup>
+
           <InputGroup>
-            <Label htmlFor="source">출처:</Label>
-            <StyledInput
-              id="source"
-              value={formData.source}
+            <Label>입출력 예시 전체</Label>
+            <StyledTextArea
+              value={form.inputOutputExample}
               onChange={(e) =>
-                setFormData({ ...formData, source: e.target.value })
+                setForm({ ...form, inputOutputExample: e.target.value })
               }
+            />
+          </InputGroup>
+
+          <SectionTitle>제한</SectionTitle>
+
+          <InputGroup>
+            <Label>시간 제한 (초)</Label>
+            <StyledInput
+              value={form.timeLimit}
+              onChange={(e) => setForm({ ...form, timeLimit: e.target.value })}
+            />
+          </InputGroup>
+
+          <InputGroup>
+            <Label>메모리 제한 (MB)</Label>
+            <StyledInput
+              value={form.memoryLimit}
+              onChange={(e) =>
+                setForm({ ...form, memoryLimit: e.target.value })
+              }
+            />
+          </InputGroup>
+
+          <InputGroup>
+            <Label>테스트케이스 파일</Label>
+            <StyledInput
+              type="file"
+              multiple
+              onChange={(e) => setTestCases(e.target.files)}
+            />
+          </InputGroup>
+
+          <SectionTitle>추가</SectionTitle>
+
+          <InputGroup>
+            <Label>힌트</Label>
+            <StyledInput
+              value={form.hint}
+              onChange={(e) => setForm({ ...form, hint: e.target.value })}
+            />
+          </InputGroup>
+
+          <InputGroup>
+            <Label>출처</Label>
+            <StyledInput
+              value={form.source}
+              onChange={(e) => setForm({ ...form, source: e.target.value })}
             />
           </InputGroup>
 
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
 
-          <MainButton
-            type="submit"
-            disabled={!isFormValid}
-            style={{ marginTop: "40px" }}
-          >
-            문제 등록
+          <MainButton type="submit" disabled={!isValid}>
+            등록
           </MainButton>
         </form>
       </MainContent>

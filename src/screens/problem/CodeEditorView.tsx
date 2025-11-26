@@ -201,7 +201,7 @@ export default function CodeEditorView({
           language={monacoLanguage}
           value={code}
           theme={isDark ? "vs-dark" : "vs-light"}
-          beforeMount={setupLanguages} // ⭐ 여기서 언어/색 규칙 전부 등록
+          beforeMount={setupLanguages} // 여기서 언어/색 규칙 전부 등록
           onChange={(value) => onCodeChange(value || "")}
           options={{
             minimap: { enabled: false },

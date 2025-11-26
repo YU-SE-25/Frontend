@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+
 import {
   ProblemListWrapper,
   PageTitle,
@@ -15,11 +16,11 @@ import {
   TableCell,
   EmptyCell,
   TitleCell,
-  ProblemLink,
+  //ProblemLink,
   SummaryRow,
   SummaryBox,
   TitleContainer,
-  StatusIndicator,
+  //StatusIndicator,
   ActionInSummaryButton,
   PaginationContainer,
   PageLink,
@@ -35,13 +36,19 @@ import {
 import type { UserProblemStatus } from "../../theme/ProblemList.Style";
 import type { IProblem } from "../../api/problem_api";
 import { fetchProblems, fetchAvailableTags } from "../../api/problem_api";
-import { fetchDummyProblems } from "../../api/dummy/problem_dummy";
+import {
+  fetchDummyProblems,
+  ALL_AVAILABLE_TAGS,
+} from "../../api/dummy/problem_dummy_new";
 
-const USE_DUMMY = true;
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "../../atoms";
 
 export default function ProblemList() {
   const navigate = useNavigate();
-  //문제 상세 -> 테그 연동
+  const user = useAtomValue(userProfileAtom);
+  const isLoggedIn = !!user;
+
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,99 +60,108 @@ export default function ProblemList() {
   const itemsPerPage = 10;
 
   const [filter, setFilter] = useState<
-    "off" | "solved" | "attempted" | "tried"
+    "off" | "SOLVED" | "ATTEMPTED" | "tried"
   >("off");
 
   const [problems, setProblems] = useState<IProblem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isLoggedIn = true;
+  // 처음 태그 파라미터
+  const initialTags = searchParams.get("tag") ? [searchParams.get("tag")!] : [];
 
-  // 'tag' 파라미터가 있으면 그 값을 배열로 초기화, 없으면 빈 배열로 초기화
-  const initialTags = searchParams.get("tag") ? [searchParams.get("tag")!] : []; // !는 값이 반드시 있음을 타입스크립트에 알림
-
-  //AVAILABLE TAGS 상태 정의 (API로 불러올 태그 전체 목록)
+  // 전체 태그 목록
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-  // SELECTED TAGS 상태 정의 (사용자가 클릭해서 선택한 필터 태그)
+  // 선택된 태그 목록
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
 
-  //사용 가능한 태그 목록 불러오기 (컴포넌트 마운트 시 1회)
+  // 1) 사용 가능한 태그 불러오기
   useEffect(() => {
     const loadAvailableTags = async () => {
       try {
-        const tags = await fetchAvailableTags(); //API 호출
+        const tags = await fetchAvailableTags(); // 백엔드
         setAvailableTags(tags);
-      } catch (e) {
-        console.error("사용 가능한 태그 목록을 불러오는 데 실패했습니다.", e);
+      } catch {
+        console.warn("태그 API 실패 → 더미 태그 사용");
+        setAvailableTags(ALL_AVAILABLE_TAGS);
       }
     };
     loadAvailableTags();
-  }, []); //마운트 시 1회 실행
+  }, []);
 
+  // 2) 문제 목록 불러오기 (백엔드 → 실패 시 더미 fallback)
   useEffect(() => {
     let mounted = true;
-    const run = async () => {
+
+    const load = async () => {
       setLoading(true);
       setError(null);
+
       try {
-        const fetcher = USE_DUMMY ? fetchDummyProblems : fetchProblems;
-        const data = await fetcher({
-          sortType,
-          searchTerm: searchTerm.trim().length >= 2 ? searchTerm : "",
-          isLoggedIn,
-          page: 1,
-          size: 1000,
-          tags: selectedTags.length > 0 ? selectedTags : undefined, //selectedTags를 API 인자로 전달
-        });
-        if (mounted) setProblems(data || []);
+        //백엔드 먼저 시도
+        const real = await fetchProblems();
+        if (mounted) setProblems(real);
       } catch (e) {
-        if (mounted) setError("문제 목록을 불러오는 데 실패했습니다.");
+        console.warn("API 실패 → 더미 fallback");
+
+        try {
+          const dummy = await fetchDummyProblems({
+            sortType,
+            searchTerm,
+            isLoggedIn,
+            tags: selectedTags,
+          });
+          if (mounted) {
+            const mapped = dummy.map((d: any) => ({
+              ...d,
+              successRate: d.successRate + "%", // number → string
+            }));
+
+            setProblems(mapped);
+          }
+        } catch (err) {
+          if (mounted) setError("문제 목록을 불러올 수 없습니다.");
+        }
       } finally {
         if (mounted) setLoading(false);
       }
     };
-    run();
+
+    load();
     return () => {
       mounted = false;
     };
-  }, [sortType, isLoggedIn, searchTerm, selectedTags]);
+  }, [sortType, searchTerm, selectedTags, isLoggedIn]);
 
-  //태그 칩 클릭 핸들러
+  //태그 클릭 핸들러
   const handleToggleTag = (tag: string) => {
-    setSelectedTags((prevTags) => {
+    setSelectedTags((prev) => {
       let newTags;
-      //필터 해제
-      if (prevTags.includes(tag)) {
-        return prevTags.filter((t) => t !== tag);
+      if (prev.includes(tag)) {
+        newTags = prev.filter((t) => t !== tag);
       } else {
-        newTags = [...prevTags, tag];
-      }
-      //필터 적용
-      if (newTags.length > 0) {
-        // 여러 태그 필터링을 지원한다면, 쿼리 파라미터 처리가 더 복잡해질 수 있습니다.
-        // 여기서는 단순하게 첫 번째 태그만 쿼리로 유지하거나, 아니면 복수 쿼리 파라미터를 사용해야 합니다.
-        // 간단하게, 첫 번째 태그만 쿼리에 반영하거나, 태그를 제거합니다. (현재 문제 상세에서 1개만 전달하므로, 1개만 고려)
-        const newTagQuery = newTags[0];
-        setSearchParams({ tag: newTagQuery }, { replace: true });
-      } else {
-        // 태그가 없으면 쿼리 파라미터에서 제거
-        setSearchParams({}, { replace: true });
+        newTags = [...prev, tag];
       }
 
-      // 태그 필터가 바뀌면 1페이지로 돌아가게 설정
+      if (newTags.length > 0) {
+        setSearchParams({ tag: newTags[0] });
+      } else {
+        setSearchParams({});
+      }
+
       setCurrentPage(1);
       return newTags;
     });
   };
 
+  // 검색
   const handleSearch = () => {
     if (searchTerm.trim().length === 0) {
       alert("검색어를 입력해 주세요.");
       return;
     }
     if (searchTerm.trim().length < 2) {
-      alert("두 자 이상의 문자를 입력해 주세요.");
+      alert("두 글자 이상 입력해 주세요.");
       return;
     }
     setCurrentPage(1);
@@ -155,61 +171,65 @@ export default function ProblemList() {
     if (e.key === "Enter") handleSearch();
   };
 
+  // 요약 토글
   const handleToggleSummary = (problemId: number) => {
-    setExpandedProblemId((currentId) =>
-      currentId === problemId ? null : problemId
-    );
+    setExpandedProblemId((curr) => (curr === problemId ? null : problemId));
   };
 
+  // 바로 코드 작성
   const handleDirectSolve = (problemId: number) => {
-    if (isLoggedIn) {
-      navigate(`/problems/${problemId}/solve`);
-    } else {
-      alert("로그인 후 이용 가능합니다.");
-    }
+    if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
+    navigate(`/problems/${problemId}/solve`);
   };
 
+  // 상세보기
   const handleViewDetails = (problemId: number) => {
-    console.log("view details", problemId); //debug
     navigate(`/problem-detail/${problemId}`);
   };
 
+  // ==========================================
+  // ⭐ 기록 필터링
+  // ==========================================
   const filteredProblems = problems.filter((problem) => {
     if (filter === "off") return true;
-    if (filter === "tried")
-      return (
-        problem.userStatus === "solved" || problem.userStatus === "attempted"
-      );
 
-    if (filter === "solved") {
-      return problem.userStatus === "solved";
+    if (filter === "tried") {
+      return (
+        problem.userStatus === "SOLVED" || problem.userStatus === "ATTEMPTED"
+      );
     }
-    if (filter === "attempted") {
-      return problem.userStatus === "attempted";
-    }
+
+    if (filter === "SOLVED") return problem.userStatus === "SOLVED";
+    if (filter === "ATTEMPTED") return problem.userStatus === "ATTEMPTED";
+
     return true;
   });
-  // 페이지네이션 계산을 필터링된 목록 기준으로 변경
+
+  // 페이지네이션
   const totalItems = filteredProblems.length;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
+
   const currentProblems = filteredProblems.slice(
     indexOfFirstItem,
     indexOfLastItem
   );
 
-  const handlePageChange = (pageNumber: number) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
+  const handlePageChange = (number: number) => {
+    if (number >= 1 && number <= totalPages) setCurrentPage(number);
   };
 
   return (
     <ProblemListWrapper>
       <PageTitleContainer>
         <PageTitle>문제 목록</PageTitle>
-        <AddButton onClick={() => navigate("/problem-add")}>
-          문제 추가
-        </AddButton>
+
+        {(user?.role === "INSTRUCTOR" || user?.role === "MANAGER") && (
+          <AddButton onClick={() => navigate("/problem-add")}>
+            문제 추가
+          </AddButton>
+        )}
       </PageTitleContainer>
 
       <ControlBar>
@@ -222,51 +242,45 @@ export default function ProblemList() {
           />
           <SearchButton onClick={handleSearch}>검색</SearchButton>
         </SearchContainer>
+
         <SortSelect
           value={sortType}
           onChange={(e) => setSortType(e.target.value)}
         >
           <option value="latest">최신순</option>
-          <option value="low_difficulty">난이도순 (낮은 순)</option>
-          <option value="high_difficulty">난이도순 (높은 순)</option>
-          <option value="views">조회순</option>
+          <option value="low_difficulty">난이도 낮은 순</option>
+          <option value="high_difficulty">난이도 높은 순</option>
+          <option value="views">조회수 순</option>
           <option value="id">문제번호 순</option>
-          <option value="language">선호 언어 (미구현)</option>
         </SortSelect>
 
-        {/*기록 필터링 Select */}
-        <SortSelect
-          value={filter}
-          onChange={(e) => {
-            setFilter(
-              e.target.value as "off" | "solved" | "attempted" | "tried"
-            );
-            setCurrentPage(1);
-          }}
-          style={{ marginRight: "10px" }}
-        >
-          <option value="off">문제 필터</option>
-          <option value="tried">시도 문제</option>
-          <option value="solved">맞은 문제</option>
-          <option value="attempted">틀린 문제</option>
-        </SortSelect>
+        {isLoggedIn && (
+          <SortSelect
+            value={filter}
+            onChange={(e) =>
+              setFilter(
+                e.target.value as "off" | "SOLVED" | "ATTEMPTED" | "tried"
+              )
+            }
+            style={{ marginRight: "10px" }}
+          >
+            <option value="off">기록 필터</option>
+            <option value="tried">시도 문제</option>
+            <option value="SOLVED">맞은 문제</option>
+            <option value="ATTEMPTED">틀린 문제</option>
+          </SortSelect>
+        )}
       </ControlBar>
 
       {availableTags.length > 0 && (
         <TagDisplayContainer
-          style={{
-            maxWidth: "1200px",
-            margin: "15px auto",
-            padding: "0 20px",
-            flexWrap: "wrap",
-          }}
+          style={{ maxWidth: "1200px", margin: "10px auto" }}
         >
           {availableTags.map((tag) => (
             <TagChip
               key={tag}
-              // 선택된 태그 배열에 현재 태그가 포함되어 있으면 'active' 스타일 적용
               $active={selectedTags.includes(tag)}
-              onClick={() => handleToggleTag(tag)} //클릭 핸들러 바인딩
+              onClick={() => handleToggleTag(tag)}
             >
               {tag}
             </TagChip>
@@ -285,26 +299,25 @@ export default function ProblemList() {
             <HeaderCell width="25%">태그</HeaderCell>
             <HeaderCell width="10%">난이도</HeaderCell>
             <HeaderCell width="13%">조회수</HeaderCell>
-            <HeaderCell width="19%">등록일</HeaderCell>
-            <HeaderCell width="5%">기록</HeaderCell>
+            <HeaderCell width="14%">등록일</HeaderCell>
           </tr>
         </TableHead>
+
         <tbody>
           {currentProblems.length > 0 ? (
             currentProblems.map((problem) => (
-              <React.Fragment key={problem.id}>
+              <React.Fragment key={problem.problemId}>
                 <TableRow $userStatus={problem.userStatus as UserProblemStatus}>
-                  <TableCell>{problem.id}</TableCell>
+                  <TableCell>{problem.problemId}</TableCell>
+
                   <TitleCell>
                     <TitleContainer>
-                      <ProblemLink
-                        to={`/problem-detail/${problem.id}`}
-                        as="span"
-                        onClick={() => handleToggleSummary(problem.id)}
-                        style={{ cursor: "pointer" }}
+                      <span
+                        style={{ cursor: "pointer", fontWeight: 600 }}
+                        onClick={() => handleToggleSummary(problem.problemId)}
                       >
                         {problem.title}
-                      </ProblemLink>
+                      </span>
                     </TitleContainer>
                   </TitleCell>
 
@@ -315,20 +328,13 @@ export default function ProblemList() {
                       ))}
                     </TagDisplayContainer>
                   </TableCell>
-                  <TableCell>{problem.difficulty}</TableCell>
-                  <TableCell>{problem.views}</TableCell>
-                  <TableCell>{problem.uploadDate}</TableCell>
 
-                  <TableCell style={{ textAlign: "center" }}>
-                    {problem.userStatus !== "none" && (
-                      <StatusIndicator $userStatus={problem.userStatus}>
-                        {problem.userStatus === "solved" ? "맞춤" : "시도"}
-                      </StatusIndicator>
-                    )}
-                  </TableCell>
+                  <TableCell>{problem.difficulty}</TableCell>
+                  <TableCell>{problem.viewCount}</TableCell>
+                  <TableCell>{problem.createdAt}</TableCell>
                 </TableRow>
 
-                {expandedProblemId === problem.id && (
+                {expandedProblemId === problem.problemId && (
                   <SummaryRow>
                     <TableCell colSpan={7}>
                       <SummaryBox>
@@ -337,21 +343,27 @@ export default function ProblemList() {
                             <strong>요약:</strong> {problem.summary}
                           </p>
                           <p>
-                            <strong>푼 사람:</strong> {problem.solvedCount} |
-                            <strong>정답률:</strong> {problem.successRate}
+                            <strong>푼 사람:</strong> {problem.solvedCount} |{" "}
+                            <strong>정답률:</strong> {problem.successRate}%
                           </p>
                         </div>
+
                         <ButtonContainer>
                           <DetailsButton
-                            onClick={() => handleViewDetails(problem.id)}
+                            onClick={() => handleViewDetails(problem.problemId)}
                           >
                             상세보기
                           </DetailsButton>
-                          <ActionInSummaryButton
-                            onClick={() => handleDirectSolve(problem.id)}
-                          >
-                            바로 코드 작성
-                          </ActionInSummaryButton>
+
+                          {isLoggedIn && (
+                            <ActionInSummaryButton
+                              onClick={() =>
+                                handleDirectSolve(problem.problemId)
+                              }
+                            >
+                              바로 코드 작성
+                            </ActionInSummaryButton>
+                          )}
                         </ButtonContainer>
                       </SummaryBox>
                     </TableCell>
@@ -361,9 +373,7 @@ export default function ProblemList() {
             ))
           ) : (
             <TableRow>
-              <EmptyCell colSpan={7}>
-                {searchTerm ? "검색된 문제가 없습니다." : "문제가 없습니다."}
-              </EmptyCell>
+              <EmptyCell colSpan={7}>문제가 없습니다.</EmptyCell>
             </TableRow>
           )}
         </tbody>
@@ -373,14 +383,13 @@ export default function ProblemList() {
         <PageLink
           onClick={() => handlePageChange(currentPage - 1)}
           isDisabled={currentPage === 1}
-          aria-disabled={currentPage === 1}
         >
           &lt; 이전
         </PageLink>
 
         {Array.from({ length: totalPages }, (_, index) => (
           <PageLink
-            key={index + 1}
+            key={index}
             onClick={() => handlePageChange(index + 1)}
             isActive={currentPage === index + 1}
           >
@@ -391,7 +400,6 @@ export default function ProblemList() {
         <PageLink
           onClick={() => handlePageChange(currentPage + 1)}
           isDisabled={currentPage === totalPages}
-          aria-disabled={currentPage === totalPages}
         >
           다음 &gt;
         </PageLink>

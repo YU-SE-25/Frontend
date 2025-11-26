@@ -276,10 +276,6 @@ export const LanguageSelect = styled.select`
   color: ${(props) => props.theme.textColor};
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   font-size: 14px;
-
-  option {
-    color: #000;
-  }
 `;
 
 // 코드 에디터 전체 박스를 감싸는 wrapper (배경색 커스텀 가능)
@@ -287,6 +283,7 @@ export const EditorWrapper = styled.div`
   width: 100%;
   height: 100%;
   background-color: ${(props) => props.theme.bgColor};
+  color: ${(props) => props.theme.textColor};
   border-radius: 10px;
   padding: 10px;
   box-sizing: border-box;
@@ -301,4 +298,15 @@ export const FontSizeSelect = styled.select`
   color: ${(props) => props.theme.textColor};
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   font-size: 14px;
+`;
+
+// solve 전용 예시 박스
+export const ExampleBox = styled.div`
+  margin-top: 20px;
+  background-color: ${(props) => props.theme.headerBgColor};
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 `;
