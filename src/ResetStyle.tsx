@@ -66,7 +66,6 @@ body{
   font-style: normal;
   }
   *{
-    color: ${(props) => props.theme.textColor};
   transition: background-color 0.3s ease, color 0.3s ease;
 
   }

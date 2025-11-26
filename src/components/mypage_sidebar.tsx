@@ -67,7 +67,7 @@ const NavLink = styled(Link)`
   }
 `;
 
-export default function MyPageSidebar({
+export default function Mypage_sidebar({
   isMyPage,
   role,
 }: {

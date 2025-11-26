@@ -303,7 +303,7 @@ const ActionButton = styled.button<{ variant?: "primary" | "ghost" }>`
   }
 `;
 
-export default function CodeResult() {
+export default function SolveResult() {
   const [sp] = useSearchParams();
   const id = sp.get("id");
   const navigate = useNavigate();
