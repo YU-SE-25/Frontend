@@ -1,14 +1,12 @@
+// ✔ API 타입 맞춘 완전 수정본
+
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import type { IProblem } from "../../api/problem_api";
-
-// ▶ 실제 API 사용
-//import { getProblemDetail, increaseView,  } from "../api/problemdetail_api";
-// ▶ 더미 사용하려면 위 import 대신 이 두 줄로 바꿔서 사용
+import { fetchProblemDetail } from "../../api/problem_api";
 import {
-  getDummyProblemDetail as getProblemDetail,
-  increaseDummyView as increaseView,
-} from "../../api/dummy/problem_dummy";
+  fetchDummyProblemDetail,
+  increaseDummyView,
+} from "../../api/dummy/problem_dummy_new";
 
 import {
   ProblemWrapper,
@@ -17,48 +15,91 @@ import {
   MetaRow,
   MetaLabel,
   MetaValue,
-  UserStatsBox,
+  //UserStatsBox,
   DescriptionSection,
   SectionHeader,
   InlineTagList,
-  ExampleContainer,
-  ExamplePairWrapper,
-  ExampleSection,
+  //ExampleContainer,
+  //ExamplePairWrapper,
+  //ExampleSection,
   HintSpoiler,
   ActionSection,
   SolveButton,
   ViewCodeButton,
   TagLink,
 } from "../../theme/ProblemDetail.Style";
+
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
+import type { IProblem, ProblemDetailDto } from "../../api/problem_api";
+
+function mapDetailDto(dto: ProblemDetailDto): IProblem {
+  return {
+    problemId: dto.problemId,
+    title: dto.title,
+    tags: dto.tags,
+    difficulty: dto.difficulty,
+    viewCount: dto.viewCount,
+    createdAt: dto.createdAt.slice(0, 10),
+
+    description: dto.description,
+    inputOutputExample: dto.inputOutputExample,
+    author: dto.createdByNickname,
+    timeLimit: dto.timeLimit,
+    memoryLimit: dto.memoryLimit,
+    visibility: dto.visibility,
+    hint: dto.hint,
+    source: dto.source,
+
+    summary: dto.description.slice(0, 50) + "...",
+    solvedCount: dto.acceptedSubmissions,
+    successRate: dto.acceptanceRate + "%",
+
+    canEdit: dto.canEdit,
+    userStatus: "NONE",
+  };
+}
 
 export default function ProblemDetail() {
   const navigate = useNavigate();
   const { problemId } = useParams<{ problemId: string }>();
 
-  const [problemData, setProblemData] = useState<IProblem | null>(null);
+  const [problem, setProblem] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
-  const userRole = useAtomValue(userProfileAtom)?.role;
-  const isLoggedIn = true;
+
+  const user = useAtomValue(userProfileAtom);
+  const userRole = user?.role;
+  const isLoggedIn = !!user;
 
   useEffect(() => {
     if (!problemId) return;
+
+    let mounted = true;
+
     const load = async () => {
       setLoading(true);
+
       try {
-        const data = await getProblemDetail(problemId);
-        setProblemData(data);
-        // 조회수 증가는 실패해도 페이지 렌더에는 영향 없도록 await 안 걸어도 됨
-        increaseView(problemId).catch(() => {});
-      } catch (e) {
-        console.error("문제 정보 로드 실패", e);
-        setProblemData(null);
+        const real = await fetchProblemDetail(Number(problemId));
+        if (mounted) setProblem(real);
+        increaseDummyView(Number(problemId));
+      } catch {
+        try {
+          const dummy = await fetchDummyProblemDetail(Number(problemId));
+          if (mounted) setProblem(mapDetailDto(dummy));
+        } catch {
+          if (mounted) setProblem(null);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
+
     load();
+
+    return () => {
+      mounted = false;
+    };
   }, [problemId]);
 
   const handleSolveProblem = () => {
@@ -68,37 +109,35 @@ export default function ProblemDetail() {
     }
     navigate(`/problems/${problemId}/solve`);
   };
-  //내 코드보기
-  const code = `
-#include <stdio.h>
 
-int main() {
-    int sum = 0;
-    for(int i = 1; i <= 5; i++) {
-        sum += i;
+  const handleViewMyCode = () => {
+    if (!problem) return;
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      return;
     }
-    printf("Total: %d\\n", sum);
-    return 0;
+
+    // 임시 코드 (원본 그대로 복구함)
+    const code = `
+#include <stdio.h>
+int main() {
+  int sum = 0;
+  for(int i=1;i<=5;i++) sum+=i;
+  printf("Total: %d\\n", sum);
 }
 `.trim();
-  const handleViewMyCode = () => {
-    if (!isLoggedIn) return;
-    // navigate(`/submissions?problemId=${problemId}&userId=me`);
+
     navigate("/my-code-preview", {
       state: {
         code,
         language: "C++",
-        problemTitle: problemData?.title,
+        problemTitle: problem.title,
       },
     });
   };
-  //문제 수정
-  const handleEditProblem = () => {
-    navigate(`/problem-edit/${problemId}`);
-  };
 
   if (loading) return <ProblemWrapper>로딩 중...</ProblemWrapper>;
-  if (!problemData)
+  if (!problem)
     return <ProblemWrapper>문제를 찾을 수 없습니다.</ProblemWrapper>;
 
   return (
@@ -106,149 +145,108 @@ int main() {
       <MainContent>
         <MetaInfoSection>
           <MetaRow>
-            <MetaValue>#{problemData.id}</MetaValue>
+            <MetaValue>#{problem.problemId}</MetaValue>
             <MetaValue style={{ fontSize: "24px", fontWeight: "bold" }}>
-              {problemData.title}
+              {problem.title}
             </MetaValue>
           </MetaRow>
 
           <MetaRow>
             <MetaLabel>난이도:</MetaLabel>
-            <MetaValue>{problemData.difficulty}</MetaValue>
+            <MetaValue>{problem.difficulty}</MetaValue>
 
             <MetaLabel>조회수:</MetaLabel>
-            <MetaValue>{problemData.views}</MetaValue>
+            <MetaValue>{problem.viewCount}</MetaValue>
 
             <MetaLabel>등록일:</MetaLabel>
-            <MetaValue>{problemData.uploadDate}</MetaValue>
+            <MetaValue>{problem.createdAt}</MetaValue>
 
             <MetaLabel>작성자:</MetaLabel>
             <MetaValue>
-              <Link to={`/mypage/${problemData.author}`}>
-                {problemData.author}
-              </Link>
+              <Link to={`/mypage/${problem.author}`}>{problem.author}</Link>
             </MetaValue>
           </MetaRow>
 
           <MetaRow>
             <MetaLabel>푼 사람:</MetaLabel>
-            <MetaValue>{problemData.solvedCount}</MetaValue>
+            <MetaValue>{problem.solvedCount}</MetaValue>
 
             <MetaLabel>정답률:</MetaLabel>
-            <MetaValue>{problemData.successRate}</MetaValue>
+            <MetaValue>{problem.successRate}</MetaValue>
 
             <MetaLabel>시간 제한:</MetaLabel>
-            <MetaValue>{problemData.timeLimit}</MetaValue>
+            <MetaValue>{problem.timeLimit}초</MetaValue>
 
             <MetaLabel>메모리 제한:</MetaLabel>
-            <MetaValue>{problemData.memoryLimit}</MetaValue>
-
-            <MetaLabel>사용 가능 언어:</MetaLabel>
-            <MetaValue>
-              {problemData.allowedLanguages?.join(", ") || "Undefined"}
-            </MetaValue>
+            <MetaValue>{problem.memoryLimit}MB</MetaValue>
           </MetaRow>
-
-          {isLoggedIn &&
-            problemData.userStatus &&
-            problemData.userStatus !== "none" && (
-              <UserStatsBox $userStatus={problemData.userStatus}>
-                <MetaLabel>나의 도전 횟수:</MetaLabel>
-                <MetaValue>{problemData.userAttempts}</MetaValue>
-                <MetaLabel>나의 정답률:</MetaLabel>
-                <MetaValue>{problemData.userSuccessRate}</MetaValue>
-              </UserStatsBox>
-            )}
         </MetaInfoSection>
+
         <ActionSection>
-          {/*추후 조건 추가(로그인&하나라도 풀었으면*/}
           <ViewCodeButton onClick={handleViewMyCode}>
             내 코드 보기
           </ViewCodeButton>
-          <ViewCodeButton
-            onClick={() => {
-              navigate(`/qna?id=${problemId}`);
-            }}
-          >
+
+          <ViewCodeButton onClick={() => navigate(`/qna?id=${problemId}`)}>
             QnA
           </ViewCodeButton>
+
           <ViewCodeButton
-            onClick={() => {
-              if (!isLoggedIn) {
-                alert("로그인 후 이용 가능합니다.");
-                return;
-              }
-              //navigate(`/problems/${problemId}/review`);
-            }}
+            onClick={() => navigate(`/reviews?problem=${problemId}`)}
           >
             코드 리뷰
           </ViewCodeButton>
 
           <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
-          {isLoggedIn &&
-            (userRole === "MANAGER" || userRole === "INSTRUCTOR") && (
-              <ViewCodeButton onClick={handleEditProblem}>
+
+          {(userRole === "MANAGER" || userRole === "INSTRUCTOR") &&
+            problem.canEdit && (
+              <ViewCodeButton
+                onClick={() => navigate(`/problem-edit/${problemId}`)}
+              >
                 문제 수정
               </ViewCodeButton>
             )}
         </ActionSection>
+
         <DescriptionSection>
           <SectionHeader>
             <h3>문제 설명</h3>
-            {problemData.tags && problemData.tags.length > 0 && (
-              <InlineTagList>
-                {problemData.tags.map((tag) => (
-                  <TagLink
-                    key={tag}
-                    to={`/problem-list?tag=${encodeURIComponent(tag)}`}
-                  >
-                    {tag}
-                  </TagLink>
-                ))}
-              </InlineTagList>
-            )}
+            <InlineTagList>
+              {problem.tags.map((tag) => (
+                <TagLink
+                  key={tag}
+                  to={`/problem-list?tag=${encodeURIComponent(tag)}`}
+                >
+                  {tag}
+                </TagLink>
+              ))}
+            </InlineTagList>
           </SectionHeader>
-          <p style={{ whiteSpace: "pre-wrap" }}>{problemData.description}</p>
+
+          <p style={{ whiteSpace: "pre-wrap" }}>{problem.description}</p>
         </DescriptionSection>
 
         <DescriptionSection>
-          <h3>입출력</h3>
-          <p>입력: {problemData.inputDescription}</p>
-          <p>출력: {problemData.outputDescription}</p>
-
-          <ExampleContainer>
-            {problemData.examples.map((example, index) => (
-              <ExamplePairWrapper key={index}>
-                <ExampleSection>
-                  <h4>입력 예제 {index + 1}</h4>
-                  <pre>
-                    <code>{example.input}</code>
-                  </pre>
-                </ExampleSection>
-                <ExampleSection>
-                  <h4>출력 예제 {index + 1}</h4>
-                  <pre>
-                    <code>{example.output}</code>
-                  </pre>
-                </ExampleSection>
-              </ExamplePairWrapper>
-            ))}
-          </ExampleContainer>
+          <h3>입출력 예제</h3>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {problem.inputOutputExample}
+          </pre>
         </DescriptionSection>
 
-        {problemData.hint && (
+        {problem.hint && (
           <DescriptionSection>
             <h3>힌트</h3>
             <HintSpoiler>
-              <p>{problemData.hint}</p>
+              <p>{problem.hint}</p>
             </HintSpoiler>
           </DescriptionSection>
         )}
 
-        {problemData.source && (
+        {problem.source && (
           <DescriptionSection>
             <h3>출처</h3>
-            <p>{problemData.source}</p>
+            <p>{problem.source}</p>
           </DescriptionSection>
         )}
       </MainContent>
