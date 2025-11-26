@@ -1,99 +1,181 @@
-// 타입과 인터페이스 정의
-import { ALL_AVAILABLE_TAGS } from "./dummy/problem_dummy";
-import axios from "axios";
-export type UserProblemStatus = "solved" | "attempted" | "none";
-export interface IProblem {
-  // 공통 / 요약 정보
-  id: number;
+import { api } from "./axios";
+
+// 1. 목록 조회 DTO
+
+export interface ProblemListItemDto {
+  problemId: number;
   title: string;
-  difficulty: string;
-  views: number;
-  uploadDate: string;
+  tags: string[];
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  viewCount: number;
+  createdAt: string;
+
+  // 추가 4개 필드
+  userStatus: "SOLVED" | "ATTEMPTED" | "NONE";
+  summary: string;
   solvedCount: number;
-  successRate: string;
-  userStatus: UserProblemStatus;
+  successRate: number;
+}
 
-  // ProblemList 전용 필드
-  summary?: string;
+// 2. 문제 상세 조회 DTO
 
-  // ProblemDetail 전용 필드
-  author: string;
-  timeLimit: string;
-  memoryLimit: string;
-  allowedLanguages: string[];
+export interface ProblemDetailDto {
+  problemId: number;
+  createdByNickname: string;
+  title: string;
   description: string;
-  inputDescription: string;
-  outputDescription: string;
-  examples: IIOExample[];
+  inputOutputExample: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  timeLimit: number;
+  memoryLimit: number;
+  visibility: "PUBLIC" | "PRIVATE";
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
   hint: string;
   source: string;
-  userAttempts?: number;
-  userSuccessRate?: string;
-  tags?: string[];
-}
-export interface FetchProblemParams {
-  sortType: string;
-  searchTerm?: string;
-  isLoggedIn: boolean;
-  page?: number;
-  size?: number;
-  tags?: string[];
-  //filterStatus 속성도 필요할 수 있으므로 추가
-  filterStatus?: string;
+
+  totalSubmissions: number;
+  acceptedSubmissions: number;
+  acceptanceRate: number;
+
+  canEdit: boolean;
 }
 
-export interface IIOExample {
-  input: string;
-  output: string;
-}
-// api함수들
-export async function getProblemDetail(problemId: string): Promise<IProblem> {
-  const { data } = await axios.get<IProblem>(`api/problems/${problemId}`);
-  return data;
-}
+// 3. 문제 등록 DTO
 
-export async function increaseView(problemId: string): Promise<void> {
-  await axios.post(`/problems/${problemId}/view`);
-}
-export async function fetchProblems({
-  sortType,
-  searchTerm,
-  isLoggedIn,
-  page = 1,
-  size = 50,
-  tags,
-  filterStatus,
-}: FetchProblemParams): Promise<IProblem[]> {
-  const qs = new URLSearchParams({
-    sort: sortType,
-    q: searchTerm ?? "",
-    page: String(page),
-    size: String(size),
-  });
-
-  //tags가 있을 경우 URLSearchParams에 추가
-  if (tags && tags.length > 0) {
-    // 배열을 쉼표로 연결하거나, API 스펙에 맞게 처리
-    qs.set("tags", tags.join(","));
-  }
-
-  // filterStatus가 있을 경우 URLSearchParams에 추가
-  if (filterStatus) {
-    qs.set("filterStatus", filterStatus);
-  }
-
-  const res = await fetch(`/api/problems?${qs.toString()}`, {
-    headers: { "Content-Type": "application/json" },
-  });
-  if (!res.ok) throw new Error("Failed to fetch problems");
-
-  const data: IProblem[] = await res.json();
-
-  return isLoggedIn ? data : data.map((p) => ({ ...p, userStatus: "none" }));
+export interface ProblemRegisterPayload {
+  title: string;
+  description: string;
+  inputOutputExample: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  timeLimit: number;
+  memoryLimit: number;
+  visibility: "PUBLIC" | "PRIVATE";
+  tags: string[];
+  hint: string;
+  source: string;
+  testcases?: File[]; // 임시 추가됨
 }
 
-//테그
+// 프론트에서 사용하는 통합 IProblem 타입
+
+export interface IProblem {
+  // 목록 공통
+  problemId: number;
+  title: string;
+  tags: string[];
+  difficulty: string;
+  viewCount: number;
+  createdAt: string;
+
+  // 목록용
+  summary?: string;
+  solvedCount?: number;
+  successRate?: string;
+  userStatus?: "SOLVED" | "ATTEMPTED" | "NONE";
+
+  // 상세용
+  description?: string;
+  inputOutputExample?: string;
+  author?: string;
+  timeLimit?: number;
+  memoryLimit?: number;
+  visibility?: string;
+  hint?: string;
+  source?: string;
+  canEdit?: boolean;
+}
+
+// Mapper — DTO → IProblem 변환
+
+export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
+  return {
+    problemId: dto.problemId,
+    title: dto.title,
+    tags: dto.tags,
+    difficulty: dto.difficulty,
+    viewCount: dto.viewCount,
+    createdAt: dto.createdAt.slice(0, 10),
+
+    summary: dto.summary,
+    solvedCount: dto.solvedCount,
+    successRate: dto.successRate + "%",
+    userStatus: dto.userStatus,
+  };
+}
+
+export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
+  return {
+    problemId: dto.problemId,
+    title: dto.title,
+    tags: dto.tags,
+    difficulty: dto.difficulty,
+    viewCount: dto.viewCount,
+    createdAt: dto.createdAt.slice(0, 10),
+
+    description: dto.description,
+    inputOutputExample: dto.inputOutputExample,
+    author: dto.createdByNickname,
+    timeLimit: dto.timeLimit,
+    memoryLimit: dto.memoryLimit,
+    visibility: dto.visibility,
+    hint: dto.hint,
+    source: dto.source,
+    summary: dto.description.slice(0, 50) + "...",
+    solvedCount: dto.acceptedSubmissions,
+    successRate: dto.acceptanceRate + "%",
+
+    canEdit: dto.canEdit,
+    userStatus: "NONE",
+  };
+}
+
+// 6. 문제 API 호출 함수들
+
+// 태그 목록(임시)
 export async function fetchAvailableTags(): Promise<string[]> {
-  // 실제 API 통신 코드는 주석 처리, 더미 데이터 반환
-  return Promise.resolve(ALL_AVAILABLE_TAGS);
+  const res = await api.get<string[]>("/problems/tags");
+  return res.data;
+}
+
+// 문제 목록 조회
+export async function fetchProblems(): Promise<IProblem[]> {
+  const res = await api.get<{ content: ProblemListItemDto[] }>("/problems");
+  return res.data.content.map(mapListDtoToProblem);
+}
+
+// 문제 상세 조회
+export async function fetchProblemDetail(problemId: number): Promise<IProblem> {
+  const res = await api.get<ProblemDetailDto>(`/problems/detail/${problemId}`);
+  return mapDetailDtoToProblem(res.data);
+}
+
+// 문제 등록 (테스트케이스 포함)
+export async function registerProblem(
+  payload: ProblemRegisterPayload
+): Promise<number> {
+  const fd = new FormData();
+
+  fd.append("title", payload.title);
+  fd.append("description", payload.description);
+  fd.append("inputOutputExample", payload.inputOutputExample);
+  fd.append("difficulty", payload.difficulty);
+  fd.append("timeLimit", String(payload.timeLimit));
+  fd.append("memoryLimit", String(payload.memoryLimit));
+  fd.append("visibility", payload.visibility);
+  fd.append("hint", payload.hint);
+  fd.append("source", payload.source);
+
+  payload.tags.forEach((tag) => fd.append("tags", tag));
+
+  if (payload.testcases) {
+    payload.testcases.forEach((f) => fd.append("testcases", f));
+  }
+
+  const res = await api.post<{ problemId: number }>("/problems/register", fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data.problemId;
 }

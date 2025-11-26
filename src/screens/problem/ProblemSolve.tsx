@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import type { IProblem } from "../../api/problem_api";
-import { getDummyProblemDetail as getProblemDetail } from "../../api/dummy/problem_dummy";
+import { fetchDummyProblemDetail as getProblemDetail } from "../../api/dummy/problem_dummy_new";
 
 import {
   runCode,
@@ -19,10 +19,8 @@ import {
   ProblemTitle,
   ProblemDetailText,
   ProblemDescriptionBox,
-  ExampleContainer,
-  ExamplePairWrapper,
-  ExampleSection,
   EditorPanelContainer,
+  ExampleBox,
 } from "../../theme/ProblemSolve.Style";
 
 /* 실행/제출 결과 타입 */
@@ -41,33 +39,37 @@ export default function ProblemSolvePage() {
   const [loading, setLoading] = useState(true);
 
   /* 언어 선택 */
-  const [language, setLanguage] = useState("C");
+  const [language, setLanguage] = useState("Python");
 
   /* 코드 */
   const [code, setCode] = useState("");
 
-  /* 실행/제출 결과 */
+  /* 실행,제출 결과 */
   const [executionResult, setExecutionResult] =
     useState<ExecutionResult | null>(null);
 
-  /* 팝업 */
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  /* 문제 로딩*/
+  /* 문제 로딩 */
   useEffect(() => {
     if (!problemId) return;
 
     const load = async () => {
       setLoading(true);
       try {
-        const data = await getProblemDetail(problemId);
+        if (!problemId) return;
+        const data = await getProblemDetail(Number(problemId));
         setProblemData(data);
 
-        // allowedLanguages가 있으면 첫 번째로
         if (data.allowedLanguages && data.allowedLanguages.length > 0) {
-          setLanguage(data.allowedLanguages[0]);
+          const preferred = ["Python", "C++", "Java"]; // 우선순위
+          const picked =
+            preferred.find((lang) => data.allowedLanguages.includes(lang)) ??
+            data.allowedLanguages[0];
+
+          setLanguage(picked);
         } else {
-          setLanguage("C");
+          setLanguage("Python");
         }
       } catch (e) {
         console.error("문제 정보 로드 실패:", e);
@@ -79,14 +81,10 @@ export default function ProblemSolvePage() {
     load();
   }, [problemId]);
 
-  /* 코드 실행(추후 api보고 수정)*/
-  const handleRun = useCallback<() => Promise<string>>(async () => {
-    // 1) problemId 없을 때도 문자열 리턴
-    if (!problemId) {
-      return "문제 ID가 없습니다.";
-    }
+  /* 코드 실행 */
+  const handleRun = useCallback(async () => {
+    if (!problemId) return "문제 ID 없음";
 
-    // 2) 실제 코드 실행
     const runResult = await runCode(code, language);
 
     const result: ExecutionResult = {
@@ -96,11 +94,9 @@ export default function ProblemSolvePage() {
       testCasesPassed: "0/0",
     };
 
-    // 기존처럼 모달에서 쓸 실행결과는 그대로 저장
     setExecutionResult(result);
     setIsModalOpen(true);
 
-    // 3) ✅ 여기서 '실행 결과창(OutputBox)에 보여줄 텍스트'를 리턴해 주는 게 핵심!!
     const statusText = runResult.compileError ? "컴파일 에러(RE)" : "정상 실행";
 
     return [
@@ -112,7 +108,7 @@ export default function ProblemSolvePage() {
     ].join("\n");
   }, [code, language, problemId]);
 
-  /*  임시 저장*/
+  /* 임시 저장 */
   const handleSaveDraft = useCallback(async () => {
     if (!problemId) return;
 
@@ -125,61 +121,33 @@ export default function ProblemSolvePage() {
     alert("임시 저장 완료!");
   }, [code, language, problemId]);
 
-  /* 임시 저장 불러오기*/
+  /* 임시 저장된 코드 불러오기 */
   const handleLoadDraft = useCallback(async () => {
     if (!problemId) return;
 
     const saved = await loadDraft(Number(problemId));
 
     if (!saved) {
-      alert("임시 저장된 코드가 없습니다");
+      alert("임시 저장 없음");
       return;
     }
 
     setCode(saved.code);
     setLanguage(saved.language);
-    alert("임시 저장 불러오기 완료!");
+    alert("불러오기 완료!");
   }, [problemId]);
 
-  /* 제출 + 채점 */
+  /* 제출 */
   const nav = useNavigate();
   const handleSubmit = useCallback(async () => {
     if (!problemId) return;
 
-    const submission = await submitCode({
+    await submitCode({
       problemId: Number(problemId),
       code,
       language,
     });
-    //const submissionId = submission.submissionId;
 
-    //deprecated
-    /*
-    let finalData: ExecutionResult | null = null;
-  
-    const poll = setInterval(async () => {
-      const statusData = await getSubmissionStatus(submissionId);
-  
-      if (statusData.status === "GRADING") return;
-  
-      finalData = {
-        status: statusData.status,
-        time: `${statusData.runtime ?? 0}ms`,
-        memory: `${statusData.memory ?? 0}MB`,
-        testCasesPassed:
-          statusData.passedTestCases !== undefined
-            ? `${statusData.passedTestCases}/${statusData.totalTestCases}`
-            : "0/0",
-      };
-  
-      clearInterval(poll);
-  
-      setExecutionResult(finalData);
-      setIsModalOpen(true);
-    }, 900);
-    */
-
-    // 🔹 제출 후 결과 페이지로 이동
     nav("/problems/:username/solved?id=" + problemId + "&showResult=true");
   }, [code, language, problemId, nav]);
 
@@ -188,65 +156,37 @@ export default function ProblemSolvePage() {
     return <ProblemSolveWrapper>문제를 찾을 수 없습니다.</ProblemSolveWrapper>;
 
   return (
-    <>
-      <ProblemSolveWrapper>
-        {/* 왼쪽: 문제 정보 */}
-        <ProblemInfoContainer>
-          <ProblemTitle>{problemData.title}</ProblemTitle>
+    <ProblemSolveWrapper>
+      <ProblemInfoContainer>
+        <ProblemTitle>{problemData.title}</ProblemTitle>
 
-          <ProblemDescriptionBox>
-            {problemData.description}
-          </ProblemDescriptionBox>
+        <ProblemDescriptionBox>{problemData.description}</ProblemDescriptionBox>
 
-          <ProblemDetailText>
-            입력: {problemData.inputDescription}
-          </ProblemDetailText>
-          <ProblemDetailText>
-            출력: {problemData.outputDescription}
-          </ProblemDetailText>
+        <ProblemDetailText>
+          제한: {problemData.timeLimit}초 / {problemData.memoryLimit}MB
+        </ProblemDetailText>
 
-          <h3 style={{ marginTop: "15px" }}>입출력 예시</h3>
+        {problemData.inputOutputExample && (
+          <div style={{ marginTop: "20px" }}>
+            <h3>입출력 예시</h3>
+            <ExampleBox>{problemData.inputOutputExample}</ExampleBox>
+          </div>
+        )}
+      </ProblemInfoContainer>
 
-          <ExampleContainer>
-            {problemData.examples.map((ex, idx) => (
-              <ExamplePairWrapper key={idx}>
-                <ExampleSection>
-                  <h4>입력 예제 {idx + 1}</h4>
-                  <pre>
-                    <code>{ex.input}</code>
-                  </pre>
-                </ExampleSection>
-
-                <ExampleSection>
-                  <h4>출력 예제 {idx + 1}</h4>
-                  <pre>
-                    <code>{ex.output}</code>
-                  </pre>
-                </ExampleSection>
-              </ExamplePairWrapper>
-            ))}
-          </ExampleContainer>
-
-          <ProblemDetailText>
-            제한: {problemData.timeLimit} / {problemData.memoryLimit}
-          </ProblemDetailText>
-        </ProblemInfoContainer>
-
-        {/* 오른쪽 코드 에디터만 */}
-        <EditorPanelContainer>
-          <CodeEditorView
-            problem={problemData}
-            code={code}
-            onCodeChange={setCode}
-            onExecute={handleRun}
-            onSaveTemp={handleSaveDraft}
-            onLoadTemp={handleLoadDraft}
-            onSubmit={handleSubmit}
-            language={language}
-            onLanguageChange={setLanguage}
-          />
-        </EditorPanelContainer>
-      </ProblemSolveWrapper>
-    </>
+      <EditorPanelContainer>
+        <CodeEditorView
+          problem={problemData}
+          code={code}
+          onCodeChange={setCode}
+          onExecute={handleRun}
+          onSaveTemp={handleSaveDraft}
+          onLoadTemp={handleLoadDraft}
+          onSubmit={handleSubmit}
+          language={language}
+          onLanguageChange={setLanguage}
+        />
+      </EditorPanelContainer>
+    </ProblemSolveWrapper>
   );
 }
