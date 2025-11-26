@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import type { IProblem } from "../../api/problem_api";
 
 // ▶ 실제 API 사용
 //import { getProblemDetail, increaseView,  } from "../api/problemdetail_api";
 // ▶ 더미 사용하려면 위 import 대신 이 두 줄로 바꿔서 사용
-import type { IProblem } from "../../api/problem_api";
 import {
   getDummyProblemDetail as getProblemDetail,
   increaseDummyView as increaseView,
@@ -69,9 +69,32 @@ export default function ProblemDetail() {
     navigate(`/problems/${problemId}/solve`);
   };
   //내 코드보기
+  const code = `
+#include <stdio.h>
+
+int main() {
+    int sum = 0;
+    for(int i = 1; i <= 5; i++) {
+        sum += i;
+    }
+    printf("Total: %d\\n", sum);
+    return 0;
+}
+`.trim();
   const handleViewMyCode = () => {
     if (!isLoggedIn) return;
     // navigate(`/submissions?problemId=${problemId}&userId=me`);
+    navigate("/my-code-preview", {
+      state: {
+        code,
+        language: "C++",
+        problemTitle: problemData?.title,
+      },
+    });
+  };
+  //문제 수정
+  const handleEditProblem = () => {
+    navigate(`/problem-edit/${problemId}`);
   };
   //문제 수정
   const handleEditProblem = () => {

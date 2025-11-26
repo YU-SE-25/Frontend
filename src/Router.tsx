@@ -24,8 +24,8 @@ import MyPageRedirect from "./screens/mypage/MypageRedirect";
 import ProblemList from "./screens/problem/ProblemList";
 import ProblemDetail from "./screens/problem/ProblemDetail";
 import ProblemSolve from "./screens/problem/ProblemSolve";
-import CodeResult from "./screens/problem/CodeResult";
-import MySolvedProblem from "./screens/problem/MySolvedProblem";
+import CodeResult from "./screens/problem/SolveResult";
+import MySolvedProblem from "./screens/problem/MySolvedProblemList";
 import ProblemAdd from "./screens/problem/ProblemAdd";
 import ProblemEdit from "./screens/problem/ProblemEdit";
 import CodeAnalysis from "./screens/problem/CodeAnalysis";
@@ -39,6 +39,7 @@ import QnaWrite from "./screens/board/QnaWrite";
 // 스터디 그룹
 import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
+import SolvedProblemShow from "./screens/problem/reviews/SolvedProblemShow";
 
 const router = createBrowserRouter([
   {
@@ -53,6 +54,11 @@ const router = createBrowserRouter([
       { path: "problems/:problemId/solve", element: <ProblemSolve /> },
       { path: "problems/result", element: <CodeResult /> }, //debrecated
       { path: "problems/:username/solved", element: <MySolvedProblem /> },
+
+      {
+        path: "/my-code-preview",
+        element: <SolvedProblemShow />,
+      },
 
       //문제분석용 임시 라우터(그대로 써도되긴함)
       {
