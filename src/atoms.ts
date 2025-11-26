@@ -39,7 +39,10 @@ export const refreshTokenAtom = atomWithStorage<string | null>(
   null
 );
 //사용자의 최소 정보
-export const userProfileAtom = atom<UserProfile | null>(null);
+export const userProfileAtom = atomWithStorage<UserProfile | null>(
+  "userProfile",
+  null
+);
 userProfileAtom.debugLabel = "User Profile";
 //로그인 여부 판단: accessToken이 존재하고 userProfile이 있으면 true
 export const isLoggedInAtom = atom((get) => {
