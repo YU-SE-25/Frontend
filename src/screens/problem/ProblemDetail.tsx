@@ -69,9 +69,32 @@ export default function ProblemDetail() {
     navigate(`/problems/${problemId}/solve`);
   };
   //내 코드보기
+  const code = `
+#include <stdio.h>
+
+int main() {
+    int sum = 0;
+    for(int i = 1; i <= 5; i++) {
+        sum += i;
+    }
+    printf("Total: %d\\n", sum);
+    return 0;
+}
+`.trim();
   const handleViewMyCode = () => {
     if (!isLoggedIn) return;
     // navigate(`/submissions?problemId=${problemId}&userId=me`);
+    navigate("/my-code-preview", {
+      state: {
+        code,
+        language: "C++",
+        problemTitle: problemData?.title,
+      },
+    });
+  };
+  //문제 수정
+  const handleEditProblem = () => {
+    navigate(`/problem-edit/${problemId}`);
   };
   //문제 수정
   const handleEditProblem = () => {

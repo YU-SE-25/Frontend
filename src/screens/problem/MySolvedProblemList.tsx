@@ -34,7 +34,7 @@ import type { UserProblemStatus } from "../../theme/ProblemList.Style";
 import type { IProblem } from "../../api/problem_api";
 import { fetchProblems, fetchAvailableTags } from "../../api/problem_api";
 import { fetchDummyProblems } from "../../api/dummy/problem_dummy";
-import CodeResult from "./CodeResult";
+import CodeResult from "./SolveResult";
 import styled, { css, keyframes } from "styled-components";
 
 const USE_DUMMY = true;
@@ -125,7 +125,7 @@ export const WholeWrapper = styled.div`
   background-color: ${(props) => props.theme.bgColor};
 `;
 
-export default function MySolvedProblem() {
+export default function MySolvedProblemList() {
   const navigate = useNavigate();
   //문제 상세 -> 테그 연동
   const [searchParams, setSearchParams] = useSearchParams();
