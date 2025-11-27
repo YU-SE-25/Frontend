@@ -73,8 +73,38 @@ const LineCodeText = styled.span`
 `;
 
 const ReviewMeta = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: ${({ theme }) => theme.textColor}88;
+`;
+
+const LikeButton = styled.button<{ $liked?: boolean }>`
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid
+    ${({ theme, $liked }) =>
+      $liked ? theme.textColor + "55" : theme.textColor + "33"};
+  background: ${({ theme, $liked }) =>
+    $liked ? theme.textColor + "11" : theme.bgColor};
+  font-size: 11px;
+  cursor: pointer;
+  color: ${({ theme }) => theme.textColor};
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    background: ${({ theme, $liked }) =>
+      $liked ? theme.textColor + "11" : theme.textColor + "11"};
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
 `;
 
 const ReviewPreview = styled.div`
@@ -191,6 +221,7 @@ export type Review = {
   content: string;
   author: string;
   createdAt: string;
+  voteCount: number;
   comments: ReviewComment[];
 };
 
@@ -222,6 +253,9 @@ export default function ReviewSection({
     lineCode: string;
     content: string;
   } | null>(null);
+
+  // ✅ 이 세션에서 어떤 리뷰를 좋아요 눌렀는지 기록
+  const [likedReviews, setLikedReviews] = useState<Record<number, boolean>>({});
 
   const codeLines = code.split("\n");
   const getLineContent = (lineNumber: number) =>
@@ -359,6 +393,29 @@ export default function ReviewSection({
     alert("삭제되었습니다.");
   };
 
+  const handleLikeReview = (e: React.MouseEvent, reviewId: number) => {
+    e.stopPropagation(); // 리뷰 열기 토글 막기
+
+    setLikedReviews((prev) => {
+      if (prev[reviewId]) {
+        // 이미 눌렀으면 무시
+        return prev;
+      }
+
+      // 처음 누를 때만 voteCount 증가
+      onChangeReviews((prevReviews) =>
+        prevReviews.map((r) =>
+          r.id === reviewId ? { ...r, voteCount: r.voteCount + 1 } : r
+        )
+      );
+
+      return {
+        ...prev,
+        [reviewId]: true,
+      };
+    });
+  };
+
   return (
     <>
       <CodePreview
@@ -389,6 +446,7 @@ export default function ReviewSection({
             content,
             author: "현재유저",
             createdAt: new Date().toISOString(),
+            voteCount: 0,
             comments: [],
           };
           onChangeReviews((prev) => [...prev, newReview]);
@@ -410,6 +468,7 @@ export default function ReviewSection({
             const lineCode = getLineContent(review.lineNumber);
             const isEditingThisReview =
               editingTarget && editingTarget.reviewId === review.id;
+            const liked = !!likedReviews[review.id];
 
             return (
               <ReviewItem
@@ -421,6 +480,14 @@ export default function ReviewSection({
                   <LineTag>{review.lineNumber}번째 줄</LineTag>
                   <LineCodeText>{lineCode}</LineCodeText>
                   <ReviewMeta>
+                    <LikeButton
+                      type="button"
+                      $liked={liked}
+                      disabled={liked}
+                      onClick={(e) => handleLikeReview(e, review.id)}
+                    >
+                      👍 {review.voteCount}
+                    </LikeButton>
                     {isOwner(review) && (
                       <>
                         <CommentActionButton

@@ -202,6 +202,7 @@ int main() {
                 content: r.content,
                 author: r.reviewer,
                 createdAt: r.createdAt,
+                voteCount: r.voteCount,
                 comments,
               };
             })

@@ -195,6 +195,7 @@ export default function SolvedProblemShow() {
                 content: r.content,
                 author: r.reviewer,
                 createdAt: r.createdAt,
+                voteCount: r.voteCount,
                 comments,
               };
             })
