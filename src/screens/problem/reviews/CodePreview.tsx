@@ -192,7 +192,7 @@ function ReviewModal({ target, onClose, onSubmit }: ReviewModalProps) {
 
   const handleSubmit = () => {
     if (!content.trim()) {
-      alert("리뷰 내용을 입력해주세요.");
+      alert("리뷰 내용을 입력해주세요");
       return;
     }
 
