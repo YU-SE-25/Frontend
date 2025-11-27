@@ -454,7 +454,7 @@ export default function MySubmissionsList() {
                       <ResultButtons>
                         <SmallResultButton
                           onClick={() =>
-                            toggleShowResult(submission.submissionId)
+                            navigate(`codeView?id=${submission.submissionId}`)
                           }
                         >
                           코드 보기

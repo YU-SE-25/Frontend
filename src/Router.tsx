@@ -41,6 +41,7 @@ import QnaWrite from "./screens/board/QnaWrite";
 import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 import SolvedProblemShow from "./screens/problem/reviews/SolvedProblemShow";
+import MySubmissionsDetail from "./screens/problem/MySubmissionsDetail";
 
 const router = createBrowserRouter([
   {
@@ -54,10 +55,14 @@ const router = createBrowserRouter([
       { path: "problem-edit/:problemId", element: <ProblemEdit /> },
       { path: "problems/:problemId/solve", element: <ProblemSolve /> },
       { path: "problems/result", element: <CodeResult /> }, //debrecated
-      { path: "problems/:username/solved", element: <MySolvedProblem /> },
+      { path: "problems/:username/submitted", element: <MySolvedProblem /> },
       {
         path: "problem-detail/:problemId/solved",
         element: <SolvedProblemList />,
+      },
+      {
+        path: "problems/:username/submitted/codeView/:solutionId",
+        element: <MySubmissionsDetail />,
       },
 
       {
@@ -67,7 +72,7 @@ const router = createBrowserRouter([
 
       //문제분석용 임시 라우터(그대로 써도되긴함)
       {
-        path: "problems/:problemId/submissions/:submissionId",
+        path: "problems/:problemId/analysis/:submissionId",
         element: <CodeAnalysis />,
       },
 

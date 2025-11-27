@@ -599,6 +599,16 @@ export default function SolveResult() {
           >
             에디터로 돌아가기
           </ActionButton>
+          <ActionButton
+            variant="primary"
+            onClick={() =>
+              problemId
+                ? navigate(`/problem-detail/${problemId}/solved`)
+                : alert("문제 ID가 없어 다른 사람 풀이를 볼 수 없습니다.")
+            }
+          >
+            다른 사람 풀이 보기
+          </ActionButton>
         </ButtonGroup>
       </FooterRow>
     </ResultCard>

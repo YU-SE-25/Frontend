@@ -84,7 +84,7 @@ export default function ProblemDetail() {
       return;
     }
 
-    navigate(`/problems/${problemId}/solved?search=${problemId}`);
+    navigate(`/problems/${user.nickname}/submitted?search=${problemId}`);
   };
 
   if (loading) return <ProblemWrapper>로딩 중...</ProblemWrapper>;

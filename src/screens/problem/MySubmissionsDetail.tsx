@@ -1,27 +1,27 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
-import CodePreview from "./CodePreview";
+import CodePreview from "../../components/CodePreview";
 import {
   fetchProblemDetail,
   mapDetailDtoToProblem,
-} from "../../../api/problem_api";
-import type { IProblem } from "../../../api/problem_api";
+} from "../../api/problem_api";
+import type { IProblem } from "../../api/problem_api";
 import {
   fetchSolvedCode,
   fetchReviewsBySolution,
   fetchCommentsByReview,
-} from "../../../api/solution_api";
+} from "../../api/solution_api";
 import {
   fetchDummyProblemDetail,
   increaseDummyView,
-} from "../../../api/dummy/problem_dummy_new";
+} from "../../api/dummy/problem_dummy_new";
 
 // ✅ 공통 문제 메타
-import ProblemMeta from "../../../components/ProblemMeta";
-import { timeConverter } from "../../../utils/timeConverter";
-import { isOwner } from "../../../utils/isOwner";
-import { ButtonContainer } from "../../../theme/ProblemList.Style";
+import ProblemMeta from "../../components/ProblemMeta";
+import { timeConverter } from "../../utils/timeConverter";
+import { isOwner } from "../../utils/isOwner";
+// ===================== 스타일 =====================
 
 const Page = styled.div`
   width: 100%;
@@ -271,7 +271,7 @@ const langMap: Record<string, string> = {
 
 // ===================== 컴포넌트 =====================
 
-export default function SolvedProblemShow() {
+export default function MySubmissionsDetail() {
   const { problemId, solutionId } = useParams<{
     problemId: string;
     solutionId: string;
@@ -502,60 +502,11 @@ export default function SolvedProblemShow() {
     }));
   };
 
-  // 다른 사람 풀이 보기
-  const handleViewOtherSolutions = () => {
-    if (!problemId) return;
-    navigate(`/problem-detail/${problemId}/solved`);
-  };
-
-  const handleCommentSubmit = (e: React.FormEvent, reviewId: number) => {
-    e.preventDefault();
-    const text = commentDrafts[reviewId]?.trim();
-    if (!text) return;
-
-    setReviews((prev) =>
-      prev.map((r) =>
-        r.id === reviewId
-          ? {
-              ...r,
-              comments: [
-                ...r.comments,
-                {
-                  id: Date.now(),
-                  author: "현재유저", // TODO: 실제 로그인 유저로 교체
-                  content: text,
-                  createdAt: "방금 전",
-                },
-              ],
-            }
-          : r
-      )
-    );
-
-    setCommentDrafts((prev) => ({
-      ...prev,
-      [reviewId]: "",
-    }));
-  };
-
   return (
     <Page>
       <Inner>
-        {problem && <ProblemMeta problem={problem} />}
-
         <HeadingRow>
-          <Heading>제출된 코드</Heading>
-          <ButtonContainer>
-            {isMine && (
-              <OtherCodeButton onClick={handleViewOtherSolutions}>
-                편집...
-              </OtherCodeButton>
-            )}
-
-            <OtherCodeButton onClick={handleViewOtherSolutions}>
-              다른 사람 풀이 보기
-            </OtherCodeButton>
-          </ButtonContainer>
+          <Heading>내 코드 보기</Heading>
         </HeadingRow>
 
         {/* ✅ 풀이 전용 메타 (언어 / 제출 시각 / 메모리 / 실행시간) */}
@@ -574,6 +525,9 @@ export default function SolvedProblemShow() {
         </MetaRow>
 
         <CodePreview code={code} language={hlLang} />
+        <HeadingRow>
+          <Heading>설정</Heading>
+        </HeadingRow>
 
         <ReviewSectionTitle>
           코드 리뷰
@@ -625,21 +579,6 @@ export default function SolvedProblemShow() {
                             </CommentItem>
                           ))}
                         </CommentList>
-
-                        <CommentForm
-                          onSubmit={(e) => handleCommentSubmit(e, review.id)}
-                        >
-                          <CommentInput
-                            placeholder="댓글을 입력하세요."
-                            value={commentDrafts[review.id] ?? ""}
-                            onChange={(e) =>
-                              handleCommentChange(review.id, e.target.value)
-                            }
-                          />
-                          <CommentSubmitBtn type="submit">
-                            등록
-                          </CommentSubmitBtn>
-                        </CommentForm>
                       </CommentSection>
                     </>
                   )}
