@@ -1,54 +1,68 @@
 // 지금은 그냥 더미 전달하는용..
 
-import type { Review } from "./dummy/solution_dummy";
-
 import {
-  fetchMySolvedCode as fetchMySolvedCodeDummy,
-  fetchSolutionReviews as fetchSolutionReviewsDummy,
-  updateShareMyCode as updateShareMyCodeDummy,
-  fetchSharedSolvedList as fetchSharedSolvedListDummy,
+  fetchSolvedCode as fetchSolvedCodeDummy,
+  fetchReviewsBySolution as fetchReviewsBySolutionDummy,
+  fetchCommentsByReview as fetchCommentsByReviewDummy,
 } from "./dummy/solution_dummy";
-import type { IProblem } from "./problem_api";
+
+export type ReviewsResponse = {
+  totalPages: number;
+  currentPage: number;
+  reviews: ReviewItem[];
+};
+
+export type ReviewItem = {
+  reviewId: number;
+  reviewer: string;
+  lineNumber: number;
+  content: string;
+  voteCount: number;
+  createdAt: string; // ISO 8601 문자열 (UTC)
+  owner: boolean;
+};
+
+export type ReviewComments = {
+  totalPages: number;
+  currentPage: number;
+  comments: {
+    commentId: number;
+    commenter: string;
+    content: string;
+    createdAt: string; // ISO 8601
+    owner: boolean;
+  }[];
+};
 
 export type MySolvedCodeResponse = {
-  solutionId: number;
-  code: string;
-  language: string;
-  problem: IProblem | null;
-  isShared: boolean;
-  createdAt: string;
-  memoryUsage: number;
-  executionTime: number;
+  totalPages: number;
+  currentPage: number;
+  solutions: {
+    submissionId: number;
+    username: string;
+    code: string;
+    submittedAt: string; // ISO 8601 문자열
+    language: string; // e.g. "CPP", "C", "JAVA"
+    runtime: number; // ms
+    memory: number; // KB
+  }[];
 };
-// ===================== 내 최신 풀이 =====================
 
-export async function fetchMySolvedCode(
+// ===================== 풀이 가져오기 =====================
+export async function fetchSolvedCode(
   problemId: number
 ): Promise<MySolvedCodeResponse | null> {
-  return fetchMySolvedCodeDummy(problemId);
+  return fetchSolvedCodeDummy(problemId);
 }
-
-// ===================== 풀이 리뷰 =====================
-
-export async function fetchSolutionReviews(
-  solutionId: number
-): Promise<Review[]> {
-  return fetchSolutionReviewsDummy(solutionId);
+// ===================== 리뷰 가져오기 =====================
+export async function fetchReviewsBySolution(
+  submissionId: number
+): Promise<ReviewsResponse | null> {
+  return fetchReviewsBySolutionDummy(submissionId);
 }
-
-// ===================== 풀이 공유 여부 변경 =====================
-
-export async function updateShareMyCode(
-  solutionId: number,
-  shared: boolean
-): Promise<void> {
-  return updateShareMyCodeDummy(solutionId, shared);
-}
-
-// ===================== ✅ 공유된 풀이 목록 =====================
-
-export async function fetchSharedSolvedList(
-  problemId: number
-): Promise<MySolvedCodeResponse[]> {
-  return fetchSharedSolvedListDummy(problemId);
+// ===================== 리뷰 댓글 가져오기 =====================
+export async function fetchCommentsByReview(
+  reviewId: number
+): Promise<ReviewComments | null> {
+  return fetchCommentsByReviewDummy(reviewId);
 }
