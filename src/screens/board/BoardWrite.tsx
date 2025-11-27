@@ -1,13 +1,12 @@
 import { useAtomValue } from "jotai";
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 
 type BoardCategory = "discussion" | "qna";
 
 const CATEGORY_LABEL: Record<BoardCategory, string> = {
-  // free: "자유게시판",
   discussion: "토론게시판",
   qna: "Q&A 게시판",
 };
@@ -168,43 +167,70 @@ const ErrorText = styled.p`
   color: #ff4d4f;
 `;
 
-//-----스터디그룹 코드-----
+//----- 스터디그룹 코드 -----
 interface BoardWriteProps {
-  mode?: "board" | "study"; // 기본 게시판 / 스터디그룹 게시판 구분
-  groupId?: number; // study 모드에서 필요
+  mode?: "board" | "study";
+  groupId?: number;
 }
-//---------
+
+// 수정 모드에서 받을 게시글 형태(필요한 최소 필드만)
+interface EditPostState {
+  id: number;
+  category: BoardCategory;
+  title: string;
+  content: string;
+  isAnonymous: boolean;
+  isPrivate: boolean;
+  groupId?: number;
+}
+
+interface LocationState {
+  post?: EditPostState;
+}
 
 export default function BoardWrite({
   mode = "board",
   groupId,
 }: BoardWriteProps) {
   const navigate = useNavigate();
-  const { p } = useParams();
   const params = useParams();
   const { category: routeCategory } = useParams();
-  //스터디그룹 재사용 용도의 코드, api 붙이면 빨간줄 사라짐
-  const effectiveGroupId = Number(params.groupId);
-  //스터디 그룹은 category를 강제로 'discussion'으로 고정
-  const isStudy = mode === "study";
-
-  const initialCategory: BoardCategory =
-    routeCategory === "qna" || routeCategory === "discussion"
-      ? (routeCategory as BoardCategory)
-      : "discussion";
-  const [category, setCategory] = useState<BoardCategory>(initialCategory);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [isPrivate, setIsPrivate] = useState(false);
+  const location = useLocation();
   const user = useAtomValue(userProfileAtom);
 
-  // 스터디 모드는 토론게시판 고정
+  const effectiveGroupId = Number(params.groupId ?? groupId);
+  const isStudy = mode === "study";
+
+  const editPost = (location.state as LocationState | null)?.post;
+  const isEditMode = !!editPost;
+
+  const initialCategory: BoardCategory =
+    editPost?.category ??
+    (routeCategory === "qna" || routeCategory === "discussion"
+      ? (routeCategory as BoardCategory)
+      : "discussion");
+
+  const [category, setCategory] = useState<BoardCategory>(initialCategory);
+  const [title, setTitle] = useState(editPost?.title ?? "");
+  const [content, setContent] = useState(editPost?.content ?? "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(
+    editPost?.isAnonymous ?? false
+  );
+  const [isPrivate, setIsPrivate] = useState(editPost?.isPrivate ?? false);
+
   useEffect(() => {
-    if (isStudy) setCategory("discussion");
-    setIsPrivate(false);
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (isStudy) {
+      setCategory("discussion");
+      setIsPrivate(false);
+    }
   }, [isStudy]);
 
   const isValid = title.trim().length > 0 && content.trim().length > 0;
@@ -222,72 +248,86 @@ export default function BoardWrite({
       return;
     }
     setError(null);
+
     try {
       setIsSubmitting(true);
-      //-----스터디그룹 코드-----
-      //스터디그룹인지 체크 (추가)
+
       if (isStudy) {
         const studyPayload = {
           post_title: title.trim(),
           contents: content.trim(),
-          tag: "discussion", // 강제 고정
+          tag: "discussion",
           anonymity: isAnonymous,
-          is_private: false, // 비밀글 삭제
+          is_private: false,
         };
 
-        console.log("스터디그룹 payload:", studyPayload);
+        if (isEditMode && editPost) {
+          console.log("스터디그룹 글 수정 payload:", {
+            id: editPost.id,
+            ...studyPayload,
+          });
+          // await api.patch(`/api/studygroup/${effectiveGroupId}/discuss/${editPost.id}`, studyPayload);
+          alert("스터디그룹 글 수정 완료! (더미)");
+        } else {
+          console.log("스터디그룹 글 작성 payload:", studyPayload);
+          // await api.post(`/api/studygroup/${effectiveGroupId}/discuss`, studyPayload);
+          alert("스터디그룹 글 작성 완료! (더미)");
+        }
 
-        // 여기서 나중에 실제 API 연결됨
-        /*
-      await api.post(`/api/studygroup/${effectiveGroupId}/discuss/1`, studyPayload);
-      */
-
-        alert("스터디그룹 글 작성 완료! (더미)");
         if (effectiveGroupId) {
           navigate(`/studygroup/${effectiveGroupId}`);
         } else {
-          // fallback: 혹시라도 groupId 못 읽으면 기본 studygroup으로 이동
           navigate("/studygroup");
         }
         return;
       }
-      //----------
-      // 기존 '일반 게시판' 코드
+
       const payload = {
-        authorId: user?.userId ?? 0, //추가 요망
+        authorId: user?.userId ?? 0,
         category,
         title: title.trim(),
         content: content.trim(),
-        isAnonymous: isAnonymous,
-        privatePost: isPrivate, //추가 요망
+        isAnonymous,
+        privatePost: isPrivate,
       };
-      console.log("게시글 전송 payload", payload);
+
+      if (isEditMode && editPost) {
+        console.log("게시글 수정 payload", { id: editPost.id, ...payload });
+        // await api.patch(`/api/board/${editPost.id}`, payload);
+      } else {
+        console.log("게시글 전송 payload", payload);
+        // await api.post(`/api/board`, payload);
+      }
 
       await new Promise((resolve) => setTimeout(resolve, 500));
-      navigate("/board/" + category);
+
+      if (isEditMode && editPost) {
+        // 상세 페이지로 돌려보내고 싶으면 이런식으로
+        // navigate(`/board/${category}/${editPost.id}`);
+        navigate(-1);
+      } else {
+        navigate("/board/" + category);
+      }
     } catch (e) {
-      setError("글 작성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      setError("글 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsSubmitting(false);
     }
   };
-  if (!user) {
-    navigate("/login");
-  }
 
   return (
     <Page>
       <Wrapper as="form" onSubmit={handleSubmit}>
-        <Title>게시글 작성</Title>
+        <Title>{isEditMode ? "게시글 수정" : "게시글 작성"}</Title>
+
         {!isStudy && (
           <FieldRow>
             <Label>카테고리</Label>
-
-            {/* 카테고리 드롭다운 + 익명 체크박스 row*/}
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               <Select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as BoardCategory)}
+                disabled={isEditMode}
               >
                 {(Object.keys(CATEGORY_LABEL) as BoardCategory[]).map((key) => (
                   <option key={key} value={key}>
@@ -304,7 +344,7 @@ export default function BoardWrite({
                 />
                 익명 작성
               </CheckboxLabel>
-              {/*스터디그룹은 비밀글 없음*/}
+
               {!isStudy && (
                 <CheckboxLabel>
                   <Checkbox
@@ -318,6 +358,7 @@ export default function BoardWrite({
             </div>
           </FieldRow>
         )}
+
         <FieldRow>
           <Label>
             제목
@@ -345,14 +386,19 @@ export default function BoardWrite({
         {error && <ErrorText>{error}</ErrorText>}
 
         <BottomRow>
-          <LeftOptions></LeftOptions>
-
+          <LeftOptions />
           <ButtonRow>
             <GhostButton type="button" onClick={handleCancel}>
               취소
             </GhostButton>
             <PrimaryButton type="submit" disabled={!isValid || isSubmitting}>
-              {isSubmitting ? "작성 중..." : "등록"}
+              {isSubmitting
+                ? isEditMode
+                  ? "수정 중..."
+                  : "작성 중..."
+                : isEditMode
+                ? "수정 완료"
+                : "등록"}
             </PrimaryButton>
           </ButtonRow>
         </BottomRow>

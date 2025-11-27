@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import styled from "styled-components";
 import { useAtomValue } from "jotai";
@@ -55,14 +55,11 @@ const PlusButton = styled.button<{ $visible: boolean }>`
   transition: opacity 0.15s ease;
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   pointer-events: ${({ $visible }) => ($visible ? "auto" : "none")};
-
   position: absolute;
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
 `;
-
-// ====== Modal (ReportModal 스타일 그대로 재사용) ======
 
 const Overlay = styled.div`
   position: fixed;
@@ -82,7 +79,6 @@ const Modal = styled.div`
   border-radius: 14px;
   border: 1px solid ${({ theme }) => theme.textColor}33;
   box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
-
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -113,7 +109,6 @@ const StyledTextarea = styled.textarea`
   resize: none;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.textColor}44;
-
   background: ${({ theme }) => theme.bgColor};
   color: ${({ theme }) => theme.textColor};
 `;
@@ -165,11 +160,19 @@ const SubmitBtn = styled.button`
 interface CodePreviewProps {
   code: string;
   language: string;
-  // 실제로는 여기서 API 호출하거나, 상위에서 처리하고 싶으면 이 콜백에서 하면 됨
   onAddReview?: (data: {
     lineNumber: number;
     lineCode: string;
-
+    content: string;
+  }) => void;
+  editReviewTarget?: {
+    lineNumber: number;
+    lineCode: string;
+    content: string;
+  } | null;
+  onEditReview?: (data: {
+    lineNumber: number;
+    lineCode: string;
     content: string;
   }) => void;
 }
@@ -177,9 +180,9 @@ interface CodePreviewProps {
 interface ReviewTarget {
   lineNumber: number;
   lineCode: string;
+  initialContent?: string;
+  mode: "add" | "edit";
 }
-
-// ================== ReviewModal ==================
 
 interface ReviewModalProps {
   target: ReviewTarget;
@@ -187,15 +190,20 @@ interface ReviewModalProps {
   onSubmit: (content: string) => void;
 }
 
+// ================== ReviewModal ==================
+
 function ReviewModal({ target, onClose, onSubmit }: ReviewModalProps) {
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(target.initialContent ?? "");
+
+  useEffect(() => {
+    setContent(target.initialContent ?? "");
+  }, [target]);
 
   const handleSubmit = () => {
     if (!content.trim()) {
       alert("리뷰 내용을 입력해주세요.");
       return;
     }
-
     onSubmit(content);
     onClose();
   };
@@ -203,7 +211,7 @@ function ReviewModal({ target, onClose, onSubmit }: ReviewModalProps) {
   return (
     <Overlay>
       <Modal>
-        <Title>코드 리뷰 작성</Title>
+        <Title>코드 리뷰 {target.mode === "edit" ? "수정" : "작성"}</Title>
 
         <Label>대상 줄: {target.lineNumber}번째 줄</Label>
         <CodePreviewBox>{target.lineCode || "(빈 줄)"}</CodePreviewBox>
@@ -217,7 +225,9 @@ function ReviewModal({ target, onClose, onSubmit }: ReviewModalProps) {
 
         <ButtonRow>
           <CancelBtn onClick={onClose}>취소</CancelBtn>
-          <SubmitBtn onClick={handleSubmit}>등록하기</SubmitBtn>
+          <SubmitBtn onClick={handleSubmit}>
+            {target.mode === "edit" ? "수정하기" : "등록하기"}
+          </SubmitBtn>
         </ButtonRow>
       </Modal>
     </Overlay>
@@ -230,6 +240,8 @@ export default function CodePreview({
   code,
   language,
   onAddReview,
+  editReviewTarget,
+  onEditReview,
 }: CodePreviewProps) {
   const isDark = useAtomValue(isDarkAtom);
   const style = isDark ? atomDark : oneLight;
@@ -237,6 +249,16 @@ export default function CodePreview({
 
   const [hoveredLine, setHoveredLine] = useState<number | null>(null);
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null);
+
+  useEffect(() => {
+    if (!editReviewTarget) return;
+    setReviewTarget({
+      lineNumber: editReviewTarget.lineNumber,
+      lineCode: editReviewTarget.lineCode,
+      initialContent: editReviewTarget.content,
+      mode: "edit",
+    });
+  }, [editReviewTarget]);
 
   return (
     <>
@@ -287,6 +309,7 @@ export default function CodePreview({
                   setReviewTarget({
                     lineNumber,
                     lineCode: line,
+                    mode: "add",
                   })
                 }
               >
@@ -302,12 +325,19 @@ export default function CodePreview({
           target={reviewTarget}
           onClose={() => setReviewTarget(null)}
           onSubmit={(content) => {
-            onAddReview?.({
-              lineNumber: reviewTarget.lineNumber,
-              lineCode: reviewTarget.lineCode,
-
-              content,
-            });
+            if (reviewTarget.mode === "edit") {
+              onEditReview?.({
+                lineNumber: reviewTarget.lineNumber,
+                lineCode: reviewTarget.lineCode,
+                content,
+              });
+            } else {
+              onAddReview?.({
+                lineNumber: reviewTarget.lineNumber,
+                lineCode: reviewTarget.lineCode,
+                content,
+              });
+            }
           }}
         />
       )}
