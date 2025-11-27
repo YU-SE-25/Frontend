@@ -1,8 +1,9 @@
 // mypage/MyPageScreen.tsx
 import { useSearchParams } from "react-router-dom";
-import ActivityPage from "./ActivityPage";
+
 import EditAlert from "./EditAlert";
 import ManagePage from "./ManagePage";
+import ActivityPage from "./Activitypage";
 
 export default function MyPageScreen() {
   const [sp] = useSearchParams();

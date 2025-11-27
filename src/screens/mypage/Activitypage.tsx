@@ -355,7 +355,7 @@ export default function ActivityPage() {
   // const goBookmarked = () =>bookmarkedIds.length && nav(`/problem-list?ids=${bookmarkedIds.join(",")}`);
   const goSolved = () =>
     solvedIds.length &&
-    nav(`/problems/${user?.username}/solved?showResult=false`);
+    nav(`/problems/${user?.username}/submitted?showResult=false`);
   const goAll = () => nav("/problem-list");
   const goDetail = (problemId: number) => nav(`/problem-detail/${problemId}`);
 

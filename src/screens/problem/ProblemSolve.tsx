@@ -148,7 +148,7 @@ export default function ProblemSolvePage() {
       language,
     });
 
-    nav("/problems/:username/solved?id=" + problemId + "&showResult=true");
+    nav("/problems/:username/submitted?id=" + problemId + "&showResult=true");
   }, [code, language, problemId, nav]);
 
   if (loading) return <ProblemSolveWrapper>로딩 중...</ProblemSolveWrapper>;

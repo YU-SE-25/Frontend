@@ -13,7 +13,7 @@ const dummySolutions_problem1: MySolvedCodeResponse = {
   solutions: [
     {
       submissionId: 101,
-      username: "coding_master",
+      username: "gamppe",
       submittedAt: "2025-11-24T10:22:00Z",
       language: "CPP",
       runtime: 52,

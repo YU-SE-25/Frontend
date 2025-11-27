@@ -24,6 +24,7 @@ const store = getDefaultStore();
  *   author?: string,       // 토론 게시글 / QnA 댓글: 닉네임 기반
  *   reviewer?: string,     // 코드 리뷰 작성자
  *   commenter?: string,    // 코드 리뷰 댓글 작성자
+ *  username?:string,
  * }
  */
 export const isOwner = (params: {
@@ -34,6 +35,7 @@ export const isOwner = (params: {
   author?: string;
   reviewer?: string;
   commenter?: string;
+  username?: string;
 }) => {
   const user = store.get(userProfileAtom);
   if (!user) return false;
@@ -66,6 +68,10 @@ export const isOwner = (params: {
   // (6) commenter 비교(코드 리뷰 댓글)
   if (params.commenter) {
     return user.nickname === params.commenter;
+  }
+
+  if (params.username) {
+    return user.nickname === params.username;
   }
 
   // (7) 모든 조건에서 해당 사항 없으면 false

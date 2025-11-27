@@ -25,7 +25,7 @@ import ProblemList from "./screens/problem/ProblemList";
 import ProblemDetail from "./screens/problem/ProblemDetail";
 import ProblemSolve from "./screens/problem/ProblemSolve";
 import CodeResult from "./screens/problem/SolveResult";
-import MySolvedProblem from "./screens/problem/MySolvedProblemList";
+import MySolvedProblem from "./screens/problem/MySubmissionsList";
 import ProblemAdd from "./screens/problem/ProblemAdd";
 import ProblemEdit from "./screens/problem/ProblemEdit";
 import CodeAnalysis from "./screens/problem/CodeAnalysis";
@@ -41,6 +41,7 @@ import QnaWrite from "./screens/board/QnaWrite";
 import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 import SolvedProblemShow from "./screens/problem/reviews/SolvedProblemShow";
+import MySubmissionsDetail from "./screens/problem/MySubmissionsDetail";
 
 const router = createBrowserRouter([
   {
@@ -54,10 +55,14 @@ const router = createBrowserRouter([
       { path: "problem-edit/:problemId", element: <ProblemEdit /> },
       { path: "problems/:problemId/solve", element: <ProblemSolve /> },
       { path: "problems/result", element: <CodeResult /> }, //debrecated
-      { path: "problems/:username/solved", element: <MySolvedProblem /> },
+      { path: "problems/:username/submitted", element: <MySolvedProblem /> },
       {
         path: "problem-detail/:problemId/solved",
         element: <SolvedProblemList />,
+      },
+      {
+        path: "problems/:username/submitted/codeView/:solutionId",
+        element: <MySubmissionsDetail />,
       },
 
       {
@@ -67,7 +72,7 @@ const router = createBrowserRouter([
 
       //문제분석용 임시 라우터(그대로 써도되긴함)
       {
-        path: "problems/:problemId/submissions/:submissionId",
+        path: "problems/:problemId/analysis/:submissionId",
         element: <CodeAnalysis />,
       },
 
