@@ -2,15 +2,24 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import CodePreview from "./CodePreview";
+import {
+  fetchProblemDetail,
+  mapDetailDtoToProblem,
+} from "../../../api/problem_api";
 import type { IProblem } from "../../../api/problem_api";
 import {
-  fetchMySolvedCode,
-  fetchSolutionReviews,
-  updateShareMyCode,
+  fetchSolvedCode,
+  fetchReviewsBySolution,
+  fetchCommentsByReview,
 } from "../../../api/solution_api";
+import {
+  fetchDummyProblemDetail,
+  increaseDummyView,
+} from "../../../api/dummy/problem_dummy_new";
 
 // ✅ 공통 문제 메타
-import ProblemMeta from "../../../components/ProblemMeta";";
+import ProblemMeta from "../../../components/ProblemMeta";
+import { timeConverter } from "../../../utils/timeConverter";
 
 const Page = styled.div`
   width: 100%;
@@ -62,21 +71,6 @@ const MetaRow = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.textColor}99;
   margin-top: 4px;
-`;
-
-// 체크 박스
-const ShareRow = styled.div`
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-`;
-
-const ShareLabel = styled.label`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: ${({ theme }) => theme.textColor};
 `;
 
 const ErrorText = styled.div`
@@ -258,12 +252,17 @@ type Review = {
   comments: ReviewComment[];
 };
 
+// 새 API 언어코드까지 커버하도록 확장
 const langMap: Record<string, string> = {
   C: "c",
+  CPP: "cpp",
   "C++": "cpp",
   Java: "java",
+  JAVA: "java",
   Python: "python",
+  PYTHON: "python",
   Python3: "python",
+  PYTHON3: "python",
   JS: "javascript",
   TS: "typescript",
 };
@@ -279,13 +278,13 @@ export default function SolvedProblemShow() {
 
   const [code, setCode] = useState("");
   const [rawLang, setRawLang] = useState("C");
-  const [problemTitle, setProblemTitle] = useState("내 제출 코드");
-  const [shareCode, setShareCode] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>(
     {}
   );
+  if (solutionId === "myCode") {
+  }
 
   // ✅ 문제 전체 정보 (ProblemMeta용)
   const [problem, setProblem] = useState<IProblem | null>(null);
@@ -293,59 +292,131 @@ export default function SolvedProblemShow() {
   // ✅ 풀이 메타 (제출 시각 / 메모리 / 실행시간)
   const [solutionMeta, setSolutionMeta] = useState<{
     createdAt: string;
-    memoryUsage: number;
-    executionTime: number;
+    memory: number;
+    runtime: number;
   } | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 코드 + 문제 정보 + 공유 여부 + 리뷰 로딩
+  // 코드 + 문제 정보 + 리뷰/댓글 로딩
+  // ✅ 1) 문제 상세만 불러오는 useEffect (실서버 → 더미)
   useEffect(() => {
     if (!problemId) return;
 
     let mounted = true;
 
-    const load = async () => {
+    const loadProblem = async () => {
+      try {
+        const real = await fetchProblemDetail(Number(problemId));
+        if (mounted) setProblem(real);
+        // 뷰 카운트는 실제/더미 상관 없이 여기서만 올리자
+        increaseDummyView(Number(problemId));
+      } catch {
+        try {
+          const dummy = await fetchDummyProblemDetail(Number(problemId));
+          if (mounted) setProblem(mapDetailDtoToProblem(dummy));
+        } catch {
+          if (mounted) setProblem(null);
+        }
+      }
+    };
+
+    loadProblem();
+
+    return () => {
+      mounted = false;
+    };
+  }, [problemId]);
+
+  // ✅ 2) 제출 코드 + 리뷰/댓글 불러오는 useEffect
+  useEffect(() => {
+    if (!problemId) return;
+
+    let mounted = true;
+
+    const loadSolvedAndReviews = async () => {
       setLoading(true);
       setError(null);
-      try {
-        const solved = await fetchMySolvedCode(Number(problemId));
 
-        if (!solved) {
-          if (mounted) setError("아직 제출한 풀이가 없습니다.");
+      try {
+        // 1) 이 문제에 대한 풀이 목록 가져오기
+        const solved = await fetchSolvedCode(Number(problemId));
+
+        if (!solved || solved.solutions.length === 0) {
+          if (mounted) setError("아직 제출된 풀이가 없습니다.");
           return;
         }
-        const revs: Review[] = await fetchSolutionReviews(solved.solutionId);
+
+        // 2) URL의 solutionId가 있으면 그 풀이, 없으면 첫 번째 풀이
+        let targetSolution = solved.solutions[0];
+
+        if (solutionId) {
+          const found = solved.solutions.find(
+            (s) => s.submissionId === Number(solutionId)
+          );
+          if (found) targetSolution = found;
+        }
+
+        // 3) 해당 풀이의 리뷰 목록 가져오기
+        const reviewsRes = await fetchReviewsBySolution(
+          targetSolution.submissionId
+        );
+
+        let reviewsWithComments: Review[] = [];
+
+        if (reviewsRes && reviewsRes.reviews.length > 0) {
+          reviewsWithComments = await Promise.all(
+            reviewsRes.reviews.map(async (r) => {
+              const commentsRes = await fetchCommentsByReview(r.reviewId);
+
+              const comments: ReviewComment[] =
+                commentsRes?.comments.map((c) => ({
+                  id: c.commentId,
+                  author: c.commenter,
+                  content: c.content,
+                  createdAt: c.createdAt,
+                })) ?? [];
+
+              return {
+                id: r.reviewId,
+                lineNumber: r.lineNumber,
+                content: r.content,
+                author: r.reviewer,
+                createdAt: r.createdAt,
+                comments,
+              };
+            })
+          );
+        }
 
         if (!mounted) return;
 
-        setCode(solved.code);
-        setRawLang(solved.language);
-        setProblemTitle(solved.problem?.title || "내 제출 코드");
-        setShareCode(solved.isShared);
-        setReviews(revs);
-        setProblem(solved.problem ?? null);
+        // 4) 상태 반영 (👉 매핑은 네가 쓰던 그대로 둠)
+        setCode(targetSolution.code);
+        setRawLang(targetSolution.language);
         setSolutionMeta({
-          createdAt: solved.createdAt,
-          memoryUsage: solved.memoryUsage,
-          executionTime: solved.executionTime,
+          createdAt: targetSolution.submittedAt,
+          memory: targetSolution.memory,
+          runtime: targetSolution.runtime,
         });
+        setReviews(reviewsWithComments);
       } catch (e) {
         if (mounted) {
-          setError("내 제출 코드를 불러오는 중 오류가 발생했습니다.");
+          console.error("SolvedProblemShow load error:", e);
+          setError("제출된 코드를 불러오는 중 오류가 발생했습니다.");
         }
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
-    load();
+    loadSolvedAndReviews();
 
     return () => {
       mounted = false;
     };
-  }, [problemId]);
+  }, [problemId, solutionId]);
 
   const hlLang = langMap[rawLang] || "text";
 
@@ -353,6 +424,8 @@ export default function SolvedProblemShow() {
     return (
       <Page>
         <Inner>
+          {problem && <ProblemMeta problem={problem} />}
+
           <HeadingRow>
             <Heading>제출된 코드</Heading>
             <OtherCodeButton disabled>다른 사람 풀이 보기</OtherCodeButton>
@@ -367,6 +440,8 @@ export default function SolvedProblemShow() {
     return (
       <Page>
         <Inner>
+          {problem && <ProblemMeta problem={problem} />}
+
           <HeadingRow>
             <Heading>제출된 코드</Heading>
             <OtherCodeButton
@@ -387,6 +462,8 @@ export default function SolvedProblemShow() {
     return (
       <Page>
         <Inner>
+          {problem && <ProblemMeta problem={problem} />}
+
           <HeadingRow>
             <Heading>제출된 코드</Heading>
             <OtherCodeButton
@@ -459,47 +536,17 @@ export default function SolvedProblemShow() {
     }));
   };
 
-  const handleShareChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!solutionId) return;
-
-    const next = e.target.checked;
-
-    if (next) {
-      const ok = window.confirm("다른 사람들에게 내 풀이를 공유하시겠습니까?");
-      if (!ok) {
-        e.target.checked = false;
-        return;
-      }
-    } else {
-      const ok = window.confirm("내 풀이를 비공개하시겠습니까?");
-      if (!ok) {
-        e.target.checked = true;
-        return;
-      }
-    }
-
-    setShareCode(next);
-    try {
-      await updateShareMyCode(Number(solutionId), next);
-    } catch {
-      setShareCode(!next);
-      e.target.checked = !next;
-      alert("공유 설정 변경에 실패했습니다.");
-    }
-  };
-
   return (
     <Page>
       <Inner>
+        {problem && <ProblemMeta problem={problem} />}
+
         <HeadingRow>
           <Heading>제출된 코드</Heading>
           <OtherCodeButton onClick={handleViewOtherSolutions}>
             다른 사람 풀이 보기
           </OtherCodeButton>
         </HeadingRow>
-
-        {/* ✅ 공통 문제 메타 */}
-        {problem && <ProblemMeta problem={problem} />}
 
         {/* ✅ 풀이 전용 메타 (언어 / 제출 시각 / 메모리 / 실행시간) */}
         <MetaRow>
@@ -509,25 +556,14 @@ export default function SolvedProblemShow() {
               {" · 제출 시각: "}
               {solutionMeta.createdAt}
               {" · 메모리: "}
-              {solutionMeta.memoryUsage}MB
+              {solutionMeta.memory}MB
               {" · 실행시간: "}
-              {solutionMeta.executionTime}ms
+              {solutionMeta.runtime}ms
             </>
           )}
         </MetaRow>
 
         <CodePreview code={code} language={hlLang} />
-
-        <ShareRow>
-          <ShareLabel>
-            <input
-              type="checkbox"
-              checked={shareCode}
-              onChange={handleShareChange}
-            />
-            <span>내 코드 공유하기</span>
-          </ShareLabel>
-        </ShareRow>
 
         <ReviewSectionTitle>
           코드 리뷰
@@ -552,7 +588,7 @@ export default function SolvedProblemShow() {
                     <LineTag>{review.lineNumber}번째 줄</LineTag>
                     <LineCodeText>{lineCode}</LineCodeText>
                     <ReviewMeta>
-                      {review.author} · {review.createdAt}
+                      {review.author} · {timeConverter(review.createdAt)}
                     </ReviewMeta>
                   </ReviewTopRow>
 

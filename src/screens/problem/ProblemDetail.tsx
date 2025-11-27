@@ -4,6 +4,7 @@ import {
   fetchProblemDetail,
   mapDetailDtoToProblem,
 } from "../../api/problem_api";
+import type { IProblem } from "../../api/problem_api";
 import {
   fetchDummyProblemDetail,
   increaseDummyView,
@@ -24,7 +25,6 @@ import {
 
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
-import type { IProblem, ProblemDetailDto } from "../../api/problem_api";
 import ProblemMeta from "../../components/ProblemMeta";
 
 export default function ProblemDetail() {

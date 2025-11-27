@@ -584,14 +584,14 @@ export async function fetchSolvedCode(
 export async function fetchReviewsBySolution(
   submissionId: number
 ): Promise<ReviewsResponse> {
-  const data = dummyReviewsBySolution[submissionId] ?? {
-    totalPages: 0,
-    currentPage: 0,
-    reviews: [],
-  };
+  const data = dummyReviewsBySolution[submissionId];
 
-  if (data.reviews.length === 0) {
-    throw new Error("해당 풀이에 대한 리뷰가 없습니다.");
+  if (!data) {
+    return {
+      totalPages: 0,
+      currentPage: 0,
+      reviews: [],
+    };
   }
 
   return data;
@@ -601,14 +601,14 @@ export async function fetchReviewsBySolution(
 export async function fetchCommentsByReview(
   reviewId: number
 ): Promise<ReviewComments> {
-  const data = dummyCommentsByReview[reviewId] ?? {
-    totalPages: 0,
-    currentPage: 0,
-    comments: [],
-  };
+  const data = dummyCommentsByReview[reviewId];
 
-  if (data.comments.length === 0) {
-    throw new Error("해당 리뷰에 대한 댓글이 없습니다.");
+  if (!data) {
+    return {
+      totalPages: 0,
+      currentPage: 0,
+      comments: [],
+    };
   }
 
   return data;
