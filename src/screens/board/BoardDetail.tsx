@@ -1,7 +1,7 @@
 // src/screens/board/BoardDetail.tsx
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import ReportButton from "../ReportButton";
+import ReportButton from "../../components/ReportButton";
 import { useNavigate } from "react-router-dom";
 import type { BoardComment, BoardContent } from "./BoardList";
 

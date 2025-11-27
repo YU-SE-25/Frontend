@@ -1,6 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
-import ReportModal from "./ReportModal";
+import ReportModal from "../screens/ReportModal";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../atoms";
 
