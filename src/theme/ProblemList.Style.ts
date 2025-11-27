@@ -6,10 +6,10 @@ import { TOPBAR_HEIGHT } from "../components/Topbar";
 export interface HeaderCellProps {
   width: string;
 }
-export type UserProblemStatus = "solved" | "attempted" | "none";
+export type UserProblemStatus = "SOLVED" | "ATTEMPTED" | undefined;
 // 푼 문제 상태 타입
 export interface StatusProps {
-  $userStatus?: "solved" | "attempted" | "none";
+  $userStatus?: "SOLVED" | "ATTEMPTED" | undefined;
 }
 //레이아웃 및 컨트롤 스타일, 스터디그룹 화면 크기용 추가
 export const ProblemListWrapper = styled.div<{ $fullWidth?: boolean }>`
@@ -164,13 +164,13 @@ export const StatusIndicator = styled.span<StatusProps>`
 
   ${({ $userStatus, theme }) => {
     switch ($userStatus) {
-      case "solved":
+      case "SOLVED":
         return `
           background: ${theme.logoColor + "30"}; 
           border: 1px solid ${theme.logoColor}; 
           color: ${theme.textColor}; 
         `;
-      case "attempted":
+      case "ATTEMPTED":
         return `
           background: #ff383830; 
           border: 1px solid #ff3838; 

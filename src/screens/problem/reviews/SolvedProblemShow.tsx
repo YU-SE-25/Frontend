@@ -1,7 +1,25 @@
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import CodePreview from "./CodePreview";
+import {
+  fetchProblemDetail,
+  mapDetailDtoToProblem,
+} from "../../../api/problem_api";
+import type { IProblem } from "../../../api/problem_api";
+import {
+  fetchSolvedCode,
+  fetchReviewsBySolution,
+  fetchCommentsByReview,
+} from "../../../api/solution_api";
+import {
+  fetchDummyProblemDetail,
+  increaseDummyView,
+} from "../../../api/dummy/problem_dummy_new";
+
+// ✅ 공통 문제 메타
+import ProblemMeta from "../../../components/ProblemMeta";
+import { timeConverter } from "../../../utils/timeConverter";
 
 const Page = styled.div`
   width: 100%;
@@ -20,6 +38,28 @@ const Inner = styled.div`
   gap: 18px;
 `;
 
+// 머리 부분
+const HeadingRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: auto;
+`;
+
+const OtherCodeButton = styled.button`
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: none;
+  background: ${({ theme }) => theme.logoColor};
+  color: white;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
 const Heading = styled.h1`
   font-size: 22px;
   font-weight: 700;
@@ -30,6 +70,7 @@ const Heading = styled.h1`
 const MetaRow = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.textColor}99;
+  margin-top: 4px;
 `;
 
 const ErrorText = styled.div`
@@ -193,11 +234,7 @@ const CommentSubmitBtn = styled.button`
   }
 `;
 
-type LocationState = {
-  code?: string;
-  language?: string;
-  problemTitle?: string;
-};
+// ===================== 타입 =====================
 
 type ReviewComment = {
   id: number;
@@ -215,64 +252,228 @@ type Review = {
   comments: ReviewComment[];
 };
 
+// 새 API 언어코드까지 커버하도록 확장
 const langMap: Record<string, string> = {
   C: "c",
+  CPP: "cpp",
   "C++": "cpp",
   Java: "java",
+  JAVA: "java",
   Python: "python",
+  PYTHON: "python",
   Python3: "python",
+  PYTHON3: "python",
   JS: "javascript",
   TS: "typescript",
 };
 
-const initialReviews: Review[] = [
-  {
-    id: 1,
-    lineNumber: 5,
-    content:
-      "sum 변수를 for문 밖에서 선언한 건 좋은데, const로 못 바꾸는지 한 번만 체크해보면 좋을 것 같아요.",
-    author: "gamppe",
-    createdAt: "2025-11-26",
-    comments: [
-      {
-        id: 1,
-        author: "helper01",
-        content: "동의합니다. 특히 값이 바뀌지 않는다면 const가 더 안전하죠.",
-        createdAt: "2025-11-26 13:42",
-      },
-    ],
-  },
-  {
-    id: 2,
-    lineNumber: 12,
-    content:
-      "반복문의 종료 조건을 n이 아니라 vec.size()로 두면 더 안전할 것 같습니다.",
-    author: "helper02",
-    createdAt: "2025-11-25",
-    comments: [],
-  },
-];
+// ===================== 컴포넌트 =====================
 
 export default function SolvedProblemShow() {
-  const location = useLocation();
-  const state = (location.state || {}) as LocationState;
+  const { problemId, solutionId } = useParams<{
+    problemId: string;
+    solutionId: string;
+  }>();
+  const navigate = useNavigate();
 
-  const code = state.code || "";
-  const problemTitle = state.problemTitle || "내 제출 코드";
-  const rawLang = state.language || "C";
-  const hlLang = langMap[rawLang] || "text";
-
-  const [reviews, setReviews] = useState<Review[]>(initialReviews);
+  const [code, setCode] = useState("");
+  const [rawLang, setRawLang] = useState("C");
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>(
     {}
   );
+  if (solutionId === "myCode") {
+  }
+
+  // ✅ 문제 전체 정보 (ProblemMeta용)
+  const [problem, setProblem] = useState<IProblem | null>(null);
+
+  // ✅ 풀이 메타 (제출 시각 / 메모리 / 실행시간)
+  const [solutionMeta, setSolutionMeta] = useState<{
+    createdAt: string;
+    memory: number;
+    runtime: number;
+  } | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 코드 + 문제 정보 + 리뷰/댓글 로딩
+  // ✅ 1) 문제 상세만 불러오는 useEffect (실서버 → 더미)
+  useEffect(() => {
+    if (!problemId) return;
+
+    let mounted = true;
+
+    const loadProblem = async () => {
+      try {
+        const real = await fetchProblemDetail(Number(problemId));
+        if (mounted) setProblem(real);
+        // 뷰 카운트는 실제/더미 상관 없이 여기서만 올리자
+        increaseDummyView(Number(problemId));
+      } catch {
+        try {
+          const dummy = await fetchDummyProblemDetail(Number(problemId));
+          if (mounted) setProblem(mapDetailDtoToProblem(dummy));
+        } catch {
+          if (mounted) setProblem(null);
+        }
+      }
+    };
+
+    loadProblem();
+
+    return () => {
+      mounted = false;
+    };
+  }, [problemId]);
+
+  // ✅ 2) 제출 코드 + 리뷰/댓글 불러오는 useEffect
+  useEffect(() => {
+    if (!problemId) return;
+
+    let mounted = true;
+
+    const loadSolvedAndReviews = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // 1) 이 문제에 대한 풀이 목록 가져오기
+        const solved = await fetchSolvedCode(Number(problemId));
+
+        if (!solved || solved.solutions.length === 0) {
+          if (mounted) setError("아직 제출된 풀이가 없습니다.");
+          return;
+        }
+
+        // 2) URL의 solutionId가 있으면 그 풀이, 없으면 첫 번째 풀이
+        let targetSolution = solved.solutions[0];
+
+        if (solutionId) {
+          const found = solved.solutions.find(
+            (s) => s.submissionId === Number(solutionId)
+          );
+          if (found) targetSolution = found;
+        }
+
+        // 3) 해당 풀이의 리뷰 목록 가져오기
+        const reviewsRes = await fetchReviewsBySolution(
+          targetSolution.submissionId
+        );
+
+        let reviewsWithComments: Review[] = [];
+
+        if (reviewsRes && reviewsRes.reviews.length > 0) {
+          reviewsWithComments = await Promise.all(
+            reviewsRes.reviews.map(async (r) => {
+              const commentsRes = await fetchCommentsByReview(r.reviewId);
+
+              const comments: ReviewComment[] =
+                commentsRes?.comments.map((c) => ({
+                  id: c.commentId,
+                  author: c.commenter,
+                  content: c.content,
+                  createdAt: c.createdAt,
+                })) ?? [];
+
+              return {
+                id: r.reviewId,
+                lineNumber: r.lineNumber,
+                content: r.content,
+                author: r.reviewer,
+                createdAt: r.createdAt,
+                comments,
+              };
+            })
+          );
+        }
+
+        if (!mounted) return;
+
+        // 4) 상태 반영 (👉 매핑은 네가 쓰던 그대로 둠)
+        setCode(targetSolution.code);
+        setRawLang(targetSolution.language);
+        setSolutionMeta({
+          createdAt: targetSolution.submittedAt,
+          memory: targetSolution.memory,
+          runtime: targetSolution.runtime,
+        });
+        setReviews(reviewsWithComments);
+      } catch (e) {
+        if (mounted) {
+          console.error("SolvedProblemShow load error:", e);
+          setError("제출된 코드를 불러오는 중 오류가 발생했습니다.");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadSolvedAndReviews();
+
+    return () => {
+      mounted = false;
+    };
+  }, [problemId, solutionId]);
+
+  const hlLang = langMap[rawLang] || "text";
+
+  if (loading) {
+    return (
+      <Page>
+        <Inner>
+          {problem && <ProblemMeta problem={problem} />}
+
+          <HeadingRow>
+            <Heading>제출된 코드</Heading>
+            <OtherCodeButton disabled>다른 사람 풀이 보기</OtherCodeButton>
+          </HeadingRow>
+          <MetaRow>코드를 불러오는 중입니다…</MetaRow>
+        </Inner>
+      </Page>
+    );
+  }
+
+  if (error) {
+    return (
+      <Page>
+        <Inner>
+          {problem && <ProblemMeta problem={problem} />}
+
+          <HeadingRow>
+            <Heading>제출된 코드</Heading>
+            <OtherCodeButton
+              onClick={() =>
+                problemId && navigate(`/problem-detail/${problemId}/solved`)
+              }
+            >
+              다른 사람 풀이 보기
+            </OtherCodeButton>
+          </HeadingRow>
+          <ErrorText>{error}</ErrorText>
+        </Inner>
+      </Page>
+    );
+  }
 
   if (!code) {
     return (
       <Page>
         <Inner>
-          <Heading>내 코드 미리보기</Heading>
+          {problem && <ProblemMeta problem={problem} />}
+
+          <HeadingRow>
+            <Heading>제출된 코드</Heading>
+            <OtherCodeButton
+              onClick={() =>
+                problemId && navigate(`/problem-detail/${problemId}/solved`)
+              }
+            >
+              다른 사람 풀이 보기
+            </OtherCodeButton>
+          </HeadingRow>
           <ErrorText>표시할 코드가 없습니다.</ErrorText>
         </Inner>
       </Page>
@@ -297,6 +498,12 @@ export default function SolvedProblemShow() {
       ...prev,
       [reviewId]: value,
     }));
+  };
+
+  // 다른 사람 풀이 보기
+  const handleViewOtherSolutions = () => {
+    if (!problemId) return;
+    navigate(`/problem-detail/${problemId}/solved`);
   };
 
   const handleCommentSubmit = (e: React.FormEvent, reviewId: number) => {
@@ -332,9 +539,28 @@ export default function SolvedProblemShow() {
   return (
     <Page>
       <Inner>
-        <Heading>내 코드 미리보기</Heading>
+        {problem && <ProblemMeta problem={problem} />}
+
+        <HeadingRow>
+          <Heading>제출된 코드</Heading>
+          <OtherCodeButton onClick={handleViewOtherSolutions}>
+            다른 사람 풀이 보기
+          </OtherCodeButton>
+        </HeadingRow>
+
+        {/* ✅ 풀이 전용 메타 (언어 / 제출 시각 / 메모리 / 실행시간) */}
         <MetaRow>
-          문제: {problemTitle} · 언어: {rawLang}
+          언어: {rawLang}
+          {solutionMeta && (
+            <>
+              {" · 제출 시각: "}
+              {solutionMeta.createdAt}
+              {" · 메모리: "}
+              {solutionMeta.memory}MB
+              {" · 실행시간: "}
+              {solutionMeta.runtime}ms
+            </>
+          )}
         </MetaRow>
 
         <CodePreview code={code} language={hlLang} />
@@ -362,7 +588,7 @@ export default function SolvedProblemShow() {
                     <LineTag>{review.lineNumber}번째 줄</LineTag>
                     <LineCodeText>{lineCode}</LineCodeText>
                     <ReviewMeta>
-                      {review.author} · {review.createdAt}
+                      {review.author} · {timeConverter(review.createdAt)}
                     </ReviewMeta>
                   </ReviewTopRow>
 
@@ -374,9 +600,7 @@ export default function SolvedProblemShow() {
                     <>
                       <ReviewFull>{review.content}</ReviewFull>
 
-                      <CommentSection
-                        onClick={(e) => e.stopPropagation()} // 카드 토글 방지
-                      >
+                      <CommentSection onClick={(e) => e.stopPropagation()}>
                         <CommentHeader>
                           댓글 {review.comments.length}개
                         </CommentHeader>
