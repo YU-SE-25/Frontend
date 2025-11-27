@@ -84,22 +84,7 @@ export default function ProblemDetail() {
       return;
     }
 
-    const code = `
-#include <stdio.h>
-int main() {
-  int sum = 0;
-  for(int i=1;i<=5;i++) sum+=i;
-  printf("Total: %d\\n", sum);
-}
-`.trim();
-
-    navigate(`sovled/mycode`, {
-      state: {
-        code,
-        language: "C++",
-        problem,
-      },
-    });
+    navigate(`/problems/${user.nickname}/submitted?search=${problemId}`);
   };
 
   if (loading) return <ProblemWrapper>로딩 중...</ProblemWrapper>;
@@ -113,7 +98,7 @@ int main() {
 
         <ActionSection>
           <ViewCodeButton onClick={handleViewMyCode}>
-            내 코드 보기
+            제출한 기록 보기
           </ViewCodeButton>
 
           <ViewCodeButton onClick={() => navigate(`/qna?id=${problemId}`)}>
