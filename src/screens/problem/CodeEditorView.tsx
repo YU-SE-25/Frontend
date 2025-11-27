@@ -21,6 +21,10 @@ import styled from "styled-components";
 //실행 결과 UI용 박스 스타일
 const OutputBox = styled.pre`
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto; // 길어질 때 가로 스크롤 허용
+  white-space: pre-wrap;
+  word-break: break-word; // 너무 긴 단어가 있어도 줄바꿈
   min-height: 120px;
   margin-top: 14px;
   padding: 14px;
@@ -28,7 +32,6 @@ const OutputBox = styled.pre`
   color: ${(p) => p.theme.textColor};
   border: 1px solid ${(p) => p.theme.textColor}33;
   border-radius: 10px;
-  white-space: pre-wrap;
   font-size: 14px;
 `;
 
@@ -156,14 +159,50 @@ export default function CodeEditorView({
   const [output, setOutput] = useState("");
 
   const handleExecuteClick = async () => {
-    if (!onExecute) return alert("실행 기능이 없습니다!");
+    // 더미 실행 결과 만들기
+    const execTime = Math.floor(Math.random() * 50) + 10; // 10~60ms
+    const memory = Math.floor(Math.random() * 3000) + 500; // 500~3500KB
 
-    try {
-      const result = await onExecute();
-      setOutput(result);
-    } catch (err: any) {
-      setOutput("실행 중 오류 발생:\n" + err?.message);
-    }
+    const hasError = code.includes("error") || code.includes("undefined");
+    const infiniteLoop =
+      code.includes("while(true)") || code.includes("for(;;)");
+
+    const stdout = hasError ? "" : "Hello World!\n이것은 더미 실행 결과입니다.";
+
+    const stderr = hasError
+      ? "RuntimeError: undefined variable\n오류가 발생했습니다."
+      : infiniteLoop
+      ? "⚠ 무한루프 감지 — 실행 중단됨"
+      : "(없음)";
+
+    const compileLog =
+      language === "C++"
+        ? "g++ 더미 컴파일 성공"
+        : language === "Java"
+        ? "javac 더미 컴파일 성공"
+        : language === "Python"
+        ? "파이썬은 컴파일 과정이 없습니다."
+        : "컴파일 로그 없음";
+
+    // 결과 형태 구성 (UI에 그대로 출력)
+    const resultText = `
+[ 컴파일 로그 ]
+${compileLog}
+
+[ 표준 출력(stdout) ]
+${stdout}
+
+[ 표준 에러(stderr) ]
+${stderr}
+
+[ 실행 시간 ]
+${execTime} ms
+
+[ 메모리 사용량 ]
+${memory} KB
+`.trim();
+
+    setOutput(resultText);
   };
 
   return (
