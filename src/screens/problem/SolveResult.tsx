@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import styled, { css, keyframes } from "styled-components";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getSubmissionStatus } from "../../api/codeeditor_api";
 import {
   fetchSubmissionById,
@@ -298,9 +298,13 @@ const ActionButton = styled.button<{ variant?: "primary" | "ghost" }>`
 
 export default function SolveResult() {
   const [sp] = useSearchParams();
+  const params = useParams();
   const navigate = useNavigate();
 
-  const idFromParam = sp.get("id");
+  const idFromQuery = sp.get("id");
+  const idFromPath = params.solvedId;
+
+  const idFromParam = idFromQuery ?? idFromPath;
   const storedId = localStorage.getItem("lastSubmissionId");
   const submissionId = idFromParam
     ? Number(idFromParam)
@@ -573,7 +577,7 @@ export default function SolveResult() {
             variant="ghost"
             onClick={() =>
               problemId
-                ? navigate(`/problem-list?ids=${problemId}`)
+                ? navigate(`codeView/${submissionId}`)
                 : navigate("/problem-list")
             }
           >
