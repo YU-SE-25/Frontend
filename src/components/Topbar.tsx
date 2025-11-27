@@ -369,10 +369,11 @@ export default function Topbar() {
           <MenuItem>
             <MenuLink to="/studygroup-main">스터디 그룹</MenuLink>
           </MenuItem>
-
-          <MenuItem>
-            <MenuLink to="/scratch">IDE</MenuLink>
-          </MenuItem>
+          {isLoggedIn && (
+            <MenuItem>
+              <MenuLink to="/scratch">IDE</MenuLink>
+            </MenuItem>
+          )}
         </Menu>
 
         <RightSection>

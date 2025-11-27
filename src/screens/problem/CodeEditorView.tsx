@@ -18,8 +18,6 @@ import {
 
 import styled from "styled-components";
 
-const DEFAULT_LANGUAGE = "C";
-
 //실행 결과 UI용 박스 스타일
 const OutputBox = styled.pre`
   width: 100%;
@@ -34,8 +32,12 @@ const OutputBox = styled.pre`
   font-size: 14px;
 `;
 
+interface IDEProblem extends Partial<IProblem> {
+  allowedLanguages?: string[];
+}
+
 interface CodeEditorViewProps {
-  problem?: Partial<IProblem>;
+  problem?: IDEProblem;
   code: string;
   onCodeChange: (value: string) => void;
   onSaveTemp: () => void;
@@ -46,16 +48,15 @@ interface CodeEditorViewProps {
   isSubmitting?: boolean;
   hideSubmit?: boolean;
 
-  //추가됨: 실행 기능 (IDE 에서 사용)
+  // IDE 실행 기능
   onExecute?: () => Promise<string>;
 }
 
-// ⭐ 우리가 직접 정의할 언어 ID들
 const JAVA_LANG_ID = "java-simple";
 const CPP_LANG_ID = "cpp-simple";
 const PY_LANG_ID = "python-simple";
 
-// ⭐ 언어 토큰 규칙 등록 (키워드/문자열/주석/숫자 정도)
+//언어 토큰 규칙 등록
 const setupLanguages = (monaco: Monaco) => {
   const already = monaco.languages.getLanguages().map((l) => l.id);
 
@@ -125,38 +126,37 @@ export default function CodeEditorView({
   onSaveTemp,
   onLoadTemp,
   onSubmit,
+  onExecute,
   language,
   onLanguageChange,
-  onExecute,
   hideSubmit,
 }: CodeEditorViewProps) {
   const [isDark] = useAtom(isDarkAtom);
+
   const [fontSize, setFontSize] = useState(20);
+
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    language || "Python"
+  );
 
   const availableLanguages = problem?.allowedLanguages?.length
     ? problem.allowedLanguages
-    : [DEFAULT_LANGUAGE];
+    : ["Python", "C++", "Java"];
 
-  // ⭐ 화면에서 선택하는 문자열 -> 우리가 만든 커스텀 언어 ID
   const monacoLangMap: Record<string, string> = {
-    C: CPP_LANG_ID, // C도 C++룰로 색칠
+    C: CPP_LANG_ID,
     "C++": CPP_LANG_ID,
     Java: JAVA_LANG_ID,
     Python: PY_LANG_ID,
     Python3: PY_LANG_ID,
-    JS: "javascript",
-    TS: "typescript",
   };
 
-  const monacoLanguage = monacoLangMap[language] || "plaintext";
+  const monacoLanguage = monacoLangMap[selectedLanguage] || "plaintext";
 
-  // 실행 결과 상태
   const [output, setOutput] = useState("");
 
   const handleExecuteClick = async () => {
-    if (!onExecute) {
-      return alert("실행 기능이 없습니다!");
-    }
+    if (!onExecute) return alert("실행 기능이 없습니다!");
 
     try {
       const result = await onExecute();
@@ -172,8 +172,11 @@ export default function CodeEditorView({
         사용 언어 :
         <LanguageSelectWrapper>
           <LanguageSelect
-            value={language}
-            onChange={(e) => onLanguageChange(e.target.value)}
+            value={selectedLanguage}
+            onChange={(e) => {
+              setSelectedLanguage(e.target.value);
+              onLanguageChange(e.target.value);
+            }}
           >
             {availableLanguages.map((lang) => (
               <option key={lang} value={lang}>
@@ -194,14 +197,13 @@ export default function CodeEditorView({
         </FontSizeSelect>
       </LanguageDisplay>
 
-      {/* 모나코 에디터 */}
       <EditorWrapper>
         <Editor
           height="100%"
           language={monacoLanguage}
           value={code}
           theme={isDark ? "vs-dark" : "vs-light"}
-          beforeMount={setupLanguages} // 여기서 언어/색 규칙 전부 등록
+          beforeMount={setupLanguages}
           onChange={(value) => onCodeChange(value || "")}
           options={{
             minimap: { enabled: false },
@@ -213,7 +215,6 @@ export default function CodeEditorView({
         />
       </EditorWrapper>
 
-      {/* 버튼 */}
       <ActionRow>
         <ActionButton onClick={onLoadTemp}>불러오기</ActionButton>
         <ActionButton onClick={onSaveTemp}>임시저장</ActionButton>
@@ -227,7 +228,6 @@ export default function CodeEditorView({
         )}
       </ActionRow>
 
-      {/* 실행 결과 출력창 */}
       {output && <OutputBox>{output}</OutputBox>}
     </ViewContentWrapper>
   );
