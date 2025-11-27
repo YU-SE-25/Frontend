@@ -29,6 +29,7 @@ import MySolvedProblem from "./screens/problem/MySolvedProblemList";
 import ProblemAdd from "./screens/problem/ProblemAdd";
 import ProblemEdit from "./screens/problem/ProblemEdit";
 import CodeAnalysis from "./screens/problem/CodeAnalysis";
+import SolvedProblemList from "./screens/problem/reviews/SolvedProblemList";
 
 // 게시판 / QnA
 import Board from "./screens/board/BoardList";
@@ -54,9 +55,13 @@ const router = createBrowserRouter([
       { path: "problems/:problemId/solve", element: <ProblemSolve /> },
       { path: "problems/result", element: <CodeResult /> }, //debrecated
       { path: "problems/:username/solved", element: <MySolvedProblem /> },
+      {
+        path: "problem-detail/:problemId/solved",
+        element: <SolvedProblemList />,
+      },
 
       {
-        path: "/my-code-preview",
+        path: "problem-detail/:problemId/solved/:solutionId",
         element: <SolvedProblemShow />,
       },
 

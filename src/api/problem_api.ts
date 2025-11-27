@@ -82,7 +82,7 @@ export interface IProblem {
   author?: string;
   timeLimit?: number;
   memoryLimit?: number;
-  visibility?: string;
+  visibility?: "PUBLIC" | "PRIVATE" | undefined;
   hint?: string;
   source?: string;
   canEdit?: boolean;

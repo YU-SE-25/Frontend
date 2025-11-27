@@ -1,8 +1,10 @@
-// ✔ API 타입 맞춘 완전 수정본
-
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { fetchProblemDetail } from "../../api/problem_api";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  fetchProblemDetail,
+  mapDetailDtoToProblem,
+} from "../../api/problem_api";
+import type { IProblem } from "../../api/problem_api";
 import {
   fetchDummyProblemDetail,
   increaseDummyView,
@@ -11,17 +13,9 @@ import {
 import {
   ProblemWrapper,
   MainContent,
-  MetaInfoSection,
-  MetaRow,
-  MetaLabel,
-  MetaValue,
-  //UserStatsBox,
   DescriptionSection,
   SectionHeader,
   InlineTagList,
-  //ExampleContainer,
-  //ExamplePairWrapper,
-  //ExampleSection,
   HintSpoiler,
   ActionSection,
   SolveButton,
@@ -31,34 +25,7 @@ import {
 
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
-import type { IProblem, ProblemDetailDto } from "../../api/problem_api";
-
-function mapDetailDto(dto: ProblemDetailDto): IProblem {
-  return {
-    problemId: dto.problemId,
-    title: dto.title,
-    tags: dto.tags,
-    difficulty: dto.difficulty,
-    viewCount: dto.viewCount,
-    createdAt: dto.createdAt.slice(0, 10),
-
-    description: dto.description,
-    inputOutputExample: dto.inputOutputExample,
-    author: dto.createdByNickname,
-    timeLimit: dto.timeLimit,
-    memoryLimit: dto.memoryLimit,
-    visibility: dto.visibility,
-    hint: dto.hint,
-    source: dto.source,
-
-    summary: dto.description.slice(0, 50) + "...",
-    solvedCount: dto.acceptedSubmissions,
-    successRate: dto.acceptanceRate + "%",
-
-    canEdit: dto.canEdit,
-    userStatus: "NONE",
-  };
-}
+import ProblemMeta from "../../components/ProblemMeta";
 
 export default function ProblemDetail() {
   const navigate = useNavigate();
@@ -86,7 +53,7 @@ export default function ProblemDetail() {
       } catch {
         try {
           const dummy = await fetchDummyProblemDetail(Number(problemId));
-          if (mounted) setProblem(mapDetailDto(dummy));
+          if (mounted) setProblem(mapDetailDtoToProblem(dummy));
         } catch {
           if (mounted) setProblem(null);
         }
@@ -117,7 +84,6 @@ export default function ProblemDetail() {
       return;
     }
 
-    // 임시 코드 (원본 그대로 복구함)
     const code = `
 #include <stdio.h>
 int main() {
@@ -127,11 +93,11 @@ int main() {
 }
 `.trim();
 
-    navigate("/my-code-preview", {
+    navigate(`sovled/mycode`, {
       state: {
         code,
         language: "C++",
-        problemTitle: problem.title,
+        problem,
       },
     });
   };
@@ -143,44 +109,7 @@ int main() {
   return (
     <ProblemWrapper>
       <MainContent>
-        <MetaInfoSection>
-          <MetaRow>
-            <MetaValue>#{problem.problemId}</MetaValue>
-            <MetaValue style={{ fontSize: "24px", fontWeight: "bold" }}>
-              {problem.title}
-            </MetaValue>
-          </MetaRow>
-
-          <MetaRow>
-            <MetaLabel>난이도:</MetaLabel>
-            <MetaValue>{problem.difficulty}</MetaValue>
-
-            <MetaLabel>조회수:</MetaLabel>
-            <MetaValue>{problem.viewCount}</MetaValue>
-
-            <MetaLabel>등록일:</MetaLabel>
-            <MetaValue>{problem.createdAt}</MetaValue>
-
-            <MetaLabel>작성자:</MetaLabel>
-            <MetaValue>
-              <Link to={`/mypage/${problem.author}`}>{problem.author}</Link>
-            </MetaValue>
-          </MetaRow>
-
-          <MetaRow>
-            <MetaLabel>푼 사람:</MetaLabel>
-            <MetaValue>{problem.solvedCount}</MetaValue>
-
-            <MetaLabel>정답률:</MetaLabel>
-            <MetaValue>{problem.successRate}</MetaValue>
-
-            <MetaLabel>시간 제한:</MetaLabel>
-            <MetaValue>{problem.timeLimit}초</MetaValue>
-
-            <MetaLabel>메모리 제한:</MetaLabel>
-            <MetaValue>{problem.memoryLimit}MB</MetaValue>
-          </MetaRow>
-        </MetaInfoSection>
+        <ProblemMeta problem={problem} />
 
         <ActionSection>
           <ViewCodeButton onClick={handleViewMyCode}>
@@ -191,10 +120,8 @@ int main() {
             QnA
           </ViewCodeButton>
 
-          <ViewCodeButton
-            onClick={() => navigate(`/reviews?problem=${problemId}`)}
-          >
-            코드 리뷰
+          <ViewCodeButton onClick={() => navigate(`solved`)}>
+            공유된 풀이 보기
           </ViewCodeButton>
 
           <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
