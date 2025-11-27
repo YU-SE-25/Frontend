@@ -25,7 +25,7 @@ import ProblemList from "./screens/problem/ProblemList";
 import ProblemDetail from "./screens/problem/ProblemDetail";
 import ProblemSolve from "./screens/problem/ProblemSolve";
 import CodeResult from "./screens/problem/SolveResult";
-import MySolvedProblem from "./screens/problem/MySolvedProblemList";
+import MySolvedProblem from "./screens/problem/MySubmissionsList";
 import ProblemAdd from "./screens/problem/ProblemAdd";
 import ProblemEdit from "./screens/problem/ProblemEdit";
 import CodeAnalysis from "./screens/problem/CodeAnalysis";
