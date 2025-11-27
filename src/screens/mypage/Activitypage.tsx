@@ -359,12 +359,6 @@ export default function ActivityPage() {
   const goAll = () => nav("/problem-list");
   const goDetail = (problemId: number) => nav(`/problem-detail/${problemId}`);
 
-  const solvedCount = useMemo(() => {
-    const acSubs = submissions.filter((s) => s.verdict === "AC");
-    const uniqueIds = new Set(acSubs.map((s) => s.problemId));
-    return uniqueIds.size;
-  }, [submissions]);
-
   if (isError) {
     return (
       <Page>

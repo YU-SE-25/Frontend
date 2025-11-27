@@ -365,7 +365,7 @@ export const dummyReviewsBySolution: Record<number, ReviewsResponse> = {
     reviews: [
       {
         reviewId: 11,
-        reviewer: "java_algo",
+        reviewer: "gamppe",
         lineNumber: 10,
         content: "Java에서도 시간 제한을 안정적으로 통과하네요.",
         voteCount: 10,
@@ -548,7 +548,7 @@ export const dummyCommentsByReview: Record<number, ReviewComments> = {
     comments: [
       {
         commentId: 1011,
-        commenter: "performance_critic",
+        commenter: "gamppe",
         content: "최악의 경우에도 0.2초면 충분하겠네요.",
         createdAt: "2025-11-27T10:28:00Z",
         owner: false,

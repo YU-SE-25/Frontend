@@ -1,9 +1,11 @@
 // src/screens/board/BoardDetail.tsx
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import ReportButton from "../ReportButton";
+import ReportButton from "../../components/ReportButton";
 import { useNavigate } from "react-router-dom";
 import type { BoardComment, BoardContent } from "./BoardList";
+import EditButton from "../../components/EditButton";
+import { isOwner } from "../../utils/isOwner";
 
 interface BoardDetailProps {
   post: BoardContent;
@@ -204,6 +206,23 @@ const CommentList = styled.ul`
   margin: 0;
   padding: 0;
 `;
+const CommentActionButton = styled.button<{ $danger?: boolean }>`
+  margin-left: 8px;
+  font-size: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: ${({ theme, $danger }) => ($danger ? "#ff4d4f" : theme.muteColor)};
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.focusColor};
+    outline-offset: 2px;
+  }
+`;
 
 const CommentItem = styled.li`
   padding: 8px 0;
@@ -317,6 +336,8 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
   );
   const [vote, setVote] = useState(post.like_count); // 투표
   const [voteState, setVoteState] = useState<"up" | "down" | null>(null);
+
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   useEffect(() => {
     setLocalComments(post.comments ?? []);
@@ -339,14 +360,55 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
     setVote((v) => (voteState === "up" ? v - 2 : v - 1));
   };
 
+  //댓글 수정 삭제
+  const handleEditComment = (comment: BoardComment) => {
+    setDraft(comment.contents);
+    setAnonimity(comment.anonymity);
+    setEditingCommentId(comment.id);
+  };
+  const handleDeleteComment = (commentId: number) => {
+    const ok = window.confirm("삭제하시겠습니까?");
+    if (!ok) return;
+
+    setLocalComments((prev) => prev.filter((c) => c.id !== commentId));
+
+    // 수정 중이던 댓글이 삭제되었다면 입력창도 초기화
+    if (editingCommentId === commentId) {
+      setEditingCommentId(null);
+      setDraft("");
+    }
+
+    alert("삭제되었습니다.");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
 
+    if (editingCommentId !== null) {
+      // 수정 모드
+      setLocalComments((prev) =>
+        prev.map((c) =>
+          c.id === editingCommentId
+            ? {
+                ...c,
+                contents: text,
+                anonymity: anonymity,
+                // create_time 그대로 둘지, 수정시간 따로 둘지는 나중에 결정
+              }
+            : c
+        )
+      );
+      setEditingCommentId(null);
+      setDraft("");
+      return;
+    }
+
+    // 새 댓글 작성 모드
     const next: BoardComment = {
       id: Date.now(),
-      author: "Guest", // TODO: 나중에 실제 로그인 유저 닉네임으로 교체
+      author: "Guest",
       contents: text,
       anonymity: anonymity,
       create_time: new Date().toISOString(),
@@ -355,6 +417,7 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
     setLocalComments((prev) => [...prev, next]);
     setDraft("");
   };
+
   const handleNavigateMypage = (username: string) => () => {
     nav(`/mypage/${username}`);
   };
@@ -379,6 +442,23 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
         </TitleBlock>
 
         <HeaderActions>
+          {isOwner({ author: post.author, anonymity: post.anonymity }) && (
+            <EditButton
+              to={`/board/edit/write`}
+              state={{
+                post: {
+                  state: "edit",
+                  id: post.post_id,
+                  category: post.tag,
+                  title: post.post_title,
+                  content: post.contents,
+                  isAnonymous: post.anonymity,
+                  isPrivate: post.is_private,
+                  groupId: null,
+                },
+              }}
+            />
+          )}
           <ReportButton
             targetContentId={post.post_id}
             targetContentType="post"
@@ -420,6 +500,24 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                           targetContentId={c.id}
                           targetContentType="comment"
                         />
+                        {isOwner(c) && (
+                          <>
+                            <CommentActionButton
+                              type="button"
+                              onClick={() => handleEditComment(c)}
+                            >
+                              수정
+                            </CommentActionButton>
+
+                            <CommentActionButton
+                              type="button"
+                              $danger
+                              onClick={() => handleDeleteComment(c.id)}
+                            >
+                              삭제
+                            </CommentActionButton>
+                          </>
+                        )}
                       </CommentMeta>
                       <CommentContent>{c.contents}</CommentContent>
                     </CommentItem>
@@ -447,7 +545,9 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                   />
                 </label>
 
-                <CommentButton type="submit">댓글 작성</CommentButton>
+                <CommentButton type="submit">
+                  {editingCommentId !== null ? "댓글 수정" : "댓글 작성"}
+                </CommentButton>
               </CommentSubmitRow>
             </CommentForm>
           </CommentsSection>
