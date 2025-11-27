@@ -3,10 +3,18 @@ import styled from "styled-components";
 import ReportModal from "../screens/ReportModal";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../atoms";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   targetContentId: number;
-  targetContentType: "post" | "comment" | "discussion" | "qna";
+  targetContentType:
+    | "post"
+    | "comment"
+    | "discussion"
+    | "qna"
+    | "review"
+    | "submission"
+    | "reviewComment";
 }
 
 export default function ReportButton({
@@ -15,7 +23,7 @@ export default function ReportButton({
 }: Props) {
   const [open, setOpen] = useState(false);
   const userRole = useAtomValue(userProfileAtom)?.role;
-
+  const navigate = useNavigate();
   if (userRole === "MANAGER") {
     return (
       <>
@@ -26,6 +34,7 @@ export default function ReportButton({
               alert(
                 "삭제되었습니다. (실제 삭제 기능은 구현되어 있지 않습니다.)"
               );
+              navigate(-1);
             }
           }}
         >

@@ -48,7 +48,7 @@ export const BOARD_DUMMY: Record<BoardCategory, BoardContent[]> = {
     {
       post_id: 2,
       post_title: "요즘 뭐하고 지내냐",
-      author: "코딩러",
+      author: "gamppe",
       tag: TAGS[1],
       anonymity: false,
       like_count: 1,
@@ -67,7 +67,7 @@ export const BOARD_DUMMY: Record<BoardCategory, BoardContent[]> = {
       comment_count: 1,
       create_time: "2025-11-22T11:10:00Z",
       contents: "갑자기 뛰어서 따라가느라 죽을 뻔함...",
-      comments: [makeComment(1, "멍멍이", "강아지는 뛰는 게 국룰 ㅋㅋ")],
+      comments: [makeComment(1, "gamppe", "강아지는 뛰는 게 국룰 ㅋㅋ")],
     },
   ],
 
