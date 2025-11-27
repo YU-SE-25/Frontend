@@ -23,7 +23,7 @@ export const QNA_DUMMY: QnaContent[] = [
     post_id: 1,
     problem_id: 1,
     post_title: "1001번 두 수의 합, 시간 초과가 나요",
-    author: "코딩초보",
+    author: "gamppe",
     anonymity: false,
     like_count: 3,
     comment_count: 2,
@@ -58,7 +58,7 @@ export const QNA_DUMMY: QnaContent[] = [
     comments: [
       makeQnaComment(
         1,
-        "힌트주는사람",
+        "gamppe",
         "음수나 범위가 큰 입력도 고려했는지 확인해보세요."
       ),
     ],
