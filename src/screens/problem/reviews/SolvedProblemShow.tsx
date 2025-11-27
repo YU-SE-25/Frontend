@@ -286,6 +286,8 @@ export default function SolvedProblemShow() {
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>(
     {}
   );
+  if (solutionId === "myCode") {
+  }
 
   // ✅ 문제 전체 정보 (ProblemMeta용)
   const [problem, setProblem] = useState<IProblem | null>(null);
