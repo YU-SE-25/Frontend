@@ -98,6 +98,72 @@ const Blankdiv = styled.div<{
   }};
 `;
 
+const ResultCellInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+`;
+
+const StatusChip = styled.span<{ $status: SubmissionStatus }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+
+  background-color: ${({ $status }) => {
+    switch ($status) {
+      case "CA":
+        return "#16a34a"; // 정답 - 초록
+      case "WA":
+        return "#ef4444"; // 오답 - 빨강
+      case "PENDING":
+      case "GRADING":
+        return "#0ea5e9"; // 채점중 - 파랑
+      case "CE":
+      case "RE":
+      case "TLE":
+      case "MLE":
+        return "#f97316"; // 에러류 - 주황
+      case "DRAFT":
+      default:
+        return "#6b7280"; // 임시저장 - 회색
+    }
+  }};
+`;
+
+const ResultButtons = styled.div`
+  display: flex;
+  gap: 4px;
+`;
+
+const SmallResultButton = styled.button`
+  margin-right: 2px;
+  background-color: ${(props) => props.theme.bgCardColor};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  color: ${(props) => props.theme.textColor};
+  font-size: 12px;
+  white-space: nowrap;
+  word-break: keep-all;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    transform: translateY(-2px);
+    background-color: ${(props) => props.theme.focusColor}60;
+    cursor: pointer;
+  }
+`;
+
 export const ProblemListWrapper = styled.div`
   height: 100%;
   width: 80%;
@@ -127,7 +193,9 @@ export default function MySubmissionsList() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") ?? ""
+  );
   const [sortType, setSortType] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -136,6 +204,7 @@ export default function MySubmissionsList() {
     ? Number(searchParams.get("id"))
     : null;
   const showResult = searchParams.get("showResult") === "true";
+
   const show = selectedSubmissionId !== null && showResult;
 
   const [animate, setAnimate] = useState<"none" | "open" | "close">("none");
@@ -193,10 +262,6 @@ export default function MySubmissionsList() {
       alert("검색어를 입력해 주세요.");
       return;
     }
-    if (searchTerm.trim().length < 2) {
-      alert("두 자 이상의 문자를 입력해 주세요.");
-      return;
-    }
     setCurrentPage(1);
   };
 
@@ -208,10 +273,6 @@ export default function MySubmissionsList() {
     searchParams.set("id", String(submissionId));
     searchParams.set("showResult", "true");
     setSearchParams(searchParams, { replace: true });
-  };
-
-  const handleViewProblem = (problemId: number) => {
-    navigate(`/problem-detail/${problemId}`);
   };
 
   const handleDirectSolve = (problemId: number) => {
@@ -228,7 +289,7 @@ export default function MySubmissionsList() {
 
     let list = submissions.filter((s) => {
       // 검색어: 문제 ID 또는 제목
-      if (term.length >= 2) {
+      if (term.length > 0) {
         const asNumber = Number(term);
         const matchId =
           !Number.isNaN(asNumber) && s.problemId === Number(asNumber);
@@ -368,7 +429,6 @@ export default function MySubmissionsList() {
             {currentSubmissions.length > 0 ? (
               currentSubmissions.map((submission, idx) => (
                 <TableRow key={submission.submissionId}>
-                  {/* 번호: 페이지 기준 역순 번호를 쓰고 싶으면 계산 바꿔도 됨 */}
                   <TableCell>{indexOfFirstItem + idx + 1}</TableCell>
 
                   <TitleCell>
@@ -385,22 +445,36 @@ export default function MySubmissionsList() {
                   <TableCell>{submission.runtime} ms</TableCell>
                   <TableCell>{submission.submittedAt}</TableCell>
 
-                  <TableCell style={{ textAlign: "center" }}>
-                    <ButtonContainer style={{ gap: "6px" }}>
-                      <span>{STATUS_LABEL[submission.status]}</span>
-                      <DetailsButton
-                        onClick={() =>
-                          toggleShowResult(submission.submissionId)
-                        }
-                      >
-                        결과 보기
-                      </DetailsButton>
-                      <DetailsButton
-                        onClick={() => handleDirectSolve(submission.problemId)}
-                      >
-                        다시 풀기
-                      </DetailsButton>
-                    </ButtonContainer>
+                  <TableCell style={{ textAlign: "right" }}>
+                    <ResultCellInner>
+                      <StatusChip $status={submission.status}>
+                        {STATUS_LABEL[submission.status]}
+                      </StatusChip>
+
+                      <ResultButtons>
+                        <SmallResultButton
+                          onClick={() =>
+                            toggleShowResult(submission.submissionId)
+                          }
+                        >
+                          코드 보기
+                        </SmallResultButton>
+                        <SmallResultButton
+                          onClick={() =>
+                            toggleShowResult(submission.submissionId)
+                          }
+                        >
+                          결과
+                        </SmallResultButton>
+                        <SmallResultButton
+                          onClick={() =>
+                            handleDirectSolve(submission.problemId)
+                          }
+                        >
+                          다시 풀기
+                        </SmallResultButton>
+                      </ResultButtons>
+                    </ResultCellInner>
                   </TableCell>
                 </TableRow>
               ))

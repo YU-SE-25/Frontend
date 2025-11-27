@@ -1,4 +1,7 @@
-import { fetchDummySubmissions } from "./dummy/mySubmissions_dummy";
+import {
+  fetchDummySubmissionById,
+  fetchDummySubmissions,
+} from "./dummy/mySubmissions_dummy";
 
 export type SubmissionStatus =
   | "PENDING"
@@ -31,4 +34,7 @@ export interface SubmissionListResponse {
 
 export async function fetchSubmissions() {
   return fetchDummySubmissions();
+}
+export async function fetchSubmissionById(submissionId: number) {
+  return fetchDummySubmissionById(submissionId);
 }

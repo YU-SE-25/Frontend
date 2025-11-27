@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
-import styled, { keyframes } from "styled-components";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import styled, { css, keyframes } from "styled-components";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getSubmissionStatus } from "../../api/codeeditor_api";
+import {
+  fetchSubmissionById,
+  type Submission,
+} from "../../api/mySubmissions_api";
 
 interface GradingResponse {
   status: string;
@@ -12,15 +16,6 @@ interface GradingResponse {
   runtime?: number;
   memory?: number;
 }
-
-const Page = styled.div`
-  min-height: calc(100vh - 80px);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 96px 24px 48px;
-  background: ${({ theme }) => theme.bgColor};
-`;
 
 const ResultCard = styled.div`
   width: 100%;
@@ -107,25 +102,23 @@ const StatusSection = styled.div`
       ? "linear-gradient(135deg, #eaf1fd, #f0faf7)"
       : "transparent"};
 
-  /* 다크모드 - 그라데이션 테두리 적용 */
   ${({ theme }) =>
     theme.mode === "dark" &&
-    `
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 18px;
-      padding: 4px; /* 테두리 두께 */
-      background: linear-gradient(135deg, #eaf1fd, #f0faf7);
-      -webkit-mask:
-        linear-gradient(#fff 0 0) content-box,
-        linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      pointer-events: none;
-    }
-  `}
+    css`
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 18px;
+        padding: 4px; /* 테두리 두께 */
+        background: linear-gradient(135deg, #eaf1fd, #f0faf7);
+        -webkit-mask: linear-gradient(#fff 0 0) content-box,
+          linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+    `}
 `;
 
 const StatusTextBlock = styled.div`
@@ -305,36 +298,87 @@ const ActionButton = styled.button<{ variant?: "primary" | "ghost" }>`
 
 export default function SolveResult() {
   const [sp] = useSearchParams();
-  const id = sp.get("id");
   const navigate = useNavigate();
 
-  const rawId = localStorage.getItem("lastSubmissionId");
-  const submissionId = rawId ? Number(rawId) : null;
+  const idFromParam = sp.get("id");
+  const storedId = localStorage.getItem("lastSubmissionId");
+  const submissionId = idFromParam
+    ? Number(idFromParam)
+    : storedId
+    ? Number(storedId)
+    : null;
 
-  const [data, setData] = useState<GradingResponse | null>(null);
+  const [gradingData, setGradingData] = useState<GradingResponse | null>(null);
+  const [submission, setSubmission] = useState<Submission | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!submissionId) return;
 
-    const interval = setInterval(async () => {
-      const status = await getSubmissionStatus(submissionId);
-      setData(status);
+    let active = true;
 
-      if (status.status !== "GRADING") {
+    fetchSubmissionById(submissionId)
+      .then((res) => {
+        if (!active) return;
+
+        if (!res) {
+          setSubmission(null);
+          setSubmissionError("해당 제출 기록을 찾을 수 없습니다.");
+          return;
+        }
+
+        setSubmission(res);
+        setSubmissionError(null);
+      })
+      .catch(() => {
+        if (active) {
+          setSubmission(null);
+          setSubmissionError("제출 정보를 불러오지 못했습니다.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [submissionId]);
+
+  useEffect(() => {
+    if (!submissionId) return;
+
+    // 이미 최종 상태(정답/오답/에러 등)이면 폴링 안 돌림
+    const isFinalStatus =
+      submission?.status &&
+      submission.status !== "PENDING" &&
+      submission.status !== "GRADING";
+
+    if (isFinalStatus) return;
+
+    let alive = true;
+
+    const interval = setInterval(async () => {
+      if (!alive) return;
+
+      const status = await getSubmissionStatus(submissionId);
+      setGradingData(status);
+
+      if (status.status !== "GRADING" && status.status !== "PENDING") {
         clearInterval(interval);
       }
     }, 700);
 
-    return () => clearInterval(interval);
-  }, [submissionId]);
+    return () => {
+      alive = false;
+      clearInterval(interval);
+    };
+  }, [submissionId, submission?.status]);
 
-  const status = data?.status ?? "PENDING";
+  const status = gradingData?.status ?? submission?.status ?? "PENDING";
 
-  const totalCases = data?.totalTestCases ?? 0;
+  const totalCases = gradingData?.totalTestCases ?? 0;
   const currentCases =
     status === "GRADING"
-      ? data?.currentTestCase ?? 0
-      : data?.passedTestCases ?? 0;
+      ? gradingData?.currentTestCase ?? 0
+      : gradingData?.passedTestCases ?? 0;
 
   const progressPercent =
     totalCases > 0 ? Math.round((currentCases / totalCases) * 100) : 0;
@@ -369,7 +413,12 @@ export default function SolveResult() {
       ? `진행 상황: ${currentCases} / ${totalCases} 테스트`
       : status === "CA"
       ? "해낼 줄 알았다구요!"
-      : `실패한 테스트케이스: ${data?.failedTestCase ?? "-"} 번`;
+      : `실패한 테스트케이스: ${gradingData?.failedTestCase ?? "-"} 번`;
+
+  const problemId = submission?.problemId;
+  const problemTitle = submission?.problemTitle ?? "";
+  const language = submission?.language ?? "-";
+  const submittedAt = submission?.submittedAt ?? "알 수 없음";
 
   return (
     <ResultCard>
@@ -379,18 +428,20 @@ export default function SolveResult() {
             <Dot />
             채점 결과
           </ServiceTag>
-          <Title>문제 #{id} 채점 리포트</Title>
-          <Subtitle>방금 제출한 코드에 대한 온라인 채점 결과입니다.</Subtitle>
+          <Title>
+            {problemId ? `문제 [${problemId}] ${problemTitle}` : "채점 리포트"}
+          </Title>
+          <Subtitle>선택한 제출에 대한 온라인 채점 결과입니다.</Subtitle>
         </TitleBlock>
         <MetaBlock>
           <div>
-            언어: <Strong>C++</Strong>
+            언어: <Strong>{language}</Strong>
           </div>
           <div>
-            시도 횟수: <Strong>1회</Strong>
+            제출 ID: <Strong>{submissionId ?? "-"}</Strong>
           </div>
           <div>
-            제출 시간: <Strong>방금 전</Strong>
+            제출 시간: <Strong>{submittedAt}</Strong>
           </div>
         </MetaBlock>
       </HeaderRow>
@@ -418,8 +469,8 @@ export default function SolveResult() {
                 ? `현재 ${currentCases} / ${totalCases} 테스트 진행중`
                 : status === "CA"
                 ? "모든 테스트를 통과했습니다"
-                : `통과한 테스트: ${data?.passedTestCases ?? 0} / ${
-                    data?.totalTestCases ?? 0
+                : `통과한 테스트: ${gradingData?.passedTestCases ?? 0} / ${
+                    gradingData?.totalTestCases ?? 0
                   }`}
             </span>
             <span>
@@ -441,9 +492,9 @@ export default function SolveResult() {
         <StatCard>
           <StatLabel>통과한 테스트</StatLabel>
           <StatValue>
-            {data?.passedTestCases ?? 0}
-            {data?.totalTestCases
-              ? ` / ${data.totalTestCases}`
+            {gradingData?.passedTestCases ?? 0}
+            {gradingData?.totalTestCases
+              ? ` / ${gradingData.totalTestCases}`
               : status === "PENDING" || status === "GRADING"
               ? " (집계 중)"
               : ""}
@@ -454,8 +505,8 @@ export default function SolveResult() {
           <StatValue>
             {status === "CA"
               ? "0"
-              : data?.failedTestCase
-              ? `#${data.failedTestCase}번`
+              : gradingData?.failedTestCase
+              ? `#${gradingData.failedTestCase}번`
               : status === "PENDING" || status === "GRADING"
               ? "집계 중"
               : "-"}
@@ -464,20 +515,24 @@ export default function SolveResult() {
         <StatCard>
           <StatLabel>실행 시간</StatLabel>
           <StatValue>
-            {data?.runtime != null
-              ? `${data.runtime} ms`
+            {gradingData?.runtime != null
+              ? `${gradingData.runtime} ms`
               : status === "PENDING" || status === "GRADING"
               ? "측정 중"
+              : submission?.runtime != null
+              ? `${submission.runtime} ms`
               : "-"}
           </StatValue>
         </StatCard>
         <StatCard>
           <StatLabel>메모리 사용량</StatLabel>
           <StatValue>
-            {data?.memory != null
-              ? `${data.memory} KB`
+            {gradingData?.memory != null
+              ? `${gradingData.memory} KB`
               : status === "PENDING" || status === "GRADING"
               ? "측정 중"
+              : submission?.memory != null
+              ? `${submission.memory} KB`
               : "-"}
           </StatValue>
         </StatCard>
@@ -511,17 +566,36 @@ export default function SolveResult() {
             status !== "GRADING" &&
             status !== "CA" &&
             "실패한 테스트케이스의 입출력을 확인하고 코드를 수정해 보세요."}
+          {submissionError && ` (${submissionError})`}
         </HintText>
         <ButtonGroup>
           <ActionButton
             variant="ghost"
-            onClick={() => navigate(`/problem-list?ids=${id}`)}
+            onClick={() =>
+              problemId
+                ? navigate(`/problem-list?ids=${problemId}`)
+                : navigate("/problem-list")
+            }
           >
-            비슷한 문제 보기
+            내 코드 보기
+          </ActionButton>
+          <ActionButton
+            variant="ghost"
+            onClick={() =>
+              problemId
+                ? navigate(`/problem-list?ids=${problemId}`)
+                : navigate("/problem-list")
+            }
+          >
+            코드 분석
           </ActionButton>
           <ActionButton
             variant="primary"
-            onClick={() => navigate(`/problems/${id}/solve`)}
+            onClick={() =>
+              problemId
+                ? navigate(`/problems/${problemId}/solve`)
+                : navigate("/problem-list")
+            }
           >
             에디터로 돌아가기
           </ActionButton>

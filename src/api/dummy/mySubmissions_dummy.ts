@@ -111,3 +111,12 @@ export function fetchDummySubmissions(): Promise<SubmissionListResponse> {
     submissions: dummySubmissions,
   });
 }
+export function fetchDummySubmissionById(
+  submissionId: number
+): Promise<Submission | undefined> {
+  return Promise.resolve(
+    dummySubmissions.find(
+      (submission) => submission.submissionId === submissionId
+    )
+  );
+}
