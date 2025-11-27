@@ -1,388 +1,650 @@
-import React, { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
+import styled from "styled-components";
+import CodePreview from "./CodePreview";
+import type { IProblem } from "../../../api/problem_api";
 import {
-  ProblemWrapper,
-  MainContent,
-  MetaInfoSection,
-  MetaRow,
-  MetaLabel,
-  MetaValue,
-  DescriptionSection,
-  SectionHeader,
-  InlineTagList,
-  TagLink,
-} from "../../../theme/ProblemDetail.Style";
-
-import {
-  ProblemListWrapper,
-  ControlBar,
-  SearchContainer,
-  SearchInput,
-  SearchButton,
-  SortSelect,
-  ProblemTable,
-  TableHead,
-  HeaderCell,
-  TableRow,
-  TableCell,
-  EmptyCell,
-  PaginationContainer,
-  PageLink,
-  ButtonContainer,
-} from "../../../theme/ProblemList.Style";
-
-import type { IProblem, ProblemDetailDto } from "../../../api/problem_api";
-import { fetchProblemDetail } from "../../../api/problem_api";
-import {
-  fetchDummyProblemDetail,
-  increaseDummyView,
-} from "../../../api/dummy/problem_dummy_new";
-
-import {
-  fetchSharedSolvedList,
-  type MySolvedCodeResponse,
+  fetchSolvedCode,
+  fetchReviewsBySolution,
+  fetchCommentsByReview,
 } from "../../../api/solution_api";
 
-import { useAtomValue } from "jotai";
-import { userProfileAtom } from "../../../atoms";
-import styled from "styled-components";
+// ✅ 공통 문제 메타
+import ProblemMeta from "../../../components/ProblemMeta";
 
-function mapDetailDto(dto: ProblemDetailDto): IProblem {
-  return {
-    problemId: dto.problemId,
-    title: dto.title,
-    tags: dto.tags,
-    difficulty: dto.difficulty,
-    viewCount: dto.viewCount,
-    createdAt: dto.createdAt.slice(0, 10),
+const Page = styled.div`
+  width: 100%;
+  min-height: 100vh;
+  padding: 32px 24px;
+  display: flex;
+  justify-content: center;
+  background: ${({ theme }) => theme.bgColor};
+`;
 
-    description: dto.description,
-    inputOutputExample: dto.inputOutputExample,
-    author: dto.createdByNickname,
-    timeLimit: dto.timeLimit,
-    memoryLimit: dto.memoryLimit,
-    visibility: dto.visibility,
-    hint: dto.hint,
-    source: dto.source,
+const Inner = styled.div`
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+`;
 
-    summary: dto.description.slice(0, 50) + "...",
-    solvedCount: dto.acceptedSubmissions,
-    successRate: dto.acceptanceRate + "%",
-
-    canEdit: dto.canEdit,
-    userStatus: "NONE",
-  };
-}
-
-const DetailsButton = styled.button`
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid ${({ theme }) => theme.logoColor ?? theme.textColor + "40"};
-  background: transparent;
-  color: ${({ theme }) => theme.textColor};
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
+// 머리 부분
+const HeadingRow = styled.div`
+  display: flex;
   align-items: center;
-  gap: 6px;
-  line-height: 1;
+  justify-content: space-between;
+  width: auto;
+`;
+
+const OtherCodeButton = styled.button`
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: none;
+  background: ${({ theme }) => theme.logoColor};
+  color: white;
+  cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.logoColor ?? theme.textColor + "20"};
-  }
-
-  &:active {
-    transform: translateY(1px);
-    opacity: 0.9;
+    opacity: 0.8;
   }
 `;
 
-export default function SolvedProblemListPage() {
+const Heading = styled.h1`
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const MetaRow = styled.div`
+  font-size: 14px;
+  color: ${({ theme }) => theme.textColor}99;
+  margin-top: 4px;
+`;
+
+// 체크 박스
+const ShareRow = styled.div`
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+`;
+
+const ShareLabel = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const ErrorText = styled.div`
+  font-size: 16px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const ReviewSectionTitle = styled.h2`
+  margin-top: 24px;
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const ReviewCount = styled.span`
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor}88;
+  margin-left: 6px;
+`;
+
+const ReviewList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const ReviewItem = styled.button<{ $expanded: boolean }>`
+  width: 100%;
+  text-align: left;
+  border-radius: 10px;
+  border: 1px solid
+    ${({ theme, $expanded }) =>
+      $expanded ? theme.focusColor : `${theme.textColor}33`};
+  background: ${({ theme, $expanded }) =>
+    $expanded ? `${theme.focusColor}11` : theme.bgColor};
+  padding: 10px 12px;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &:hover {
+    background: ${({ theme, $expanded }) =>
+      $expanded ? "" : `${theme.textColor}0f`};
+  }
+`;
+
+const ReviewTopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+`;
+
+const LineTag = styled.span`
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.textColor}44;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const LineCodeText = styled.span`
+  font-family: "Consolas", monospace;
+  font-size: 12px;
+  color: ${({ theme }) => theme.textColor}cc;
+  flex: 1;
+  margin-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const ReviewMeta = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.textColor}88;
+`;
+
+const ReviewPreview = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const ReviewFull = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor}dd;
+  line-height: 1.4;
+`;
+
+/* 댓글 영역 */
+
+const CommentSection = styled.div`
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid ${({ theme }) => theme.textColor}22;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const CommentHeader = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.textColor}99;
+`;
+
+const CommentList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const CommentItem = styled.div`
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.headerBgColor}22;
+`;
+
+const CommentMeta = styled.div`
+  font-size: 11px;
+  color: ${({ theme }) => theme.textColor}88;
+  margin-bottom: 2px;
+`;
+
+const CommentContent = styled.div`
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor}dd;
+`;
+
+const CommentForm = styled.form`
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+`;
+
+const CommentInput = styled.textarea`
+  flex: 1;
+  min-height: 40px;
+  max-height: 80px;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.textColor}44;
+  padding: 6px 8px;
+  font-size: 13px;
+  background: ${({ theme }) => theme.bgColor};
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const CommentSubmitBtn = styled.button`
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+  background: ${({ theme }) => theme.focusColor};
+  color: #000;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(0.93);
+  }
+`;
+
+// ===================== 타입 =====================
+
+type ReviewComment = {
+  id: number;
+  author: string;
+  content: string;
+  createdAt: string;
+};
+
+type Review = {
+  id: number;
+  lineNumber: number;
+  content: string;
+  author: string;
+  createdAt: string;
+  comments: ReviewComment[];
+};
+
+// ✅ 새 API 언어코드에 맞게 매핑
+const langMap: Record<string, string> = {
+  C: "c",
+  CPP: "cpp",
+  JAVA: "java",
+  PYTHON: "python",
+  PYTHON3: "python",
+  JS: "javascript",
+  TS: "typescript",
+};
+
+// ===================== 컴포넌트 =====================
+
+export default function SolvedProblemShow() {
+  const { problemId, solutionId } = useParams<{
+    problemId: string;
+    solutionId: string;
+  }>();
   const navigate = useNavigate();
-  const { problemId } = useParams<{ problemId: string }>();
 
-  const user = useAtomValue(userProfileAtom);
-  const isLoggedIn = !!user;
-
-  const [problem, setProblem] = useState<IProblem | null>(null);
-  const [loadingProblem, setLoadingProblem] = useState(true);
-
-  const [solutions, setSolutions] = useState<MySolvedCodeResponse[]>([]);
-  const [loadingSolutions, setLoadingSolutions] = useState(true);
-  const [solutionsError, setSolutionsError] = useState<string | null>(null);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortType, setSortType] = useState<"latest" | "memory" | "time">(
-    "latest"
+  const [code, setCode] = useState("");
+  const [rawLang, setRawLang] = useState("C");
+  const [shareCode, setShareCode] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>(
+    {}
   );
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
+  // ✅ 문제 전체 정보 (ProblemMeta용) - 지금은 다른 API에서 받을 예정
+  const [problem, setProblem] = useState<IProblem | null>(null);
+
+  // ✅ 풀이 메타 (제출 시각 / 메모리 / 실행시간)
+  const [solutionMeta, setSolutionMeta] = useState<{
+    createdAt: string;
+    memoryUsage: number;
+    executionTime: number;
+  } | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 코드 + 풀이 메타 + 리뷰 + 댓글 로딩
   useEffect(() => {
     if (!problemId) return;
 
     let mounted = true;
 
     const load = async () => {
-      setLoadingProblem(true);
+      if (!problemId) return;
+
+      setLoading(true);
+      setError(null);
+
       try {
-        const real = await fetchProblemDetail(Number(problemId));
-        if (mounted) setProblem(real);
-        increaseDummyView(Number(problemId));
-      } catch {
-        try {
-          const dummy = await fetchDummyProblemDetail(Number(problemId));
-          if (mounted) setProblem(mapDetailDto(dummy));
-        } catch {
-          if (mounted) setProblem(null);
+        // ✅ 1) 문제에 대한 내 풀이 목록 가져오기 (새 MySolvedCodeResponse)
+        const solved = await fetchSolvedCode(Number(problemId));
+
+        if (!solved || solved.solutions.length === 0) {
+          if (mounted) setError("아직 제출한 풀이가 없습니다.");
+          return;
+        }
+
+        // ✅ 2) 현재 보고 있는 풀이 선택 (URL의 solutionId 우선)
+        let targetSolution = solved.solutions[0];
+
+        if (solutionId) {
+          const found = solved.solutions.find(
+            (s) => s.submissionId === Number(solutionId)
+          );
+          if (found) targetSolution = found;
+        }
+
+        // ✅ 3) 해당 풀이의 리뷰 목록 가져오기 (ReviewsResponse)
+        const reviewsRes = await fetchReviewsBySolution(
+          targetSolution.submissionId
+        );
+
+        let reviewsWithComments: Review[] = [];
+
+        if (reviewsRes && reviewsRes.reviews.length > 0) {
+          // ✅ 4) 각 리뷰별 댓글까지 묶기 (ReviewCommentsResponse)
+          reviewsWithComments = await Promise.all(
+            reviewsRes.reviews.map(async (r) => {
+              const commentsRes = await fetchCommentsByReview(r.reviewId);
+
+              const comments: ReviewComment[] =
+                commentsRes?.comments.map((c) => ({
+                  id: c.commentId,
+                  author: c.commenter,
+                  content: c.content,
+                  createdAt: c.createdAt,
+                })) ?? [];
+
+              return {
+                id: r.reviewId,
+                lineNumber: r.lineNumber,
+                content: r.content,
+                author: r.reviewer,
+                createdAt: r.createdAt,
+                comments,
+              };
+            })
+          );
+        }
+
+        if (!mounted) return;
+
+        // ✅ 5) 상태 반영 (새 필드명에 맞게 매핑)
+        setCode(targetSolution.code);
+        setRawLang(targetSolution.language);
+        setShareCode(false); // 지금은 로컬 상태만 변경 (API는 없음)
+
+        // 문제 정보는 현재 이 API에서 안 오므로 일단 null 유지
+        setProblem((prev) => prev ?? null);
+
+        setSolutionMeta({
+          createdAt: targetSolution.submittedAt,
+          memoryUsage: targetSolution.memory, // 단위는 더미 기준
+          executionTime: targetSolution.runtime,
+        });
+
+        setReviews(reviewsWithComments);
+      } catch (e) {
+        if (mounted) {
+          setError("내 제출 코드를 불러오는 중 오류가 발생했습니다.");
         }
       } finally {
-        if (mounted) setLoadingProblem(false);
+        if (mounted) setLoading(false);
       }
     };
 
     load();
+
     return () => {
       mounted = false;
     };
-  }, [problemId]);
+  }, [problemId, solutionId]);
 
-  // ✅ 공유된 풀이 목록 API 연동
-  useEffect(() => {
+  const hlLang = langMap[rawLang] || "text";
+
+  if (loading) {
+    return (
+      <Page>
+        <Inner>
+          <HeadingRow>
+            <Heading>제출된 코드</Heading>
+            <OtherCodeButton disabled>다른 사람 풀이 보기</OtherCodeButton>
+          </HeadingRow>
+          <MetaRow>코드를 불러오는 중입니다…</MetaRow>
+        </Inner>
+      </Page>
+    );
+  }
+
+  if (error) {
+    return (
+      <Page>
+        <Inner>
+          <HeadingRow>
+            <Heading>제출된 코드</Heading>
+            <OtherCodeButton
+              onClick={() =>
+                problemId && navigate(`/problem-detail/${problemId}/solved`)
+              }
+            >
+              다른 사람 풀이 보기
+            </OtherCodeButton>
+          </HeadingRow>
+          <ErrorText>{error}</ErrorText>
+        </Inner>
+      </Page>
+    );
+  }
+
+  if (!code) {
+    return (
+      <Page>
+        <Inner>
+          <HeadingRow>
+            <Heading>제출된 코드</Heading>
+            <OtherCodeButton
+              onClick={() =>
+                problemId && navigate(`/problem-detail/${problemId}/solved`)
+              }
+            >
+              다른 사람 풀이 보기
+            </OtherCodeButton>
+          </HeadingRow>
+          <ErrorText>표시할 코드가 없습니다.</ErrorText>
+        </Inner>
+      </Page>
+    );
+  }
+
+  const codeLines = code.split("\n");
+  const getLineContent = (lineNumber: number) =>
+    codeLines[lineNumber - 1] ?? "";
+
+  const handleToggle = (id: number) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  const makePreview = (content: string, max = 40) => {
+    if (content.length <= max) return content;
+    return content.slice(0, max) + "…";
+  };
+
+  const handleCommentChange = (reviewId: number, value: string) => {
+    setCommentDrafts((prev) => ({
+      ...prev,
+      [reviewId]: value,
+    }));
+  };
+
+  // 다른 사람 풀이 보기
+  const handleViewOtherSolutions = () => {
     if (!problemId) return;
-
-    let mounted = true;
-
-    const load = async () => {
-      setLoadingSolutions(true);
-      setSolutionsError(null);
-      try {
-        const data = await fetchSharedSolvedList(Number(problemId));
-        if (mounted) setSolutions(data);
-      } catch {
-        if (mounted)
-          setSolutionsError("공유된 풀이 목록을 불러올 수 없습니다.");
-      } finally {
-        if (mounted) setLoadingSolutions(false);
-      }
-    };
-
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [problemId]);
-
-  const handleSearch = () => {
-    setCurrentPage(1);
+    navigate(`/problem-detail/${problemId}/solved`);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleSearch();
+  const handleCommentSubmit = (e: React.FormEvent, reviewId: number) => {
+    e.preventDefault();
+    const text = commentDrafts[reviewId]?.trim();
+    if (!text) return;
+
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId
+          ? {
+              ...r,
+              comments: [
+                ...r.comments,
+                {
+                  id: Date.now(),
+                  author: "현재유저",
+                  content: text,
+                  createdAt: "방금 전",
+                },
+              ],
+            }
+          : r
+      )
+    );
+
+    setCommentDrafts((prev) => ({
+      ...prev,
+      [reviewId]: "",
+    }));
   };
 
-  const filteredSolutions = solutions
-    .filter((s) => {
-      const keyword = searchTerm.trim().toLowerCase();
-      if (!keyword) return true;
-      return s.language.toLowerCase().includes(keyword);
-    })
-    .sort((a, b) => {
-      if (sortType === "latest") {
-        return b.createdAt.localeCompare(a.createdAt);
-      }
-      if (sortType === "memory") {
-        return a.memoryUsage - b.memoryUsage;
-      }
-      if (sortType === "time") {
-        return a.executionTime - b.executionTime;
-      }
-      return 0;
-    });
+  const handleShareChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e.target.checked;
 
-  const totalItems = filteredSolutions.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentSolutions = filteredSolutions.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) setCurrentPage(page);
-  };
-
-  const handleViewSolutionDetail = (solutionId: number) => {
-    if (!isLoggedIn) {
-      alert("로그인 후 이용 가능합니다.");
-      return;
+    if (next) {
+      const ok = window.confirm("다른 사람들에게 내 풀이를 공유하시겠습니까?");
+      if (!ok) {
+        e.target.checked = false;
+        return;
+      }
+    } else {
+      const ok = window.confirm("내 풀이를 비공개하시겠습니까?");
+      if (!ok) {
+        e.target.checked = true;
+        return;
+      }
     }
-    navigate(`${solutionId}`);
-  };
 
-  if (loadingProblem) return <ProblemWrapper>로딩 중...</ProblemWrapper>;
-  if (!problem)
-    return <ProblemWrapper>문제를 찾을 수 없습니다.</ProblemWrapper>;
+    // 지금은 로컬 상태만 변경 (API는 없음)
+    setShareCode(next);
+  };
 
   return (
-    <ProblemWrapper>
-      <MainContent>
-        <MetaInfoSection>
-          <MetaRow>
-            <MetaValue>#{problem.problemId}</MetaValue>
-            <MetaValue style={{ fontSize: "24px", fontWeight: "bold" }}>
-              {problem.title}
-            </MetaValue>
-          </MetaRow>
+    <Page>
+      <Inner>
+        <HeadingRow>
+          <Heading>제출된 코드</Heading>
+          <OtherCodeButton onClick={handleViewOtherSolutions}>
+            다른 사람 풀이 보기
+          </OtherCodeButton>
+        </HeadingRow>
 
-          <MetaRow>
-            <MetaLabel>난이도:</MetaLabel>
-            <MetaValue>{problem.difficulty}</MetaValue>
+        {/* ✅ 공통 문제 메타 (지금은 problem이 null일 수 있음) */}
+        {problem && <ProblemMeta problem={problem} />}
 
-            <MetaLabel>조회수:</MetaLabel>
-            <MetaValue>{problem.viewCount}</MetaValue>
-
-            <MetaLabel>등록일:</MetaLabel>
-            <MetaValue>{problem.createdAt}</MetaValue>
-
-            <MetaLabel>작성자:</MetaLabel>
-            <MetaValue>{problem.author}</MetaValue>
-          </MetaRow>
-
-          <MetaRow>
-            <MetaLabel>푼 사람:</MetaLabel>
-            <MetaValue>{problem.solvedCount}</MetaValue>
-
-            <MetaLabel>정답률:</MetaLabel>
-            <MetaValue>{problem.successRate}</MetaValue>
-          </MetaRow>
-
-          {problem.tags && problem.tags.length > 0 && (
-            <MetaRow>
-              <MetaLabel>태그:</MetaLabel>
-              <MetaValue>
-                <InlineTagList>
-                  {problem.tags.map((tag) => (
-                    <TagLink
-                      key={tag}
-                      to={`/problem-list?tag=${encodeURIComponent(tag)}`}
-                    >
-                      {tag}
-                    </TagLink>
-                  ))}
-                </InlineTagList>
-              </MetaValue>
-            </MetaRow>
+        {/* ✅ 풀이 전용 메타 (언어 / 제출 시각 / 메모리 / 실행시간) */}
+        <MetaRow>
+          언어: {rawLang}
+          {solutionMeta && (
+            <>
+              {" · 제출 시각: "}
+              {solutionMeta.createdAt}
+              {" · 메모리: "}
+              {solutionMeta.memoryUsage}MB
+              {" · 실행시간: "}
+              {solutionMeta.executionTime}ms
+            </>
           )}
-        </MetaInfoSection>
+        </MetaRow>
 
-        <DescriptionSection>
-          <SectionHeader>
-            <h3>공유된 풀이 목록</h3>
-          </SectionHeader>
+        <CodePreview code={code} language={hlLang} />
 
-          <ProblemListWrapper>
-            <ControlBar>
-              <SearchContainer>
-                <SearchInput
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="언어로 검색"
-                  onKeyPress={handleKeyPress}
-                />
-                <SearchButton onClick={handleSearch}>검색</SearchButton>
-              </SearchContainer>
+        <ShareRow>
+          <ShareLabel>
+            <input
+              type="checkbox"
+              checked={shareCode}
+              onChange={handleShareChange}
+            />
+            <span>내 코드 공유하기</span>
+          </ShareLabel>
+        </ShareRow>
 
-              <SortSelect
-                value={sortType}
-                onChange={(e) =>
-                  setSortType(e.target.value as "latest" | "memory" | "time")
-                }
-              >
-                <option value="latest">최신순</option>
-                <option value="memory">메모리 적은순</option>
-                <option value="time">실행시간 빠른순</option>
-              </SortSelect>
-            </ControlBar>
+        <ReviewSectionTitle>
+          코드 리뷰
+          <ReviewCount>({reviews.length})</ReviewCount>
+        </ReviewSectionTitle>
 
-            {loadingSolutions && <p>공유된 풀이를 불러오는 중...</p>}
-            {solutionsError && <p style={{ color: "red" }}>{solutionsError}</p>}
+        {reviews.length === 0 ? (
+          <MetaRow>아직 등록된 리뷰가 없습니다.</MetaRow>
+        ) : (
+          <ReviewList>
+            {reviews.map((review) => {
+              const expanded = expandedId === review.id;
+              const lineCode = getLineContent(review.lineNumber);
 
-            <ProblemTable>
-              <TableHead>
-                <tr>
-                  <HeaderCell width="10%">번호</HeaderCell>
-                  <HeaderCell width="20%">언어</HeaderCell>
-                  <HeaderCell width="20%">메모리</HeaderCell>
-                  <HeaderCell width="20%">실행시간</HeaderCell>
-                  <HeaderCell width="20%">작성일</HeaderCell>
-                  <HeaderCell width="10%">보기</HeaderCell>
-                </tr>
-              </TableHead>
-
-              <tbody>
-                {currentSolutions.length > 0 ? (
-                  currentSolutions.map((s, idx) => (
-                    <TableRow key={s.solutionId}>
-                      <TableCell>{indexOfFirstItem + idx + 1}</TableCell>
-                      <TableCell>{s.language}</TableCell>
-                      <TableCell>{s.memoryUsage} MB</TableCell>
-                      <TableCell>{s.executionTime} ms</TableCell>
-                      <TableCell>{s.createdAt}</TableCell>
-                      <TableCell>
-                        <ButtonContainer>
-                          <DetailsButton
-                            onClick={() =>
-                              handleViewSolutionDetail(s.solutionId)
-                            }
-                          >
-                            코드 보기
-                          </DetailsButton>
-                        </ButtonContainer>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <EmptyCell colSpan={6}>
-                      공유된 풀이가 아직 없습니다.
-                    </EmptyCell>
-                  </TableRow>
-                )}
-              </tbody>
-            </ProblemTable>
-
-            <PaginationContainer>
-              <PageLink
-                onClick={() => handlePageChange(currentPage - 1)}
-                isDisabled={currentPage === 1}
-              >
-                &lt; 이전
-              </PageLink>
-
-              {Array.from({ length: totalPages }, (_, index) => (
-                <PageLink
-                  key={index}
-                  onClick={() => handlePageChange(index + 1)}
-                  isActive={currentPage === index + 1}
+              return (
+                <ReviewItem
+                  key={review.id}
+                  $expanded={expanded}
+                  onClick={() => handleToggle(review.id)}
                 >
-                  {index + 1}
-                </PageLink>
-              ))}
+                  <ReviewTopRow>
+                    <LineTag>{review.lineNumber}번째 줄</LineTag>
+                    <LineCodeText>{lineCode}</LineCodeText>
+                    <ReviewMeta>
+                      {review.author} · {review.createdAt}
+                    </ReviewMeta>
+                  </ReviewTopRow>
 
-              <PageLink
-                onClick={() => handlePageChange(currentPage + 1)}
-                isDisabled={currentPage === totalPages}
-              >
-                다음 &gt;
-              </PageLink>
-            </PaginationContainer>
-          </ProblemListWrapper>
-        </DescriptionSection>
-      </MainContent>
-    </ProblemWrapper>
+                  {!expanded && (
+                    <ReviewPreview>{makePreview(review.content)}</ReviewPreview>
+                  )}
+
+                  {expanded && (
+                    <>
+                      <ReviewFull>{review.content}</ReviewFull>
+
+                      <CommentSection onClick={(e) => e.stopPropagation()}>
+                        <CommentHeader>
+                          댓글 {review.comments.length}개
+                        </CommentHeader>
+
+                        <CommentList>
+                          {review.comments.map((c) => (
+                            <CommentItem key={c.id}>
+                              <CommentMeta>
+                                {c.author} · {c.createdAt}
+                              </CommentMeta>
+                              <CommentContent>{c.content}</CommentContent>
+                            </CommentItem>
+                          ))}
+                        </CommentList>
+
+                        <CommentForm
+                          onSubmit={(e) => handleCommentSubmit(e, review.id)}
+                        >
+                          <CommentInput
+                            placeholder="댓글을 입력하세요."
+                            value={commentDrafts[review.id] ?? ""}
+                            onChange={(e) =>
+                              handleCommentChange(review.id, e.target.value)
+                            }
+                          />
+                          <CommentSubmitBtn type="submit">
+                            등록
+                          </CommentSubmitBtn>
+                        </CommentForm>
+                      </CommentSection>
+                    </>
+                  )}
+                </ReviewItem>
+              );
+            })}
+          </ReviewList>
+        )}
+      </Inner>
+    </Page>
   );
 }

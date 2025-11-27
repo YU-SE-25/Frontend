@@ -9,6 +9,9 @@ import {
   updateShareMyCode,
 } from "../../../api/solution_api";
 
+// ✅ 공통 문제 메타
+import ProblemMeta from "../../../components/ProblemMeta";";
+
 const Page = styled.div`
   width: 100%;
   min-height: 100vh;
@@ -58,6 +61,7 @@ const Heading = styled.h1`
 const MetaRow = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.textColor}99;
+  margin-top: 4px;
 `;
 
 // 체크 박스
@@ -283,6 +287,16 @@ export default function SolvedProblemShow() {
     {}
   );
 
+  // ✅ 문제 전체 정보 (ProblemMeta용)
+  const [problem, setProblem] = useState<IProblem | null>(null);
+
+  // ✅ 풀이 메타 (제출 시각 / 메모리 / 실행시간)
+  const [solutionMeta, setSolutionMeta] = useState<{
+    createdAt: string;
+    memoryUsage: number;
+    executionTime: number;
+  } | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -311,6 +325,12 @@ export default function SolvedProblemShow() {
         setProblemTitle(solved.problem?.title || "내 제출 코드");
         setShareCode(solved.isShared);
         setReviews(revs);
+        setProblem(solved.problem ?? null);
+        setSolutionMeta({
+          createdAt: solved.createdAt,
+          memoryUsage: solved.memoryUsage,
+          executionTime: solved.executionTime,
+        });
       } catch (e) {
         if (mounted) {
           setError("내 제출 코드를 불러오는 중 오류가 발생했습니다.");
@@ -370,7 +390,9 @@ export default function SolvedProblemShow() {
           <HeadingRow>
             <Heading>제출된 코드</Heading>
             <OtherCodeButton
-              onClick={() => problemId && navigate(`/reviews/${problemId}`)}
+              onClick={() =>
+                problemId && navigate(`/problem-detail/${problemId}/solved`)
+              }
             >
               다른 사람 풀이 보기
             </OtherCodeButton>
@@ -438,7 +460,7 @@ export default function SolvedProblemShow() {
   };
 
   const handleShareChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!problemId) return;
+    if (!solutionId) return;
 
     const next = e.target.checked;
 
@@ -475,8 +497,23 @@ export default function SolvedProblemShow() {
             다른 사람 풀이 보기
           </OtherCodeButton>
         </HeadingRow>
+
+        {/* ✅ 공통 문제 메타 */}
+        {problem && <ProblemMeta problem={problem} />}
+
+        {/* ✅ 풀이 전용 메타 (언어 / 제출 시각 / 메모리 / 실행시간) */}
         <MetaRow>
-          문제: {problemTitle} · 언어: {rawLang}
+          언어: {rawLang}
+          {solutionMeta && (
+            <>
+              {" · 제출 시각: "}
+              {solutionMeta.createdAt}
+              {" · 메모리: "}
+              {solutionMeta.memoryUsage}MB
+              {" · 실행시간: "}
+              {solutionMeta.executionTime}ms
+            </>
+          )}
         </MetaRow>
 
         <CodePreview code={code} language={hlLang} />
