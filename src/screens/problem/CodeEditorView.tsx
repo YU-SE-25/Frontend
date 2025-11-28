@@ -158,53 +158,6 @@ export default function CodeEditorView({
 
   const [output, setOutput] = useState("");
 
-  const handleExecuteClick = async () => {
-    // 더미 실행 결과 만들기
-    const execTime = Math.floor(Math.random() * 50) + 10; // 10~60ms
-    const memory = Math.floor(Math.random() * 3000) + 500; // 500~3500KB
-
-    const hasError = code.includes("error") || code.includes("undefined");
-    const infiniteLoop =
-      code.includes("while(true)") || code.includes("for(;;)");
-
-    const stdout = hasError ? "" : "Hello World!\n이것은 더미 실행 결과입니다.";
-
-    const stderr = hasError
-      ? "RuntimeError: undefined variable\n오류가 발생했습니다."
-      : infiniteLoop
-      ? "⚠ 무한루프 감지 — 실행 중단됨"
-      : "(없음)";
-
-    const compileLog =
-      language === "C++"
-        ? "g++ 더미 컴파일 성공"
-        : language === "Java"
-        ? "javac 더미 컴파일 성공"
-        : language === "Python"
-        ? "파이썬은 컴파일 과정이 없습니다."
-        : "컴파일 로그 없음";
-
-    // 결과 형태 구성 (UI에 그대로 출력)
-    const resultText = `
-[ 컴파일 로그 ]
-${compileLog}
-
-[ 표준 출력(stdout) ]
-${stdout}
-
-[ 표준 에러(stderr) ]
-${stderr}
-
-[ 실행 시간 ]
-${execTime} ms
-
-[ 메모리 사용량 ]
-${memory} KB
-`.trim();
-
-    setOutput(resultText);
-  };
-
   return (
     <ViewContentWrapper>
       <LanguageDisplay>
@@ -259,7 +212,14 @@ ${memory} KB
         <ActionButton onClick={onSaveTemp}>임시저장</ActionButton>
 
         {onExecute && (
-          <ActionButton onClick={handleExecuteClick}>실행</ActionButton>
+          <ActionButton
+            onClick={async () => {
+              const result = await onExecute(); // ProblemSolvePage에서 받은 실행 로직 실행
+              if (result) setOutput(result); // 결과를 에디터 하단 OutputBox에 표시
+            }}
+          >
+            실행
+          </ActionButton>
         )}
 
         {!hideSubmit && (

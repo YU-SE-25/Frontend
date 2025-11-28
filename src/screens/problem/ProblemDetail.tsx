@@ -38,6 +38,7 @@ export default function ProblemDetail() {
   const userRole = user?.role;
   const isLoggedIn = !!user;
 
+  //문제목록
   useEffect(() => {
     if (!problemId) return;
 
@@ -109,7 +110,9 @@ export default function ProblemDetail() {
             공유된 풀이 보기
           </ViewCodeButton>
 
-          <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
+          {isLoggedIn && (
+            <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
+          )}
 
           {(userRole === "MANAGER" || userRole === "INSTRUCTOR") &&
             problem.canEdit && (
