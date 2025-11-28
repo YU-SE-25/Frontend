@@ -34,32 +34,46 @@ export interface ResetPasswordResponse {
 export const AuthAPI = {
   // 0. 블랙리스트 체크
   checkBlacklist: (name: string, email: string, phone: string) =>
-    api.post<{ isBlacklisted: boolean }>("/auth/check/blacklist", {
-      name,
+    api.post<{ blacklisted: boolean; message: string }>(
+      "/auth/check/blacklist",
+      { name, email, phone }
+    ),
+
+  // 1. 이메일 중복 확인
+  checkEmail: (email: string) =>
+    api.post<{ available: boolean; message: string }>("/auth/check/email", {
       email,
+    }),
+
+  // 2. 닉네임 중복 확인
+  checkNickname: (nickname: string) =>
+    api.post<{ available: boolean; message: string }>("/auth/check/nickname", {
+      nickname,
+    }),
+
+  // 3. 전화번호 중복 확인
+  checkPhone: (phone: string) =>
+    api.post<{ available: boolean; message: string }>("/auth/check/phone", {
       phone,
     }),
 
-  // 1. 이메일 중복확인
-  checkEmail: (email: string) => api.post<void>("/auth/check/email", { email }),
-
-  // 2. 닉네임 중복확인
-  checkNickname: (nickname: string) =>
-    api.post<void>("/auth/check/nickname", { nickname }),
-
-  // 3. 전화번호 중복확인
-  checkPhone: (phone: string) => api.post<void>("/auth/check/phone", { phone }),
-
   // 4. 동일 인물 계정 확인
-  checkDuplicateAccount: (name: string, phoneNumber: string) =>
-    api.post<void>("/auth/check/duplicate-account", { name, phoneNumber }),
+  checkDuplicateAccount: (name: string, phone: string) =>
+    api.post<{ duplicate: boolean; message: string }>(
+      "/auth/check/duplicate-account",
+      { name, phoneNumber: phone }
+    ),
 
-  // 5. 회원가입
-  register: (data: RegisterRequest) => api.post<void>("/auth/register", data),
+  // 5. 회원가입 요청
+  register: (data: RegisterRequest) => api.post("/auth/register", data),
 
   // 6. 이메일 인증 링크 발송
   sendEmailVerify: (email: string) =>
-    api.post<void>("/auth/email/send-link", { email }),
+    api.post("/auth/email/send-link", { email }),
+
+  // 7. 환영 이메일 발송
+  sendWelcomeEmail: (email: string) =>
+    api.post("/auth/email/send-welcome", { email }),
 
   // 토큰 재발급 (postRefresh 대체)
   refresh: async (refreshToken: string): Promise<RefreshResponse> => {

@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { api } from "../api/axios";
+import { AuthAPI } from "../api/auth_api";
 
 const SuccessWrapper = styled.div`
   height: 100%;
@@ -52,6 +54,35 @@ const LoginLink = styled(Link)`
 `;
 
 export default function VerifySuccessPage() {
+  useEffect(() => {
+    const email = localStorage.getItem("regEmail");
+    const storedUserId = localStorage.getItem("regUserId"); // 있으면 사용, 없으면 null
+
+    if (!email) return; // email 없으면 실행 X (userId는 없어도 됨)
+
+    const sendWelcomeEmail = async () => {
+      console.log("환영 이메일 요청 데이터:", {
+        userId: storedUserId ? Number(storedUserId) : null,
+        email,
+      });
+
+      try {
+        await api.post("/auth/email/send-welcome", {
+          userId: storedUserId ? Number(storedUserId) : null,
+          email,
+        });
+        console.log("환영 이메일 발송 요청까지는 성공");
+      } catch (err) {
+        console.error("환영 이메일 발송 실패", err);
+      } finally {
+        localStorage.removeItem("regEmail");
+        localStorage.removeItem("regUserId");
+      }
+    };
+
+    sendWelcomeEmail();
+  }, []);
+
   return (
     <SuccessWrapper>
       <SuccessCard>
