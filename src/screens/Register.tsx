@@ -18,12 +18,13 @@ import {
   RoleOption,
 } from "../theme/Register.Style.ts";
 
-// 백엔드 API 연결용 axios 인스턴스
-//import { api } from "../api/axios";
-
 import { TERMS_OF_SERVICE } from "./terms/TermsOfService";
 import { PRIVACY_POLICY } from "./terms/PrivacyPolicy";
 import { AuthAPI } from "../api/auth_api";
+import {
+  uploadPortfolio,
+  type PortfolioUploadResponse,
+} from "../api/uploadPortfolio_api";
 
 //비밀번호
 const validatePassword = (password: string) => {
@@ -118,54 +119,58 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 0. 블랙리스트 체크 (/auth/check/blacklist)
+    // 0. 블랙리스트 체크
     try {
-      console.log("0. 블랙리스트 체크 시작...");
-      // 백엔드 연결용
       const response = await AuthAPI.checkBlacklist(name, email, phoneNumber);
-      if (response.data.isBlacklisted) {
+      if (response.data.blacklisted === true) {
         alert("회원가입이 제한된 사용자입니다.");
         return;
       }
-    } catch (error) {
+    } catch {
       alert("블랙리스트 확인 중 오류가 발생했습니다.");
       return;
     }
 
-    // 1. 이메일 중복 체크 (/auth/check/email)
-    try {
-      console.log("1. 이메일 중복 체크 시작...");
-      await AuthAPI.checkEmail(email);
-    } catch (error) {
+    // 1. 이메일 중복 체크
+    const emailCheck = await AuthAPI.checkEmail(email);
+    if (emailCheck.data.available === false) {
       alert("이미 사용 중인 이메일입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
 
-    // 2. 닉네임 중복 체크 (/auth/check/nickname)
-    try {
-      console.log("2. 닉네임 중복 체크 시작...");
-      await AuthAPI.checkNickname(nickname);
-    } catch (error) {
+    // 2. 닉네임 중복 체크
+    const nickCheck = await AuthAPI.checkNickname(nickname);
+    if (nickCheck.data.available === false) {
       alert("이미 사용 중인 닉네임입니다.");
       return;
     }
 
-    // 3. 전화번호 중복 체크 (/auth/check/phone)
-    try {
-      console.log("3. 전화번호 중복 체크 시작...");
-      await AuthAPI.checkPhone(phoneNumber);
-    } catch (error) {
+    // 3. 전화번호 중복 체크
+    const phoneCheck = await AuthAPI.checkPhone(phoneNumber);
+    if (phoneCheck.data.available === false) {
       alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
 
-    // 4. 동일 인물 계정 확인 (/auth/check/duplicate-account)
-    try {
-      console.log("4. 동일 인물 계정 확인 시작...");
-      await AuthAPI.checkDuplicateAccount(name, phoneNumber);
-    } catch (error) {
+    // 4. 동일 인물 계정 체크
+    const dupCheck = await AuthAPI.checkDuplicateAccount(name, phoneNumber);
+    if (dupCheck.data.duplicate === true) {
       alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
       return;
+    }
+
+    let fileUploadResult: PortfolioUploadResponse | null = null;
+
+    // 강사일 경우 파일 업로드 먼저 수행
+    if (role === "INSTRUCTOR" && portfolioFile) {
+      try {
+        console.log("파일 업로드 수행 시작...");
+        fileUploadResult = await uploadPortfolio(portfolioFile);
+        // fileUploadResult = { fileUrl, originalFileName, fileSize }
+      } catch (err) {
+        alert("포트폴리오 파일 업로드에 실패했습니다.");
+        return;
+      }
     }
 
     const registerData = {
@@ -174,21 +179,34 @@ export default function Register() {
       name,
       nickname,
       phone: phoneNumber,
-      role: "LEARNER" as const,
+      role,
       agreedTerms: ["TERMS_OF_SERVICE", "PRIVACY_POLICY"],
 
-      // 강사일 때만 값 넣기
-      portfolioFileUrl: role === "INSTRUCTOR" ? "temp" : null,
+      // 강사일 때: 파일 업로드 결과 넣기
+      portfolioFileUrl:
+        role === "INSTRUCTOR" ? fileUploadResult?.fileUrl ?? null : null,
       originalFileName:
-        role === "INSTRUCTOR" ? portfolioFile?.name ?? null : null,
-      fileSize: role === "INSTRUCTOR" ? portfolioFile?.size ?? null : null,
+        role === "INSTRUCTOR"
+          ? fileUploadResult?.originalFileName ?? null
+          : null,
+      fileSize:
+        role === "INSTRUCTOR" ? fileUploadResult?.fileSize ?? null : null,
+
+      // URL은 그대로
       portfolioLinks: role === "INSTRUCTOR" ? portfolioLinks : [],
     };
 
     // 5. 최종 회원가입 (/auth/register)
     try {
       console.log("5. 최종 회원가입 요청 전송...");
-      await AuthAPI.register(registerData);
+
+      // register 응답 받기 (userId 꺼내야 함!)
+      const registerRes = (await AuthAPI.register(registerData)) as {
+        data: { userId: number };
+      };
+      // 회원가입 후 userId 저장 (환영 이메일 보낼 때 필요!!)
+      localStorage.setItem("regUserId", registerRes.data.userId.toString());
+      localStorage.setItem("regEmail", email);
 
       // 6. 이메일 인증 링크 발송 (/auth/email/send-link)
       console.log("6. 이메일 인증 링크 발송 요청...");

@@ -54,5 +54,7 @@ export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
 
 export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
   const response = await api.post<LoginResponse>("auth/login", data);
+  //응답값 확인용
+  console.log("login response:", response);
   return response.data;
 }
