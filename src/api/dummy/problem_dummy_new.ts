@@ -1,5 +1,7 @@
+import type { ProblemListItemDto, ProblemDetailDto } from "../problem_api";
+
 // 문제 목록 더미 데이터
-export const DUMMY_PROBLEM_LIST = [
+export const DUMMY_PROBLEM_LIST: ProblemListItemDto[] = [
   {
     problemId: 1,
     title: "두 수의 합",
@@ -7,8 +9,7 @@ export const DUMMY_PROBLEM_LIST = [
     difficulty: "EASY",
     viewCount: 187,
     createdAt: "2025-07-02T10:00:00",
-
-    // 추가 필드 (프론트 요청)
+    //추후 필요한 내용
     userStatus: "NONE",
     summary: "두 정수를 더하는 가장 기본 문제",
     solvedCount: 77,
@@ -43,8 +44,7 @@ export const DUMMY_PROBLEM_LIST = [
 ];
 
 // 문제 상세 더미 데이터
-
-export const DUMMY_PROBLEM_DETAIL: Record<number, any> = {
+export const DUMMY_PROBLEM_DETAIL: Record<number, ProblemDetailDto> = {
   1: {
     problemId: 1,
     createdByNickname: "알고위자드",
@@ -131,9 +131,8 @@ export const DUMMY_PROBLEM_DETAIL: Record<number, any> = {
   },
 };
 
-//태그
-
-export const ALL_AVAILABLE_TAGS = [
+// 태그 더미
+export const ALL_AVAILABLE_TAGS: string[] = [
   "IMPLEMENTATION",
   "BINARY_SEARCH",
   "STRING",
@@ -143,8 +142,7 @@ export const ALL_AVAILABLE_TAGS = [
   "GRAPH",
 ];
 
-// fallback: 문제 목록 불러오기
-
+// fallback: 문제 목록 조회
 export async function fetchDummyProblems(params: any = {}) {
   const {
     sortType = "latest",
@@ -155,9 +153,8 @@ export async function fetchDummyProblems(params: any = {}) {
     isLoggedIn = false,
   } = params;
 
-  let list = [...DUMMY_PROBLEM_LIST];
+  let list: ProblemListItemDto[] = [...DUMMY_PROBLEM_LIST];
 
-  // 검색
   if (searchTerm.trim().length >= 2) {
     const key = searchTerm.toLowerCase();
     list = list.filter(
@@ -167,14 +164,12 @@ export async function fetchDummyProblems(params: any = {}) {
     );
   }
 
-  // 태그 필터
   if (tags.length > 0) {
     list = list.filter((item) =>
       tags.every((t: string) => item.tags.includes(t))
     );
   }
 
-  // 정렬
   switch (sortType) {
     case "latest":
       list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -201,7 +196,6 @@ export async function fetchDummyProblems(params: any = {}) {
       break;
   }
 
-  // 로그인 안 했으면 userStatus 항상 NONE
   if (!isLoggedIn) {
     list = list.map((p) => ({ ...p, userStatus: "NONE" }));
   }
@@ -209,14 +203,12 @@ export async function fetchDummyProblems(params: any = {}) {
   return list.slice((page - 1) * size, page * size);
 }
 
-//fallback: 상세 불러오기
-
+// fallback: 문제 상세 조회
 export async function fetchDummyProblemDetail(problemId: number) {
   return DUMMY_PROBLEM_DETAIL[problemId];
 }
 
-// 최소 문제 목록 (문제 번호 + 제목만 있는 리스트)
-
+// 최소 문제 목록
 export const PROBLEM_LIST = DUMMY_PROBLEM_LIST.map((p) => ({
   problemId: p.problemId,
   title: p.title,

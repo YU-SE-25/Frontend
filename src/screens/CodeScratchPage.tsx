@@ -5,6 +5,8 @@ import CodeEditorView from "../screens/problem/CodeEditorView";
 // dummy 문제 가져오는 함수
 import { getDummyProblemDetail } from "../api/dummy/problem_dummy";
 
+import { IDEAPI } from "../api/ide_api";
+
 import {
   ProblemTitle,
   ProblemDetailText,
@@ -159,71 +161,49 @@ export default function CodeScratchPage() {
     }
   };
 
-  // ⭐ 코드 저장
-  const saveCode = () => {
+  // 코드 저장
+  const saveCode = async () => {
     if (!problem) return alert("먼저 문제를 선택하세요!");
-    localStorage.setItem(codeKey, code);
-    alert("저장됨!");
+
+    await IDEAPI.saveDraft({
+      problemId: Number(problem.problemId),
+      code,
+      language,
+    });
+
+    alert("임시 저장 완료!");
   };
 
   // 코드 불러오기
-  const loadSaved = () => {
+  const loadSaved = async () => {
     if (!problem) return alert("먼저 문제를 선택하세요!");
-    const saved = localStorage.getItem(codeKey);
-    if (!saved) return alert("저장된 코드 없음!");
-    setCode(saved);
+
+    const saved = await IDEAPI.loadDraft(Number(problem.problemId));
+
+    setCode(saved.code);
+    setLanguage(saved.language);
+
+    alert("불러오기 완료!");
   };
 
-  // 실행기능 (추후 실제 API로 연결), 일단 더미
+  // 실행기능
   const executeCode = async () => {
-    // 실행 시간 / 메모리 더미값 생성 (진짜처럼 랜덤)
-    const execTime = Math.floor(Math.random() * 50) + 5; // 5~55ms
-    const memory = Math.floor(Math.random() * 4000) + 2000; // 2000~6000 KB
+    const result = await IDEAPI.run({
+      code,
+      language,
+      input: "",
+    });
 
-    // 가짜 stdout
-    const fakeStdout = "Hello World\n테스트 출력입니다.";
-
-    // 가짜 stderr (10% 확률로 생성)
-    const fakeStderr =
-      Math.random() < 0.1 ? "RuntimeWarning: Something went wrong" : "(없음)";
-
-    // 컴파일 로그 (언어에 따라 다르게)
-    const compileLog =
-      language === "C++"
-        ? "g++ 컴파일 성공 (warning 0개)"
-        : language === "Java"
-        ? "javac 컴파일 성공"
-        : language === "Python"
-        ? "파이썬은 컴파일 과정이 필요하지 않습니다."
-        : "컴파일 로그 없음";
-
-    // 무한루프 더미 체크
-    const infiniteLoopWarning =
-      code.includes("while(true)") || code.includes("for(;;)")
-        ? "\n⚠ 무한루프 감지 → 실행 중단됨"
-        : "";
-
-    // 최종 출력 문자열 정리
     return `
-[ 컴파일 로그 ]
-${compileLog}
+[ 표준 출력(stdout) ]
+${result.output}
 
-[ 실행 로그 ]
-프로그램이 정상적으로 실행되었습니다.${infiniteLoopWarning}
+[ 표준 에러(stderr) ]
+${result.compileError ?? "(없음)"}
 
-[ 표준 출력 (stdout) ]
-${fakeStdout}
-
-[ 표준 에러 (stderr) ]
-${fakeStderr}
-
-[ 자원 사용량 ]
-실행 시간: ${execTime} ms
-사용 메모리: ${memory} KB
-
-------------------------------------
-Docker sandbox simulation complete.
-`;
+[ 실행 시간 ]
+${result.compileTimeMs} ms
+`.trim();
   };
 
   return (

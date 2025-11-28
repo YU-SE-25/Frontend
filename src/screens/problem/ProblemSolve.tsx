@@ -4,12 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { IProblem } from "../../api/problem_api";
 import { fetchDummyProblemDetail as getProblemDetail } from "../../api/dummy/problem_dummy_new";
 
-import {
-  runCode,
-  saveDraft,
-  loadDraft,
-  submitCode,
-} from "../../api/codeeditor_api";
+import { IDEAPI } from "../../api/ide_api";
 
 import CodeEditorView from "./CodeEditorView";
 
@@ -23,14 +18,6 @@ import {
   ExampleBox,
 } from "../../theme/ProblemSolve.Style";
 
-/* 실행/제출 결과 타입 */
-interface ExecutionResult {
-  status: string;
-  time: string;
-  memory: string;
-  testCasesPassed: string;
-}
-
 export default function ProblemSolvePage() {
   const { problemId } = useParams<{ problemId: string }>();
   const navigate = useNavigate();
@@ -38,17 +25,17 @@ export default function ProblemSolvePage() {
   const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /* 언어 선택 */
   const [language, setLanguage] = useState("Python");
-
-  /* 코드 */
   const [code, setCode] = useState("");
 
-  /* 실행,제출 결과 */
-  const [executionResult, setExecutionResult] =
-    useState<ExecutionResult | null>(null);
+  const token = localStorage.getItem("accessToken");
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  useEffect(() => {
+    if (!token) {
+      alert("로그인 후 이용해주세요!");
+      navigate("/login");
+    }
+  }, [token, navigate]);
 
   /* 문제 로딩 */
   useEffect(() => {
@@ -57,19 +44,15 @@ export default function ProblemSolvePage() {
     const load = async () => {
       setLoading(true);
       try {
-        if (!problemId) return;
         const data = await getProblemDetail(Number(problemId));
         setProblemData(data);
 
-        if (data.allowedLanguages && data.allowedLanguages.length > 0) {
-          const preferred = ["Python", "C++", "Java"]; // 우선순위
-          const picked =
-            preferred.find((lang) => data.allowedLanguages.includes(lang)) ??
-            data.allowedLanguages[0];
-
-          setLanguage(picked);
-        } else {
-          setLanguage("Python");
+        if (data.allowedLanguages?.length) {
+          const preferred = ["Python", "C++", "Java"];
+          setLanguage(
+            preferred.find((l) => data.allowedLanguages.includes(l)) ||
+              data.allowedLanguages[0]
+          );
         }
       } catch (e) {
         console.error("문제 정보 로드 실패:", e);
@@ -81,38 +64,34 @@ export default function ProblemSolvePage() {
     load();
   }, [problemId]);
 
-  /* 코드 실행 */
+  /* 실행하기 */
   const handleRun = useCallback(async () => {
     if (!problemId) return "문제 ID 없음";
 
-    const runResult = await runCode(code, language);
+    const result = await IDEAPI.run({
+      code,
+      language,
+      input: "",
+    });
 
-    const result: ExecutionResult = {
-      status: runResult.compileError ? "RE" : "WA",
-      time: `${runResult.compileTimeMs}ms`,
-      memory: "64MB",
-      testCasesPassed: "0/0",
-    };
+    // result가 실 API거나 더미거나 둘 다 같은 형식
+    return `
+[ 표준 출력(stdout) ]
+${result.output}
 
-    setExecutionResult(result);
-    setIsModalOpen(true);
+[ 표준 에러(stderr) ]
+${result.compileError ?? "(없음)"}
 
-    const statusText = runResult.compileError ? "컴파일 에러(RE)" : "정상 실행";
-
-    return [
-      ">>> 실행 결과",
-      `상태: ${statusText}`,
-      `컴파일 시간: ${runResult.compileTimeMs}ms`,
-      `사용 메모리: 64MB`,
-      `통과 테스트: 0/0`,
-    ].join("\n");
+[ 실행 시간 ]
+${result.compileTimeMs} ms
+`.trim();
   }, [code, language, problemId]);
 
   /* 임시 저장 */
   const handleSaveDraft = useCallback(async () => {
     if (!problemId) return;
 
-    await saveDraft({
+    await IDEAPI.saveDraft({
       problemId: Number(problemId),
       code,
       language,
@@ -121,35 +100,30 @@ export default function ProblemSolvePage() {
     alert("임시 저장 완료!");
   }, [code, language, problemId]);
 
-  /* 임시 저장된 코드 불러오기 */
+  /* 임시 저장 불러오기 */
   const handleLoadDraft = useCallback(async () => {
     if (!problemId) return;
 
-    const saved = await loadDraft(Number(problemId));
-
-    if (!saved) {
-      alert("임시 저장 없음");
-      return;
-    }
+    const saved = await IDEAPI.loadDraft(Number(problemId));
 
     setCode(saved.code);
     setLanguage(saved.language);
+
     alert("불러오기 완료!");
   }, [problemId]);
 
-  /* 제출 */
-  const nav = useNavigate();
+  /* 제출하기 */
   const handleSubmit = useCallback(async () => {
     if (!problemId) return;
 
-    await submitCode({
+    await IDEAPI.submit({
       problemId: Number(problemId),
       code,
       language,
     });
 
-    nav("/problems/:username/submitted?id=" + problemId + "&showResult=true");
-  }, [code, language, problemId, nav]);
+    navigate("/problems/:username/submitted?id=" + problemId);
+  }, [code, language, problemId, navigate]);
 
   if (loading) return <ProblemSolveWrapper>로딩 중...</ProblemSolveWrapper>;
   if (!problemData)
