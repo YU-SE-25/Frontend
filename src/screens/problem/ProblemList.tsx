@@ -80,7 +80,7 @@ export default function ProblemList() {
     const loadAvailableTags = async () => {
       try {
         const tags = await fetchAvailableTags(); // 백엔드
-        setAvailableTags(tags);
+        setAvailableTags(Array.isArray(tags) ? tags : []);
       } catch {
         console.warn("태그 API 실패 → 더미 태그 사용");
         setAvailableTags(ALL_AVAILABLE_TAGS);
