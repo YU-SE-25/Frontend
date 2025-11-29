@@ -4,6 +4,8 @@ import styled from "styled-components";
 import ReportButton from "../../components/ReportButton";
 import { useNavigate } from "react-router-dom";
 import type { QnaComment, QnaContent } from "./QnaList";
+import EditButton from "../../components/EditButton";
+import { isOwner } from "../../utils/isOwner";
 
 interface QnaDetailProps {
   post: QnaContent;
@@ -39,12 +41,12 @@ const TitleBlock = styled.div`
   gap: 6px;
 `;
 
-const DetailTitle = styled.h2`
+const DetailTitle = styled.span`
   margin: 0;
   font-size: 20px;
   color: ${({ theme }) => theme.textColor};
 `;
-const ProblemTitle = styled.h2`
+const ProblemTitle = styled.span`
   margin-right: 8px;
   font-size: 24px;
   font-weight: 800;
@@ -400,6 +402,22 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
         </TitleBlock>
 
         <HeaderActions>
+          {isOwner({ author: post.author, anonymity: post.anonymity }) && (
+            <EditButton
+              to={`/qna/write`}
+              state={{
+                post: {
+                  state: "edit",
+                  id: post.post_id,
+                  title: post.post_title,
+                  content: post.contents,
+                  isAnonymous: post.anonymity,
+                  isPrivate: post.is_private,
+                  problemId: post.problem_id,
+                },
+              }}
+            />
+          )}
           <ReportButton
             targetContentId={post.post_id}
             targetContentType="post"

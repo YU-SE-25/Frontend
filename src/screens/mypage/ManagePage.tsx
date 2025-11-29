@@ -7,6 +7,8 @@ import { getUserProfile } from "../../api/mypage_api";
 import UserManagementScreen from "./Manage/User";
 import ReportManageScreen from "./Manage/Report";
 import ProblemManagementScreen from "./Manage/Problem";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "../../atoms";
 
 const USE_DUMMY = true;
 
@@ -76,18 +78,18 @@ const DebugDiv = styled.div`
   height: 100vh;
 `;
 
-function ManageScreen({ index }: { index: number }) {
+function ManageScreen({ index, role }: { index: number; role: string }) {
+  if (role === "INSTRUCTOR") {
+    return <ProblemManagementScreen />;
+  }
+
   switch (index) {
     case 0:
       return <UserManagementScreen />;
     case 1:
       return <ReportManageScreen />;
     case 2:
-      return (
-        <div>
-          <ProblemManagementScreen />;
-        </div>
-      );
+      return <ProblemManagementScreen />;
     default:
       return (
         <div>
@@ -99,6 +101,11 @@ function ManageScreen({ index }: { index: number }) {
 
 export default function ManagePage() {
   const { username } = useParams<{ username: string }>();
+
+  // ✅ 현재 로그인한 유저 정보 (권한 체크용)
+  const loginUser = useAtomValue(userProfileAtom);
+
+  // ✅ 프로필 데이터는 그대로 필요하면 유지 (예: 상단에 관리자 정보 보여줄 용도)
   const {
     data: user,
     isLoading,
@@ -108,25 +115,42 @@ export default function ManagePage() {
     queryFn: async () =>
       USE_DUMMY ? getDummyUserProfile() : await getUserProfile(username ?? ""),
     staleTime: 5 * 60 * 1000,
+    enabled: !!username || USE_DUMMY,
   });
 
   const [navigateState, setNavigateState] = useState<number>(0);
-  const handleNavigateClick = (index: number) => {
-    setNavigateState(index);
-  };
 
   if (isLoading)
     return <LoadingText>프로필 정보를 불러오는 중입니다…</LoadingText>;
   if (isError || !user)
     return <ErrorText>프로필 정보를 불러오는 데 실패했어요.</ErrorText>;
 
+  // ✅ 권한은 로그인 유저 기준으로 판단
+  const role = loginUser?.role ?? "USER";
+  const isManager = role === "MANAGER";
+  const isInstructor = role === "INSTRUCTOR";
+
+  if (!isManager && !isInstructor) {
+    return (
+      <ErrorText>관리자 또는 강사만 접근할 수 있는 페이지입니다.</ErrorText>
+    );
+  }
+
+  const menuItems = isManager
+    ? ["유저 관리", "신고 관리", "문제 관리"]
+    : ["문제 관리"];
+
+  const handleNavigateClick = (index: number) => {
+    setNavigateState(index);
+  };
+
   return (
     <Wrapper>
       <Title>관리자 페이지</Title>
       <NavigateBar>
-        {["유저 관리", "신고 관리", "문제 관리"].map((label, index) => (
+        {menuItems.map((label, index) => (
           <NavigateItem
-            key={index}
+            key={label}
             onClick={() => handleNavigateClick(index)}
             $active={navigateState === index}
           >
@@ -135,8 +159,8 @@ export default function ManagePage() {
         ))}
       </NavigateBar>
 
-      <ManageScreen index={navigateState} />
-      <DebugDiv></DebugDiv>
+      <ManageScreen index={navigateState} role={role} />
+      <DebugDiv />
     </Wrapper>
   );
 }

@@ -50,6 +50,7 @@ const PlusButton = styled.button<{ $visible: boolean }>`
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  user-select: none;
   padding: 0 4px;
   color: ${({ theme }) => theme.textColor};
   transition: opacity 0.15s ease;

@@ -1,5 +1,5 @@
-import axios from "axios";
-
+import { api } from "./axios";
+import { getDummyUserProfile } from "./dummy/mypage_dummy";
 export type Submission = {
   id: number;
   submissionId: number;
@@ -54,12 +54,18 @@ export type UserProfile = {
   achievements?: Achievement[];
 };
 
-const USERS_API_BASE = "/api/users";
-
-export async function getUserProfile(userId: string): Promise<UserProfile> {
-  const { data } = await axios.get<UserProfile>(`${USERS_API_BASE}/${userId}`);
-  return data;
+export async function getUserProfile(nickname: string): Promise<UserProfile> {
+  try {
+    const res = await api.get<UserProfile>(`/mypage/${nickname}`);
+    console.log("user profile fetched:", res.data);
+    return res.data;
+  } catch (err) {
+    console.log("❌ getUserProfile 에러 발생, 더미 프로필로 대체:", err);
+    // 여기서 원하는 역할로 더미 돌려주면 됨
+    return getDummyUserProfile("LEARNER");
+  }
 }
+
 /* deprecated 
 @)))))))))))))))))))))))))))))))김밥 머거
 
