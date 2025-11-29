@@ -66,6 +66,21 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
   }
 }
 
+// 내 프로필 업데이트 (PATCH /api/mypage/me)
+export async function updateMyProfile(updateData: {
+  nickname?: string;
+  preferred_language?: string;
+}) {
+  try {
+    const res = await api.patch("/mypage/me", updateData);
+    console.log("마이페이지 수정 성공:", res.data);
+    return res.data;
+  } catch (err) {
+    console.error("마이페이지 수정 중 에러:", err);
+    throw err;
+  }
+}
+
 /* deprecated 
 @)))))))))))))))))))))))))))))))김밥 머거
 
