@@ -12,7 +12,7 @@ import {
   type RefreshResponse,
   type UserProfile,
 } from "./atoms";
-import api from "./axiosInstance";
+import { api } from "./api/axios";
 
 const Container = styled.div`
   margin-top: ${TOPBAR_HEIGHT}px;
@@ -58,8 +58,8 @@ export default function App() {
         runRefreshAction(refreshRes.data);
 
         //userProfile 재조회
-        const meRes = await api.get<UserProfile>("/api/mypage");
-        setUserProfile(meRes.data);
+        //const meRes = await api.get<UserProfile>("/api/mypage");
+        //setUserProfile(meRes.data);
       } catch (err) {
         console.error("세션 복구 실패:", err);
       }
