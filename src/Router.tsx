@@ -14,7 +14,6 @@ import ResetPassword from "./screens/ResetPassword";
 import Register from "./screens/Register";
 import RegisterSuccess from "./screens/RegisterSuccess";
 import VerifySuccess from "./screens/VerifySuccess";
-import NicknameSetup from "./screens/NicknameSetup";
 
 // 마이페이지
 import MypageLayout from "./screens/mypage/MypageLayout";
@@ -107,7 +106,6 @@ const router = createBrowserRouter([
       { path: "reset-password", element: <ResetPassword /> },
       { path: "register", element: <Register /> },
       { path: "register-success", element: <RegisterSuccess /> },
-      { path: "/nickname-setup", element: <NicknameSetup /> },
 
       {
         path: "auth/verify-success",

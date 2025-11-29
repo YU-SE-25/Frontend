@@ -24,12 +24,23 @@ api.interceptors.request.use(
 );
 
 //응답 인터셉터 (AccessToken 만료 → 자동 재발급)
+//응답 인터셉터 (AccessToken 만료 → 자동 재발급)
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
 
-    // Access Token 만료
+    // 1) 로그인 요청에서 발생한 401 → 토큰 재발급 금지!
+    if (original?.url === "/auth/login") {
+      return Promise.reject(error);
+    }
+
+    // 2) 리프레시 자체가 401 → 더 반복하면 무한루프라 금지
+    if (original?.url === "/auth/refresh") {
+      return Promise.reject(error);
+    }
+
+    // 3) Access Token 만료
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
@@ -51,7 +62,7 @@ api.interceptors.response.use(
       return api(original);
     }
 
-    // 다른 에러면 그대로 던짐
+    // 4) 다른 에러면 그대로 던짐
     throw error;
   }
 );
