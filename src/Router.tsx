@@ -107,7 +107,6 @@ const router = createBrowserRouter([
       { path: "reset-password", element: <ResetPassword /> },
       { path: "register", element: <Register /> },
       { path: "register-success", element: <RegisterSuccess /> },
-      { path: "/nickname-setup", element: <NicknameSetup /> },
 
       {
         path: "auth/verify-success",

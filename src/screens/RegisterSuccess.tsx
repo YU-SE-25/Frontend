@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { AuthAPI } from "../api/auth_api";
 
 const CheckWrapper = styled.div`
   height: 100vh;
@@ -40,7 +41,18 @@ const MainLink = styled(Link)`
   text-decoration: none;
   border-radius: 5px;
   font-size: 18px;
-  font-weight: bold;
+  color: ${(props) => props.theme.textColor};
+`;
+
+const ResendButton = styled.button`
+  padding: 10px 30px;
+  margin-top: 15px;
+  background-color: ${(props) => props.theme.logoColor};
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 18px;
+  cursor: pointer;
   color: ${(props) => props.theme.textColor};
 `;
 
@@ -55,6 +67,26 @@ export default function RegisterSuccess() {
           이메일이 안보이시나요? 스팸함을 확인해 보시거나, 10분 뒤에 다시
           회원가입을 시도해 주세요.
         </p>
+        <ResendButton
+          onClick={async () => {
+            const email = localStorage.getItem("regEmail");
+
+            if (!email) {
+              alert("이메일 정보를 찾을 수 없습니다. 다시 회원가입해주세요.");
+              return;
+            }
+
+            try {
+              await AuthAPI.sendEmailVerify(email);
+              alert("인증 이메일을 재발송했습니다!");
+            } catch {
+              alert("재발송 중 오류가 발생했습니다.");
+            }
+          }}
+        >
+          인증 이메일 다시 받기
+        </ResendButton>
+
         <MainLink to="/login">로그인 하러가기</MainLink>
       </CheckCard>
     </CheckWrapper>
