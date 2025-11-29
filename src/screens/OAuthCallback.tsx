@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import { loginActionAtom } from "../atoms";
 import type { LoginResponse } from "../atoms";
+import { AuthAPI } from "../api/auth_api";
 
 export default function OAuthCallback() {
   const nav = useNavigate();
@@ -35,7 +36,10 @@ export default function OAuthCallback() {
       user: { userId, nickname, role },
     };
 
-    runLoginAction(loginData);
+          runLoginAction(loginData);
+          nav("/", { replace: true });
+          return;
+        }
 
     localStorage.setItem("lastUserId", String(userId));
 
