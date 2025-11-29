@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import styled from "styled-components";
+import { userProfileAtom } from "../../../atoms";
+import { useAtomValue } from "jotai";
 
 /* -----------------------------------------------------
    타입 & 더미 데이터
@@ -46,7 +48,7 @@ const DUMMY_PROBLEMS: ProblemItem[] = [
 ];
 
 /* -----------------------------------------------------
-   styled-components (유저 관리랑 톤 맞춤)
+   styled-components
 ----------------------------------------------------- */
 
 const Wrap = styled.div`
@@ -98,6 +100,13 @@ const ActionButton = styled.button<{ disabled?: boolean }>`
   }
 `;
 
+const SectionTitle = styled.h3`
+  margin: 10px 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.textColor};
+`;
+
 const TableWrap = styled.div`
   border: 1px solid ${({ theme }) => theme.bgCardColor};
   border-radius: 12px;
@@ -146,12 +155,16 @@ const Td = styled.td`
 export default function ProblemManagementScreen() {
   const [problems, setProblems] = useState<ProblemItem[]>(DUMMY_PROBLEMS);
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  const selectedProblem = useMemo(
-    () => problems.find((p) => p.id === selectedId) ?? null,
-    [problems, selectedId]
+  const [selectedPendingId, setSelectedPendingId] = useState<number | null>(
+    null
   );
+  const [selectedMyId, setSelectedMyId] = useState<number | null>(null);
+
+  const userProfile = useAtomValue(userProfileAtom) ?? {
+    nickname: "guest",
+    role: "GUEST",
+    userId: "0",
+  };
 
   const filtered = useMemo(() => {
     if (!search.trim()) return problems;
@@ -164,15 +177,39 @@ export default function ProblemManagementScreen() {
     );
   }, [problems, search]);
 
-  const isDisabled = !selectedProblem;
+  const filteredMine = useMemo(
+    () => filtered.filter((p) => p.author === userProfile.nickname),
+    [filtered, userProfile.nickname]
+  );
+
+  const selectedPending = useMemo(
+    () => problems.find((p) => p.id === selectedPendingId) ?? null,
+    [problems, selectedPendingId]
+  );
+
+  const selectedMine = useMemo(
+    () => problems.find((p) => p.id === selectedMyId) ?? null,
+    [problems, selectedMyId]
+  );
+
+  const selectedProblem = selectedPending ?? selectedMine;
+  const hasSelection = !!selectedProblem;
+  const canManageSelected = !!selectedPending && userProfile.role === "MANAGER";
 
   const handleChange = (value: string) => {
     setSearch(value);
-    setSelectedId(null);
+    setSelectedPendingId(null);
+    setSelectedMyId(null);
   };
 
-  const handleSelect = (id: number) => {
-    setSelectedId((prev) => (prev === id ? null : id));
+  const handleSelectPending = (id: number) => {
+    setSelectedPendingId((prev) => (prev === id ? null : id));
+    setSelectedMyId(null);
+  };
+
+  const handleSelectMine = (id: number) => {
+    setSelectedMyId((prev) => (prev === id ? null : id));
+    setSelectedPendingId(null);
   };
 
   const handleViewDetail = async () => {
@@ -191,105 +228,164 @@ export default function ProblemManagementScreen() {
 
   const handleDownloadTestcase = () => {
     if (!selectedProblem) return;
-    // TODO: 실제 다운로드 API 연동 예정
     alert(
       `테스트 케이스 다운로드(추후 구현 예정)\n문제: ${selectedProblem.title}`
     );
   };
 
   const handleRegisterProblem = () => {
-    if (!selectedProblem) return;
+    if (!selectedPending || userProfile.role !== "MANAGER") return;
     if (
       !window.confirm(
-        `"${selectedProblem.title}" 문제를 등록(승인)하고 목록에서 제거할까요?`
+        `"${selectedPending.title}" 문제를 등록(승인)하고 목록에서 제거할까요?`
       )
     )
       return;
 
-    setProblems((prev) => prev.filter((p) => p.id !== selectedProblem.id));
-    setSelectedId(null);
+    setProblems((prev) => prev.filter((p) => p.id !== selectedPending.id));
+    setSelectedPendingId(null);
   };
 
   const handleDeleteProblem = () => {
-    if (!selectedProblem) return;
+    if (!selectedPending || userProfile.role !== "MANAGER") return;
     if (
       !window.confirm(
-        `"${selectedProblem.title}" 문제를 정말 삭제하시겠습니까?`
+        `"${selectedPending.title}" 문제를 정말 삭제하시겠습니까?`
       )
     )
       return;
 
-    setProblems((prev) => prev.filter((p) => p.id !== selectedProblem.id));
-    setSelectedId(null);
+    setProblems((prev) => prev.filter((p) => p.id !== selectedPending.id));
+    setSelectedPendingId(null);
   };
 
   return (
     <Wrap>
-      {}
-      <>
-        <TopBar>
-          <SearchInput
-            value={search}
-            onChange={(e) => handleChange(e.target.value)}
-            placeholder="문제 제목 / 난이도 / 작성자 검색"
-          />
+      {/* 검색 + 버튼: 모든 유저 공용 */}
+      <TopBar>
+        <SearchInput
+          value={search}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="문제 제목 / 난이도 / 작성자 검색"
+        />
 
-          <ButtonGroup>
-            <ActionButton onClick={handleViewDetail} disabled={isDisabled}>
-              문제 상세 보기
-            </ActionButton>
-            <ActionButton
-              onClick={handleDownloadTestcase}
-              disabled={isDisabled}
-            >
-              테스트 케이스 다운로드
-            </ActionButton>
-            <ActionButton onClick={handleRegisterProblem} disabled={isDisabled}>
-              문제 등록
-            </ActionButton>
-            <ActionButton onClick={handleDeleteProblem} disabled={isDisabled}>
-              문제 삭제
-            </ActionButton>
-          </ButtonGroup>
-        </TopBar>
+        <ButtonGroup>
+          <ActionButton onClick={handleViewDetail} disabled={!hasSelection}>
+            문제 상세 보기
+          </ActionButton>
+          <ActionButton
+            onClick={handleDownloadTestcase}
+            disabled={!hasSelection}
+          >
+            테스트 케이스 다운로드
+          </ActionButton>
+          <ActionButton
+            onClick={handleRegisterProblem}
+            disabled={!canManageSelected}
+            title={
+              !canManageSelected
+                ? "문제 등록은 관리자 권한이 필요합니다."
+                : undefined
+            }
+          >
+            문제 등록
+          </ActionButton>
+          <ActionButton
+            onClick={handleDeleteProblem}
+            disabled={!canManageSelected}
+            title={
+              !canManageSelected
+                ? "문제 삭제는 관리자 권한이 필요합니다."
+                : undefined
+            }
+          >
+            문제 삭제
+          </ActionButton>
+        </ButtonGroup>
+      </TopBar>
 
-        <TableWrap>
-          <Table>
-            <Thead>
-              <tr>
-                <Th>문제 제목</Th>
-                <Th>난이도</Th>
-                <Th>작성자</Th>
-                <Th>작성일</Th>
-              </tr>
-            </Thead>
-
-            <tbody>
-              {filtered.length === 0 && (
+      {/* 위: 관리자 전용 - 제출된 문제 관리 테이블 */}
+      {userProfile.role === "MANAGER" && (
+        <>
+          <SectionTitle>제출된 문제 관리</SectionTitle>
+          <TableWrap>
+            <Table>
+              <Thead>
                 <tr>
-                  <Td colSpan={4} style={{ textAlign: "center", opacity: 0.5 }}>
-                    문제 목록이 없습니다.
-                  </Td>
+                  <Th>문제 제목</Th>
+                  <Th>난이도</Th>
+                  <Th>작성자</Th>
+                  <Th>작성일</Th>
                 </tr>
-              )}
+              </Thead>
 
-              {filtered.map((p) => (
-                <Tr
-                  key={p.id}
-                  selected={selectedId === p.id}
-                  onClick={() => handleSelect(p.id)}
-                >
-                  <Td>{p.title}</Td>
-                  <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
-                  <Td>{p.author}</Td>
-                  <Td>{p.createdAt}</Td>
-                </Tr>
-              ))}
-            </tbody>
-          </Table>
-        </TableWrap>
-      </>
-      <></>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <Td
+                      colSpan={4}
+                      style={{ textAlign: "center", opacity: 0.5 }}
+                    >
+                      문제 목록이 없습니다.
+                    </Td>
+                  </tr>
+                )}
+
+                {filtered.map((p) => (
+                  <Tr
+                    key={p.id}
+                    selected={selectedPendingId === p.id}
+                    onClick={() => handleSelectPending(p.id)}
+                  >
+                    <Td>{p.title}</Td>
+                    <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
+                    <Td>{p.author}</Td>
+                    <Td>{p.createdAt}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          </TableWrap>
+        </>
+      )}
+
+      {/* 아래: 내 제출 문제 목록 (모든 유저) */}
+      <SectionTitle>내가 제출한 문제</SectionTitle>
+      <TableWrap>
+        <Table>
+          <Thead>
+            <tr>
+              <Th>문제 제목</Th>
+              <Th>난이도</Th>
+              <Th>작성자</Th>
+              <Th>작성일</Th>
+            </tr>
+          </Thead>
+
+          <tbody>
+            {filteredMine.length === 0 && (
+              <tr>
+                <Td colSpan={4} style={{ textAlign: "center", opacity: 0.5 }}>
+                  내가 제출한 문제가 없습니다.
+                </Td>
+              </tr>
+            )}
+
+            {filteredMine.map((p) => (
+              <Tr
+                key={p.id}
+                selected={selectedMyId === p.id}
+                onClick={() => handleSelectMine(p.id)}
+              >
+                <Td>{p.title}</Td>
+                <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
+                <Td>{p.author}</Td>
+                <Td>{p.createdAt}</Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableWrap>
     </Wrap>
   );
 }

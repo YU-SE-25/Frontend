@@ -30,6 +30,7 @@ import {
   type Submission,
   type SubmissionStatus,
 } from "../../api/mySubmissions_api";
+import { timeConverter } from "../../utils/timeConverter";
 
 const STATUS_LABEL: Record<SubmissionStatus, string> = {
   PENDING: "채점 대기",
@@ -443,7 +444,7 @@ export default function MySubmissionsList() {
                   <TableCell>{submission.language}</TableCell>
                   <TableCell>{submission.memory} KB</TableCell>
                   <TableCell>{submission.runtime} ms</TableCell>
-                  <TableCell>{submission.submittedAt}</TableCell>
+                  <TableCell>{timeConverter(submission.submittedAt)}</TableCell>
 
                   <TableCell style={{ textAlign: "right" }}>
                     <ResultCellInner>
