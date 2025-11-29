@@ -66,27 +66,17 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
   }
 }
 
-/* deprecated 
-@)))))))))))))))))))))))))))))))김밥 머거
-
-export async function getSolvedIds(userId: string): Promise<number[]> {
-  const { data } = await axios.get<{ ids: number[] }>(
-    `${USERS_API_BASE}/${userId}/solved`
-  );
-  return data?.ids ?? [];
+// 내 프로필 업데이트 (PATCH /api/mypage/me)
+export async function updateMyProfile(updateData: {
+  nickname?: string;
+  preferred_language?: string;
+}) {
+  try {
+    const res = await api.patch("/mypage/me", updateData);
+    console.log("마이페이지 수정 성공:", res.data);
+    return res.data;
+  } catch (err) {
+    console.error("마이페이지 수정 중 에러:", err);
+    throw err;
+  }
 }
-
-export async function getBookmarkedIds(userId: string): Promise<number[]> {
-  const { data } = await axios.get<{ ids: number[] }>(
-    `${USERS_API_BASE}/${userId}/bookmarks`
-  );
-  return data?.ids ?? [];
-}
-
-export async function getRecentSubmissions(userId: string) {
-  const { data } = await axios.get(`${USERS_API_BASE}/${userId}/submissions`, {
-    params: { limit: 20 },
-  });
-  return Array.isArray(data) ? data : [];
-}
-*/
