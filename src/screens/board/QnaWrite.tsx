@@ -283,6 +283,7 @@ const ExampleCode = styled.pre`
   overflow-x: auto;
   white-space: pre-wrap;
 `;
+
 const ProblemMeta = styled.div`
   font-size: 12px;
   color: ${({ theme }) => theme.muteColor};
@@ -334,14 +335,32 @@ type SimpleProblem = {
   title: string;
 };
 
+type EditPostState = {
+  state: "edit";
+  id: number;
+  problemId?: number;
+  title: string;
+  content: string;
+  isAnonymous: boolean;
+  isPrivate: boolean;
+};
+
 export default function QnaWrite() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const user = useAtomValue(userProfileAtom);
 
-  // 🔹 ?id=문제번호로 들어온 경우 자동 선택
-  const initialProblemIdParam = searchParams.get("id");
+  const editPost = (location.state as any)?.post as EditPostState | undefined;
+  const isEditMode = editPost?.state === "edit";
+
+  const rawProblemIdFromEdit =
+    isEditMode && editPost?.problemId != null
+      ? String(editPost.problemId)
+      : null;
+  const rawProblemIdFromQuery = searchParams.get("id");
+
+  const initialProblemIdParam = rawProblemIdFromEdit || rawProblemIdFromQuery;
   const initialProblemId = initialProblemIdParam
     ? Number(initialProblemIdParam)
     : undefined;
@@ -358,11 +377,9 @@ export default function QnaWrite() {
     initialProblem ? String(initialProblem.id) : ""
   );
 
-  // 🔹 실제 문제 상세 (설명 + 예시용)
   const [problemDetail, setProblemDetail] = useState<IProblem | null>(null);
   const [problemLoading, setProblemLoading] = useState(false);
 
-  // 선택된 문제가 바뀔 때마다 상세 더미 로드
   useEffect(() => {
     if (!selectedProblem) {
       setProblemDetail(null);
@@ -393,12 +410,18 @@ export default function QnaWrite() {
     };
   }, [selectedProblem]);
 
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [title, setTitle] = useState(isEditMode ? editPost?.title ?? "" : "");
+  const [content, setContent] = useState(
+    isEditMode ? editPost?.content ?? "" : ""
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(
+    isEditMode ? !!editPost?.isAnonymous : false
+  );
+  const [isPrivate, setIsPrivate] = useState(
+    isEditMode ? !!editPost?.isPrivate : false
+  );
 
   const isValid =
     !!selectedProblem && title.trim().length > 0 && content.trim().length > 0;
@@ -413,12 +436,15 @@ export default function QnaWrite() {
   }, [problemKeyword]);
 
   const handleSelectProblem = (p: SimpleProblem) => {
+    if (isEditMode && editPost?.problemId != null) return;
     setSelectedProblem(p);
     setProblemKeyword(String(p.id));
   };
 
   const handleCancel = () => {
-    const ok = window.confirm("작성 중인 내용을 취소할까요?");
+    const ok = window.confirm(
+      isEditMode ? "수정을 취소할까요?" : "작성 중인 내용을 취소할까요?"
+    );
     if (!ok) return;
     navigate(-1);
   };
@@ -447,13 +473,21 @@ export default function QnaWrite() {
         privatePost: isPrivate,
       };
 
-      console.log("QnA 질문 payload", payload);
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      navigate(`/qna?id=${selectedProblem.id}`);
+      if (isEditMode && editPost) {
+        console.log("QnA 수정 payload", { id: editPost.id, ...payload });
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        navigate(-1);
+      } else {
+        console.log("QnA 질문 payload", payload);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        navigate(`/qna?id=${selectedProblem.id}`);
+      }
     } catch (e) {
-      setError("질문 작성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      setError(
+        isEditMode
+          ? "질문 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+          : "질문 작성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -466,10 +500,9 @@ export default function QnaWrite() {
   return (
     <Page>
       <Wrapper as="form" onSubmit={handleSubmit}>
-        <Title>Q&A 질문 작성</Title>
+        <Title>{isEditMode ? "Q&A 질문 수정" : "Q&A 질문 작성"}</Title>
 
         <Layout>
-          {/* 🔹 왼쪽: 문제 선택 + 문제 상세/예시 */}
           <LeftPane>
             <FieldRow>
               <Label>
@@ -479,7 +512,12 @@ export default function QnaWrite() {
               <TextInput
                 value={problemKeyword}
                 onChange={(e) => setProblemKeyword(e.target.value)}
-                placeholder="문제 번호 또는 제목으로 검색"
+                placeholder={
+                  isEditMode && editPost?.problemId != null
+                    ? "문제는 수정할 수 없습니다."
+                    : "문제 번호 또는 제목으로 검색"
+                }
+                disabled={isEditMode && editPost?.problemId != null}
               />
             </FieldRow>
 
@@ -505,35 +543,23 @@ export default function QnaWrite() {
                   </Section>
 
                   <Section>
-                    <ProblemMetaRow>
-                      입력: {problemDetail.inputDescription}
-                    </ProblemMetaRow>
-                    <ProblemMetaRow>
-                      출력: {problemDetail.outputDescription}
-                    </ProblemMetaRow>
+                    <ProblemMetaRow>입력과 출력</ProblemMetaRow>
                   </Section>
 
-                  {problemDetail.examples?.length > 0 && (
+                  {problemDetail.inputOutputExample && (
                     <Section>
                       <SectionTitle>예제 1</SectionTitle>
-
                       <ExampleBlock>
-                        <ExampleLabel>입력</ExampleLabel>
                         <ExampleCode>
-                          {problemDetail.examples[0].input}
-                        </ExampleCode>
-
-                        <ExampleLabel>출력</ExampleLabel>
-                        <ExampleCode>
-                          {problemDetail.examples[0].output}
+                          {problemDetail.inputOutputExample}
                         </ExampleCode>
                       </ExampleBlock>
                     </Section>
                   )}
 
                   <ProblemMetaRow>
-                    제한: {problemDetail.timeLimit} /{" "}
-                    {problemDetail.memoryLimit}
+                    제한: {problemDetail.timeLimit}ms /{" "}
+                    {problemDetail.memoryLimit}KB
                   </ProblemMetaRow>
                 </ProblemInfoBox>
               )}
@@ -559,7 +585,6 @@ export default function QnaWrite() {
             </ResultList>
           </LeftPane>
 
-          {/* 🔹 오른쪽: 질문 작성 폼 */}
           <RightPane>
             <FieldRow>
               <Label>
@@ -625,7 +650,13 @@ export default function QnaWrite() {
                   type="submit"
                   disabled={!isValid || isSubmitting}
                 >
-                  {isSubmitting ? "작성 중..." : "등록"}
+                  {isSubmitting
+                    ? isEditMode
+                      ? "수정 중..."
+                      : "작성 중..."
+                    : isEditMode
+                    ? "수정 완료"
+                    : "등록"}
                 </PrimaryButton>
               </ButtonRow>
             </BottomRow>

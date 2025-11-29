@@ -225,64 +225,71 @@ export default function ProblemManagementScreen() {
 
   return (
     <Wrap>
-      <TopBar>
-        <SearchInput
-          value={search}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder="문제 제목 / 난이도 / 작성자 검색"
-        />
+      {}
+      <>
+        <TopBar>
+          <SearchInput
+            value={search}
+            onChange={(e) => handleChange(e.target.value)}
+            placeholder="문제 제목 / 난이도 / 작성자 검색"
+          />
 
-        <ButtonGroup>
-          <ActionButton onClick={handleViewDetail} disabled={isDisabled}>
-            문제 상세 보기
-          </ActionButton>
-          <ActionButton onClick={handleDownloadTestcase} disabled={isDisabled}>
-            테스트 케이스 다운로드
-          </ActionButton>
-          <ActionButton onClick={handleRegisterProblem} disabled={isDisabled}>
-            문제 등록
-          </ActionButton>
-          <ActionButton onClick={handleDeleteProblem} disabled={isDisabled}>
-            문제 삭제
-          </ActionButton>
-        </ButtonGroup>
-      </TopBar>
+          <ButtonGroup>
+            <ActionButton onClick={handleViewDetail} disabled={isDisabled}>
+              문제 상세 보기
+            </ActionButton>
+            <ActionButton
+              onClick={handleDownloadTestcase}
+              disabled={isDisabled}
+            >
+              테스트 케이스 다운로드
+            </ActionButton>
+            <ActionButton onClick={handleRegisterProblem} disabled={isDisabled}>
+              문제 등록
+            </ActionButton>
+            <ActionButton onClick={handleDeleteProblem} disabled={isDisabled}>
+              문제 삭제
+            </ActionButton>
+          </ButtonGroup>
+        </TopBar>
 
-      <TableWrap>
-        <Table>
-          <Thead>
-            <tr>
-              <Th>문제 제목</Th>
-              <Th>난이도</Th>
-              <Th>작성자</Th>
-              <Th>작성일</Th>
-            </tr>
-          </Thead>
-
-          <tbody>
-            {filtered.length === 0 && (
+        <TableWrap>
+          <Table>
+            <Thead>
               <tr>
-                <Td colSpan={4} style={{ textAlign: "center", opacity: 0.5 }}>
-                  문제 목록이 없습니다.
-                </Td>
+                <Th>문제 제목</Th>
+                <Th>난이도</Th>
+                <Th>작성자</Th>
+                <Th>작성일</Th>
               </tr>
-            )}
+            </Thead>
 
-            {filtered.map((p) => (
-              <Tr
-                key={p.id}
-                selected={selectedId === p.id}
-                onClick={() => handleSelect(p.id)}
-              >
-                <Td>{p.title}</Td>
-                <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
-                <Td>{p.author}</Td>
-                <Td>{p.createdAt}</Td>
-              </Tr>
-            ))}
-          </tbody>
-        </Table>
-      </TableWrap>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <Td colSpan={4} style={{ textAlign: "center", opacity: 0.5 }}>
+                    문제 목록이 없습니다.
+                  </Td>
+                </tr>
+              )}
+
+              {filtered.map((p) => (
+                <Tr
+                  key={p.id}
+                  selected={selectedId === p.id}
+                  onClick={() => handleSelect(p.id)}
+                >
+                  <Td>{p.title}</Td>
+                  <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
+                  <Td>{p.author}</Td>
+                  <Td>{p.createdAt}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
+        </TableWrap>
+      </>
+      <></>
     </Wrap>
   );
 }
