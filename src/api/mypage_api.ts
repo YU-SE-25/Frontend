@@ -61,7 +61,7 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
     return res.data;
   } catch (err) {
     console.log("❌ getUserProfile 에러 발생, 더미 프로필로 대체:", err);
-    // 여기서 원하는 역할로 더미 돌려주면 됨
+
     return getDummyUserProfile("LEARNER");
   }
 }

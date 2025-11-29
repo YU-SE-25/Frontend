@@ -36,10 +36,8 @@ export default function OAuthCallback() {
       user: { userId, nickname, role },
     };
 
-          runLoginAction(loginData);
-          nav("/", { replace: true });
-          return;
-        }
+    runLoginAction(loginData);
+    nav("/", { replace: true });
 
     localStorage.setItem("lastUserId", String(userId));
 
