@@ -137,7 +137,7 @@ const Body = styled.div`
 
 export default function MyPageLayout() {
   const { username } = useParams<{ username: string }>();
-  getUserProfile("gamppe"); //test
+  getUserProfile("김형섭"); //test
   const userProfile = useAtomValue(userProfileAtom) ?? {
     nickname: "guest",
     role: "GUEST",
