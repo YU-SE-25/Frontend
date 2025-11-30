@@ -26,7 +26,7 @@ import {
 import BoardDetail from "./BoardDetail";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
-import { fetchBoardList } from "../../api/board_api";
+import { fetchDiscussList } from "../../api/board_api";
 
 export interface BoardTag {
   id: number; // tag_id
@@ -132,6 +132,15 @@ export default function BoardList({
 
   //기존 posts 제거하고 상태로 관리하도록 변경됨
   const [posts, setPosts] = useState<BoardContent[]>([]);
+
+  const { data: list } = useQuery({
+    queryKey: ["getBoardList", currentPage],
+    queryFn: () => fetchDiscussList(currentPage),
+    enabled: !!currentPage,
+    staleTime: 5 * 60 * 1000,
+  });
+  console.log("list : ", list);
+
   //스터디그룹 api 추가
   React.useEffect(() => {
     if (mode === "study" && groupId) {
