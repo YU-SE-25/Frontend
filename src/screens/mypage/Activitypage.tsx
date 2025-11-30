@@ -1,19 +1,13 @@
-/*******************나중에 할 것*****************
-실제 API로 교체
-
-
-*************************************************/
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
-import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
 import { getUserProfile } from "../../api/mypage_api";
-const USE_DUMMY = true; //더미 데이터 사용 여부!
+
 type Submission = {
   id: number;
   problemId: number;
-  verdict: "AC" | "WA" | "TLE" | "MLE" | "RE"; //정답,오답,시간초과,메모리초과,런타임에러
+  verdict: "AC" | "WA" | "TLE" | "MLE" | "RE";
   runtimeMs?: number;
   lang?: string;
   submittedAt: string;
@@ -36,7 +30,6 @@ const Grid = styled.section`
   }
 `;
 
-// 카드 스타일
 const Card = styled.div`
   border: 1px solid ${({ theme }) => `${theme.textColor}12`};
   border-radius: 16px;
@@ -58,13 +51,13 @@ const CardTitle = styled.h2`
   font-weight: 600;
   color: ${(props) => props.theme.textColor};
 `;
-// 동기화 상태 텍스트 스타일
+
 const Muted = styled.div`
   color: ${(props) => props.theme.textColor};
   font-size: 13px;
   opacity: 0.7;
 `;
-// 버튼과 칩을 감싸는 행 스타일
+
 const Row = styled.div`
   display: flex;
   align-items: center;
@@ -117,6 +110,7 @@ const Button = styled.button<{ variant?: "primary" | "soft" | "ghost" }>`
     background: ${({ theme }) => theme.authActiveBgColor};
   }
 `;
+
 const ReputationWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -147,7 +141,6 @@ const StreakText = styled.div`
   text-align: center;
 `;
 
-// 내가 푼 문제 번호
 const Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -178,7 +171,7 @@ const StatGrid = styled.div`
     grid-template-columns: 1fr;
   }
 `;
-// 각 통계 카드 스타일
+
 const Stat = styled.div`
   border: 1px solid ${(props) => props.theme.textColor}40;
   border-radius: 14px;
@@ -199,11 +192,11 @@ const StatValue = styled.div`
   font-weight: 700;
 `;
 
-// 최근 제출 리스트 스타일
 const List = styled.ul`
   display: grid;
   gap: 8px;
 `;
+
 const Strong = styled.span`
   font-weight: 600;
   color: ${(props) => props.theme.textColor};
@@ -242,9 +235,9 @@ const Pill = styled.span<{ tone?: "ok" | "bad" | "neutral" }>`
       ? `background:#e6fbe6;border-color:#b7e2b7;`
       : tone === "bad"
       ? `background:#ffecec;border-color:#f3b5b5;`
-      : `background:#f3f4f6;`}
+      : `background:#f3f4f6;`};
 `;
-// 학습 목표 스타일
+
 const GoalsLayout = styled.div`
   margin-top: 16px;
   display: grid;
@@ -325,39 +318,44 @@ const MiniGoalValue = styled.div`
   color: ${({ theme }) => theme.textColor};
   line-height: 1.4;
 `;
-
 export default function ActivityPage() {
-  const userId = "123";
+  const { username } = useParams<{ username: string }>();
   const nav = useNavigate();
 
+  // 🔹 1) 훅은 무조건 위에서 다 호출
   const {
     data: user,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["userProfile", userId],
-    queryFn: async () =>
-      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId),
-    staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
+    queryKey: ["userProfileActivity", username],
+    enabled: !!username, // username 없으면 요청만 안 날림 (훅은 그래도 호출됨)
+    queryFn: async () => {
+      if (!username) {
+        throw new Error("username is missing");
+      }
+      return await getUserProfile(username);
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   const solvedIds = user?.solvedProblems ?? [];
-  //const bookmarkedIds = user?.bookmarkedProblems ?? []; //not used
   const submissions: Submission[] = user?.recentSubmissions ?? [];
   const stat = user?.stats;
   const goal = user?.goals;
 
+  // 🔹 2) useMemo도 조건 밖에서 항상 호출
   const solvedPreview = useMemo(() => solvedIds.slice(0, 10), [solvedIds]);
-  // const bookmarkedPreview = useMemo(() => bookmarkedIds.slice(0, 10),[bookmarkedIds]);
 
-  // 내가 푼 문제 페이지로 이동
-  // const goBookmarked = () =>bookmarkedIds.length && nav(`/problem-list?ids=${bookmarkedIds.join(",")}`);
-  const goSolved = () =>
-    solvedIds.length &&
-    nav(`/problems/${user?.username}/submitted?showResult=false`);
-  const goAll = () => nav("/problem-list");
-  const goDetail = (problemId: number) => nav(`/problem-detail/${problemId}`);
+  // 🔹 3) "조건에 따라 다른 JSX를 return"은 훅들 밑에서
+  if (!username) {
+    return (
+      <Page>
+        <Muted>잘못된 접근입니다.</Muted>
+      </Page>
+    );
+  }
 
   if (isError) {
     return (
@@ -373,16 +371,22 @@ export default function ActivityPage() {
       </Page>
     );
   }
-  if (isLoading) {
+
+  if (isLoading || !user) {
     return (
       <Page>
         <Muted>⏳ 데이터를 불러오는 중입니다...</Muted>
       </Page>
     );
   }
+
+  const goSolved = () =>
+    solvedIds.length &&
+    nav(`/problems/${user.username}/submitted?showResult=false`);
+  const goAll = () => nav("/problem-list");
+  const goDetail = (problemId: number) => nav(`/problem-detail/${problemId}`);
   return (
     <Page>
-      {/* 푼문제수, 맞힌 문제 수, 정답률 */}
       <StatGrid>
         <Stat>
           <StatLabel>푼 문제 수</StatLabel>
@@ -398,7 +402,6 @@ export default function ActivityPage() {
         </Stat>
       </StatGrid>
 
-      {/* 내가 푼 문제, 북마크한 문제 */}
       <Grid>
         <Card>
           <CardTitleRow>
@@ -452,7 +455,6 @@ export default function ActivityPage() {
         </Card>
       </Grid>
 
-      {/* 최근 제출 */}
       <Card>
         <CardTitleRow>
           <CardTitle>최근 제출</CardTitle>
@@ -485,7 +487,7 @@ export default function ActivityPage() {
           </List>
         )}
       </Card>
-      {/* 학습 목표 */}
+
       <Card>
         <CardTitleRow>
           <CardTitle>학습 목표</CardTitle>

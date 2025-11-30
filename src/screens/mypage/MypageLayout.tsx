@@ -17,7 +17,8 @@ import {
 import Sidebar from "../../components/mypage_sidebar";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
-const USE_DUMMY = true; //더미 데이터 사용 여부!
+import { useEffect } from "react";
+const USE_DUMMY = false; //더미 데이터 사용 여부!
 
 //css styles
 const Page = styled.div`
@@ -137,30 +138,36 @@ const Body = styled.div`
 
 export default function MyPageLayout() {
   const { username } = useParams<{ username: string }>();
-  getUserProfile("김형섭"); //test
-  const userProfile = useAtomValue(userProfileAtom) ?? {
+
+  if (!username) {
+    return <div>잘못된 접근입니다.</div>;
+  }
+
+  const loginUser = useAtomValue(userProfileAtom) ?? {
     nickname: "guest",
     role: "GUEST",
     userId: "0",
   };
-  //내 페이지인지 판별
-  const isMypage = userProfile.nickname === username ? true : false;
 
-  const userId = "23"; //여기서 뭔가 문제가 있는거 같아요...
-  //fetch user profile data
+  const isMyPage = loginUser.nickname === username;
+
   const {
     data: user,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: USE_DUMMY ? ["dummyUserProfile"] : ["userProfile", userId],
+    queryKey: USE_DUMMY ? ["dummyUserProfile"] : ["userProfile", username],
+    enabled: !!username,
     queryFn: async () =>
-      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(userId!),
-    staleTime: 5 * 60 * 1000, //5분 이내에는 캐시 사용
+      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(username),
+    staleTime: 5 * 60 * 1000,
   });
-  const isPublic = user?.isPublic !== false;
+
   if (isLoading) return <div>불러오는 중…</div>;
   if (isError || !user) return <div>에러가 발생했어요.</div>;
+
+  const isPublic = user.isPublic !== false;
+  console.log("user profile:", user);
 
   return (
     <Page>
@@ -189,7 +196,6 @@ export default function MyPageLayout() {
           ) : (
             <>
               <Bio>이 프로필은 비공개입니다.</Bio>
-              {/* Chips 숨김 */}
             </>
           )}
         </UserInfo>
@@ -198,15 +204,13 @@ export default function MyPageLayout() {
       <Body>
         {isPublic ? (
           <>
-            <Sidebar isMyPage={isMypage} role={userProfile.role} />
+            <Sidebar isMyPage={isMyPage} role={loginUser.role} />
             <Outlet />
           </>
         ) : (
           <div
             style={{ width: "100%", textAlign: "center", padding: "40px 0" }}
-          >
-            {/* 비공개 시 Body는 비어있지만, 너무 텅 비어 보이지 않게 여백 줌 */}
-          </div>
+          />
         )}
       </Body>
     </Page>
