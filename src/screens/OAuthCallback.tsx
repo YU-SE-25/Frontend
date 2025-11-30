@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import { loginActionAtom } from "../atoms";
 import type { LoginResponse } from "../atoms";
-import { AuthAPI } from "../api/auth_api";
 
 export default function OAuthCallback() {
   const nav = useNavigate();
@@ -29,6 +28,7 @@ export default function OAuthCallback() {
       return;
     }
 
+    // 프론트는 받은 정보 그대로 저장만 하면 됨
     const loginData: LoginResponse = {
       accessToken,
       refreshToken,
@@ -36,13 +36,7 @@ export default function OAuthCallback() {
       user: { userId, nickname, role },
     };
 
-          runLoginAction(loginData);
-          nav("/", { replace: true });
-          return;
-        }
-
-    localStorage.setItem("lastUserId", String(userId));
-
+    runLoginAction(loginData);
     nav("/", { replace: true });
   }, [nav, runLoginAction]);
 

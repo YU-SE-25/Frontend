@@ -7,7 +7,6 @@ const store = getDefaultStore();
 
 export const api = axios.create({
   baseURL: "/api",
-  withCredentials: true,
 });
 
 //요청 인터셉터 (AccessToken 붙이기)

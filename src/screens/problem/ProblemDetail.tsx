@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  fetchProblemDetail,
-  mapDetailDtoToProblem,
-} from "../../api/problem_api";
+import { fetchProblemDetail } from "../../api/problem_api";
 import type { IProblem } from "../../api/problem_api";
 import {
   fetchDummyProblemDetail,
@@ -54,7 +51,7 @@ export default function ProblemDetail() {
       } catch {
         try {
           const dummy = await fetchDummyProblemDetail(Number(problemId));
-          if (mounted) setProblem(mapDetailDtoToProblem(dummy));
+          if (mounted) setProblem(dummy);
         } catch {
           if (mounted) setProblem(null);
         }

@@ -1,42 +1,49 @@
-import axios from "axios";
+import { api } from "./axios";
 
-//랭킹 관련 타입 정의
-export interface IProblemRankingItem {
-  rank: number;
-  title: string;
-  view: number;
-  weekly_views: number;
-}
-
+// 1) 평판 랭킹
 export interface IReputationRankingItem {
-  id: number;
-  user_id: string;
+  userId: number;
   rank: number;
   delta: number;
 }
 
+// 2) 문제 조회수 랭킹
+export interface IProblemRankingItem {
+  rank: number;
+  delta: number;
+  problemId: number;
+  title: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  views: number;
+  // rankDate?: string; // 안 쓸 거라 주석 처리
+}
+
+// 3) 코드 리뷰 랭킹
 export interface IReviewRankingItem {
   id: number;
-  user_id: string;
+  authorId: number;
   rank: number;
   delta: number;
   vote: number;
-  problem_title: string;
-  review_title: string;
 }
 
-//API 설정
-const API = axios.create({
-  baseURL: "/api/UNIDE/rank",
-  withCredentials: true,
-});
+export async function getReputationRanking(): Promise<
+  IReputationRankingItem[]
+> {
+  const res = await api.get("/UNIDE/rank/user/reputation");
+  return res.data;
+}
 
-//API 호출 함수
-export const getProblemRanking = () =>
-  API.get<IProblemRankingItem[]>("/problem/views").then((res) => res.data);
+export async function getProblemRanking(
+  date?: string
+): Promise<IProblemRankingItem[]> {
+  const res = await api.get("/UNIDE/rank/problem/views", {
+    params: date ? { date } : undefined,
+  });
+  return res.data;
+}
 
-export const getReputationRanking = () =>
-  API.get<IReputationRankingItem[]>("/user/reputation").then((res) => res.data);
-
-export const getReviewRanking = () =>
-  API.get<IReviewRankingItem[]>("/reviews").then((res) => res.data);
+export async function getReviewRanking(): Promise<IReviewRankingItem[]> {
+  const res = await api.get("/UNIDE/rank/reviews");
+  return res.data;
+}
