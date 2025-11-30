@@ -1,13 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import styled from "styled-components";
-import { getDummyUserProfile } from "../../api/dummy/mypage_dummy";
-import { getUserProfile } from "../../api/mypage_api";
+import { getUserProfile, updateMyProfile } from "../../api/mypage_api";
 import { useAtom, useSetAtom } from "jotai";
 import { isDarkAtom, toggleThemeActionAtom } from "../../atoms";
-
-const USE_DUMMY = true;
 
 const Wrapper = styled.div`
   flex: 1;
@@ -257,7 +254,7 @@ const PrimaryButton = styled.button`
 const GhostButton = styled.button`
   padding: 10px 18px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid ${(props) => props.theme.muteColor};
   background: transparent;
   color: ${(props) => props.theme.textColor};
   font-size: 14px;
@@ -276,7 +273,7 @@ const DebugDiv = styled.div`
   height: 100vh;
 `;
 
-type EditableProfile = {
+export type EditableProfile = {
   avatarUrl: string;
   username: string;
   bio: string;
@@ -286,7 +283,7 @@ type EditableProfile = {
   weeklyStudyGoalMinutes?: number | string;
   enableStudyReminder: boolean;
   preferDarkMode: boolean;
-  hideMyPage: boolean;
+  hideMyPage: boolean; // isPublic의 반대 의미
 };
 
 const ALL_LANGS = ["Python", "Java", "C++", "JavaScript"];
@@ -296,14 +293,21 @@ export default function EditPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDark] = useAtom(isDarkAtom);
   const runToggleTheme = useSetAtom(toggleThemeActionAtom);
+  const didInit = useRef(false);
+  // ✅ 실제 API 호출용 useQuery
   const {
     data: user,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: USE_DUMMY ? ["dummyUserProfile"] : ["userProfile", username],
-    queryFn: async () =>
-      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(username ?? ""),
+    queryKey: ["userProfileEdit", username],
+    enabled: !!username, // username 없으면 요청만 막음 (훅은 항상 호출)
+    queryFn: async () => {
+      if (!username) {
+        throw new Error("username is missing");
+      }
+      return await getUserProfile(username);
+    },
     staleTime: 5 * 60 * 1000,
   });
 
@@ -313,35 +317,30 @@ export default function EditPage() {
     bio: "",
     prefferred_language: [],
     extralanguage: "",
-
     dailyMinimumStudyMinutes: "",
     weeklyStudyGoalMinutes: "",
-
     enableStudyReminder: false,
     preferDarkMode: isDark,
     hideMyPage: false,
   });
 
   useEffect(() => {
-    if (user) {
-      setForm({
-        avatarUrl: user.avatarUrl ?? "",
-        username: user.username ?? "",
-        bio: user.bio ?? "",
-        prefferred_language: user.prefferred_language ?? [],
-        extralanguage: "",
+    if (!user || didInit.current) return;
+    didInit.current = true;
 
-        // --- 학습목표 (goals) ---
-        dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
-        weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
-
-        // --- 설정 섹션 ---
-        enableStudyReminder: user.goals?.isReminderEnabled ?? false,
-        preferDarkMode: /*user.preferences?.preferDarkMode ??*/ isDark,
-        hideMyPage: user.isPublic ?? true,
-      });
-    }
-  }, [user]);
+    setForm({
+      avatarUrl: user.avatarUrl ?? "",
+      username: user.username ?? "",
+      bio: user.bio ?? "",
+      prefferred_language: user.prefferred_language ?? [],
+      extralanguage: "",
+      dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
+      weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
+      enableStudyReminder: user.goals?.isReminderEnabled ?? false,
+      preferDarkMode: isDark,
+      hideMyPage: user.isPublic === false,
+    });
+  }, [user, isDark]); // deps에 isDark 있어도, didInit 때문에 한 번만 세팅됨
 
   const toggleLang = (lang: string) => {
     setForm((prev) => {
@@ -354,6 +353,7 @@ export default function EditPage() {
       };
     });
   };
+
   const [showExtraLang, setShowExtraLang] = useState(false);
 
   const handleChange =
@@ -362,16 +362,23 @@ export default function EditPage() {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(
-      "프로필 저장 기능은 나중에 API 연동 시 구현될 예정입니다.\n\n" +
-        JSON.stringify(form, null, 2)
-    );
+    try {
+      await updateMyProfile(form);
+      await useQueryClient().invalidateQueries({
+        queryKey: ["userProfile"],
+      });
+      alert("프로필이 성공적으로 업데이트되었습니다!");
+    } catch (err) {
+      alert("프로필 수정 중 오류가 발생했습니다.");
+    }
   };
+
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -388,22 +395,25 @@ export default function EditPage() {
       bio: user.bio ?? "",
       prefferred_language: user.prefferred_language ?? [],
       extralanguage: "",
-
-      // --- 학습목표 (goals) ---
       dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
       weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
-
-      // --- 설정 섹션 ---
       enableStudyReminder: user.goals?.isReminderEnabled ?? false,
-      preferDarkMode: isDark, // 나중에 user.preferences 추가되면 교체
-      hideMyPage: user.isPublic ?? true,
+      preferDarkMode: isDark,
+      hideMyPage: user.isPublic === false,
     });
   };
 
-  if (isLoading)
+  if (!username) {
+    return <ErrorText>잘못된 접근입니다. (username 없음)</ErrorText>;
+  }
+
+  if (isLoading) {
     return <LoadingText>프로필 정보를 불러오는 중입니다…</LoadingText>;
-  if (isError || !user)
+  }
+
+  if (isError || !user) {
     return <ErrorText>프로필 정보를 불러오는 데 실패했어요.</ErrorText>;
+  }
 
   return (
     <Wrapper>
@@ -411,7 +421,7 @@ export default function EditPage() {
       <Form onSubmit={handleSubmit}>
         <FieldGroup>
           <Label>프로필 이미지</Label>
-          <Hint>이미지를 클릭하면 새로운 이미지를 업로드 할 수 있습니다..</Hint>
+          <Hint>이미지를 클릭하면 새로운 이미지를 업로드 할 수 있습니다.</Hint>
           <AvatarRow>
             <AvatarWrapper onClick={handleAvatarClick}>
               <AvatarImage
@@ -477,7 +487,8 @@ export default function EditPage() {
             </LangChip>
           </LangChipRow>
           {showExtraLang && (
-            <form>
+            <div>
+              {/* 🚫 form 안에 form 중첩 방지: div로 변경 */}
               <Hint>
                 구분자(,)를 이용해 프로필에 표시할 언어를 추가로 작성할 수
                 있습니다.
@@ -489,11 +500,11 @@ export default function EditPage() {
                 placeholder="추가로 선호하는 언어를 입력하세요 (쉼표로 구분해도 됨)"
                 style={{ marginTop: "8px" }}
               />
-            </form>
+            </div>
           )}
         </FieldGroup>
 
-        {/* --- 학습 목표 섹션  --- */}
+        {/* 학습 목표 */}
         <FieldGroup>
           <Label>학습 목표</Label>
           <Hint>
@@ -532,7 +543,7 @@ export default function EditPage() {
           </GoalRow>
         </FieldGroup>
 
-        {/* --- 설정 섹션 --- */}
+        {/* 설정 섹션 */}
         <FieldGroup>
           <Label>설정</Label>
           <Hint>계정과 마이페이지에 대한 기본 설정입니다.</Hint>
@@ -599,7 +610,7 @@ export default function EditPage() {
           </GhostButton>
         </ButtonRow>
       </Form>
-      <DebugDiv></DebugDiv>
+      <DebugDiv />
     </Wrapper>
   );
 }
