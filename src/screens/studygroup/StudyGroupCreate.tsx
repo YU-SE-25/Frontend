@@ -18,9 +18,10 @@ import type { StudyGroup } from "../../api/studygroup_api";
 
 interface Props {
   onClose: () => void;
+  onCreated: () => void;
 }
 
-export default function CreateStudyGroup({ onClose }: Props) {
+export default function CreateStudyGroup({ onClose, onCreated }: Props) {
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
   const [maxMembers, setMaxMembers] = useState(10);
@@ -67,6 +68,7 @@ export default function CreateStudyGroup({ onClose }: Props) {
     await createStudyGroup(payload);
 
     alert("스터디 그룹이 성공적으로 생성되었습니다!");
+    onCreated();
     onClose();
   };
 
