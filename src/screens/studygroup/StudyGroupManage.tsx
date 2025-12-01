@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ModalOverlay,
   ModalContent,
@@ -25,15 +26,21 @@ import {
 interface Props {
   group: StudyGroupDetail;
   onClose: () => void;
+  onUpdated: () => void;
 }
 
-export default function StudyGroupManageModal({ group, onClose }: Props) {
+export default function StudyGroupManageModal({
+  group,
+  onClose,
+  onUpdated,
+}: Props) {
   const [name, setName] = useState(group.groupName);
   const [desc, setDesc] = useState(group.groupDescription);
   const [maxMembers, setMaxMembers] = useState(group.maxMembers);
   const [kickTarget, setKickTarget] = useState<number | null>(null);
   const [showKickModal, setShowKickModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const navigate = useNavigate();
 
   const handleKick = async () => {
     if (kickTarget === null) return;
@@ -48,7 +55,7 @@ export default function StudyGroupManageModal({ group, onClose }: Props) {
     await deleteStudyGroup(group.groupId);
     alert("그룹이 삭제되었습니다!");
     setShowDeleteModal(false);
-    onClose();
+    navigate("/studygroup-main");
   };
 
   const handleSave = async () => {
@@ -59,6 +66,7 @@ export default function StudyGroupManageModal({ group, onClose }: Props) {
     });
 
     alert("그룹 정보가 수정되었습니다!");
+    onUpdated();
     onClose();
   };
 

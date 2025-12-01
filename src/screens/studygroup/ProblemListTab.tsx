@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   TabContentHeader,
   ProblemListAddButton,
@@ -12,7 +12,6 @@ import {
   ProblemDetailItem,
   ProblemTitleLink,
   StatusBadge,
-  SubmissionDateText,
   ProblemListInfoContainer,
 } from "../../theme/StudyGroupDetail.Style";
 
@@ -34,13 +33,14 @@ export default function ProblemListTab({ role, groupId }: Props) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // 전체 문제 리스트 불러오기
-  useEffect(() => {
-    const load = async () => {
-      const data = await fetchAssignedProblemLists(groupId);
-      setLists(data);
-    };
-    load();
+  const loadLists = useCallback(async () => {
+    const data = await fetchAssignedProblemLists(groupId);
+    setLists(data);
   }, [groupId]);
+
+  useEffect(() => {
+    loadLists();
+  }, [loadLists]);
 
   // 펼칠 때 문제 상세 데이터 가져오기
   const toggleExpand = async (problemListId: number) => {
@@ -49,12 +49,10 @@ export default function ProblemListTab({ role, groupId }: Props) {
       return;
     }
 
-    // 상세 데이터를 불러와야 한다
     const detail = await fetchAssignedProblemListDetail(groupId, problemListId);
 
     if (!detail) return;
 
-    // 상세 데이터로 lists 갱신
     setLists((prev) =>
       prev.map((list) => (list.problemListId === problemListId ? detail : list))
     );
@@ -86,6 +84,11 @@ export default function ProblemListTab({ role, groupId }: Props) {
         {lists.map((list) => {
           const isOpen = expanded === list.problemListId;
 
+          //제출된 문제 수 계산 (SUBMITTED 기준)
+          const submittedCount = list.problems.filter(
+            (p) => p.userStatus === "SUBMITTED"
+          ).length;
+
           return (
             <ProblemAccordionItem key={list.problemListId} $isExpanded={isOpen}>
               <AccordionHeader onClick={() => toggleExpand(list.problemListId)}>
@@ -93,8 +96,9 @@ export default function ProblemListTab({ role, groupId }: Props) {
 
                 <ProblemListInfo>
                   <ProblemSummarySmall>
-                    {list.submittedCount}/{list.problems.length}
+                    {submittedCount}/{list.problems.length}
                   </ProblemSummarySmall>
+
                   <ProblemSummarySmall>
                     마감: {list.dueDate}
                   </ProblemSummarySmall>
@@ -107,10 +111,6 @@ export default function ProblemListTab({ role, groupId }: Props) {
                     <ProblemDetailItem key={p.problemId}>
                       <ProblemListInfoContainer>
                         <ProblemTitleLink>{p.problemTitle}</ProblemTitleLink>
-
-                        <SubmissionDateText>
-                          {new Date(p.createTime).toLocaleDateString()}
-                        </SubmissionDateText>
                       </ProblemListInfoContainer>
 
                       <StatusBadge
@@ -135,6 +135,7 @@ export default function ProblemListTab({ role, groupId }: Props) {
         <CreateProblemList
           onClose={() => setShowCreateModal(false)}
           groupId={groupId}
+          onCreated={loadLists}
         />
       )}
     </>
