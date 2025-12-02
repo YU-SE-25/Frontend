@@ -7,7 +7,7 @@ import { Outlet, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
-import { getUserProfile } from "../../api/mypage_api";
+import { getMyProfile, getUserProfile } from "../../api/mypage_api";
 import {
   SiPython,
   SiCplusplus,
@@ -155,10 +155,28 @@ export default function MyPageLayout() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: USE_DUMMY ? ["dummyUserProfile"] : ["userProfile", username],
+    queryKey: USE_DUMMY
+      ? ["dummyUserProfile"]
+      : isMyPage
+      ? ["myProfile"]
+      : ["userProfile", username],
+
     enabled: !!username,
-    queryFn: async () =>
-      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(username),
+
+    queryFn: async () => {
+      if (USE_DUMMY) {
+        return getDummyUserProfile();
+      }
+
+      if (isMyPage) {
+        // ⭐ 내 페이지일 때는 /mypage/me 같은 API 호출
+        return await getMyProfile();
+      }
+
+      // ⭐ 다른 사용자 페이지일 때는 /mypage/{username}
+      return await getUserProfile(username);
+    },
+
     staleTime: 5 * 60 * 1000,
   });
 
