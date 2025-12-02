@@ -91,6 +91,7 @@ export type UpdateMyProfileDto = {
   preferredLanguage?: string[];
   bio?: string | null;
   isPublic?: boolean;
+  avatarUrl?: string | null;
   goals?: {
     dailyMinimumStudyMinutes?: number;
     weeklyStudyGoalMinutes?: number;
@@ -105,6 +106,9 @@ export function mapEditFormToUpdateDto(
     preferredLanguage: form.preferred_language,
     bio: form.bio || null,
     isPublic: !form.hideMyPage,
+
+    avatarUrl: form.avatarUrl,
+
     goals: {
       dailyMinimumStudyMinutes:
         typeof form.dailyMinimumStudyMinutes === "string"
@@ -170,11 +174,7 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
 
 // 내 프로필 업데이트 (PATCH /api/mypage/me)
 export async function updateMyProfile(form: EditableProfile) {
-  const updateData = {
-    nickname: form.username,
-    preferredLanguage: form.preferred_language,
-    // bio, isPublic, goals... 등 나머지도 여기서 추가
-  };
+  const updateData = mapEditFormToUpdateDto(form);
 
   console.log("👉 PATCH /mypage/me payload:", updateData);
 
