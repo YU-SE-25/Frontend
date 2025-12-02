@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { getUserProfile, updateMyProfile } from "../../api/mypage_api";
 import { useAtom, useSetAtom } from "jotai";
 import { isDarkAtom, toggleThemeActionAtom } from "../../atoms";
+import { AuthAPI } from "../../api/auth_api";
 
 const Wrapper = styled.div`
   flex: 1;
@@ -31,6 +32,33 @@ const FieldGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+`;
+const InputRow = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+`;
+
+const CheckButton = styled.button`
+  white-space: nowrap;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: ${({ theme }) => theme.focusColor};
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+
+  &:disabled {
+    background: #aaaaaa;
+    cursor: not-allowed;
+  }
+`;
+
+const SuccessText = styled.p`
+  margin-top: 8px;
+  color: #3cb371;
+  font-size: 14px;
 `;
 
 const Label = styled.label`
@@ -277,8 +305,8 @@ export type EditableProfile = {
   avatarUrl: string;
   username: string;
   bio: string;
-  prefferred_language: string[];
-  extralanguage?: string;
+  preferred_language: string[];
+  extralanguage: string;
   dailyMinimumStudyMinutes?: number | string;
   weeklyStudyGoalMinutes?: number | string;
   enableStudyReminder: boolean;
@@ -315,7 +343,7 @@ export default function EditPage() {
     avatarUrl: "",
     username: "",
     bio: "",
-    prefferred_language: [],
+    preferred_language: [],
     extralanguage: "",
     dailyMinimumStudyMinutes: "",
     weeklyStudyGoalMinutes: "",
@@ -323,33 +351,61 @@ export default function EditPage() {
     preferDarkMode: isDark,
     hideMyPage: false,
   });
+  const [isChecking, setIsChecking] = useState(false);
+  const [valid, setValid] = useState<boolean | null>(null);
+
+  async function checkDuplicate() {
+    if (!form.username.trim()) {
+      alert("닉네임을 입력하세요.");
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const res = await AuthAPI.checkNickname(form.username);
+      if (res.data.available) {
+        setValid(true);
+      } else {
+        setValid(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setValid(false);
+    }
+    setIsChecking(false);
+  }
 
   useEffect(() => {
     if (!user || didInit.current) return;
     didInit.current = true;
 
+    const allSet = new Set(ALL_LANGS);
+    const allPreferred = user.preferred_language ?? [];
+    const baseLangs = allPreferred.filter((l) => allSet.has(l));
+    const extraLangs = allPreferred.filter((l) => !allSet.has(l));
+
     setForm({
       avatarUrl: user.avatarUrl ?? "",
       username: user.username ?? "",
       bio: user.bio ?? "",
-      prefferred_language: user.prefferred_language ?? [],
-      extralanguage: "",
+      preferred_language: baseLangs,
+      extralanguage: extraLangs.join(", "),
       dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
       weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
       enableStudyReminder: user.goals?.isReminderEnabled ?? false,
       preferDarkMode: isDark,
       hideMyPage: user.isPublic === false,
     });
-  }, [user, isDark]); // deps에 isDark 있어도, didInit 때문에 한 번만 세팅됨
+  }, [user, isDark]);
 
   const toggleLang = (lang: string) => {
     setForm((prev) => {
-      const has = prev.prefferred_language.includes(lang);
+      const has = prev.preferred_language.includes(lang);
       return {
         ...prev,
-        prefferred_language: has
-          ? prev.prefferred_language.filter((l) => l !== lang)
-          : [...prev.prefferred_language, lang],
+        preferred_language: has
+          ? prev.preferred_language.filter((l) => l !== lang)
+          : [...prev.preferred_language, lang],
       };
     });
   };
@@ -362,10 +418,22 @@ export default function EditPage() {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     try {
-      await updateMyProfile(form);
+      const extraList = form.extralanguage
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      const finalPreferred = Array.from(
+        new Set([...form.preferred_language, ...extraList])
+      );
+
+      await updateMyProfile({
+        ...form,
+        preferred_language: finalPreferred,
+      });
+
       await useQueryClient().invalidateQueries({
         queryKey: ["userProfile"],
       });
@@ -389,12 +457,17 @@ export default function EditPage() {
   const handleReset = () => {
     if (!user) return;
 
+    const allSet = new Set(ALL_LANGS);
+    const allPreferred = user.preferred_language ?? [];
+    const baseLangs = allPreferred.filter((l) => allSet.has(l));
+    const extraLangs = allPreferred.filter((l) => !allSet.has(l));
+
     setForm({
       avatarUrl: user.avatarUrl ?? "",
       username: user.username ?? "",
       bio: user.bio ?? "",
-      prefferred_language: user.prefferred_language ?? [],
-      extralanguage: "",
+      preferred_language: baseLangs,
+      extralanguage: extraLangs.join(", "),
       dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
       weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
       enableStudyReminder: user.goals?.isReminderEnabled ?? false,
@@ -418,7 +491,11 @@ export default function EditPage() {
   return (
     <Wrapper>
       <Title>프로필 수정</Title>
-      <Form onSubmit={handleSubmit}>
+      <Form
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
         <FieldGroup>
           <Label>프로필 이미지</Label>
           <Hint>이미지를 클릭하면 새로운 이미지를 업로드 할 수 있습니다.</Hint>
@@ -444,12 +521,38 @@ export default function EditPage() {
         <FieldGroup>
           <Label>닉네임</Label>
           <Hint>서비스 내에서 표시되는 이름입니다.</Hint>
-          <Input
-            type="text"
-            value={form.username}
-            onChange={handleChange("username")}
-            placeholder="닉네임을 입력하세요"
-          />
+          <InputRow>
+            <Input
+              type="text"
+              value={form.username}
+              onChange={(e) => {
+                handleChange("username")(e);
+                setValid(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  checkDuplicate();
+                }
+              }}
+              placeholder="닉네임을 입력하세요"
+            />
+
+            <CheckButton
+              type="button"
+              onClick={checkDuplicate}
+              disabled={isChecking}
+            >
+              {isChecking ? "확인 중…" : "중복 확인"}
+            </CheckButton>
+          </InputRow>
+
+          {valid === true && (
+            <SuccessText>사용 가능한 닉네임입니다!</SuccessText>
+          )}
+          {valid === false && (
+            <ErrorText>이미 존재하는 닉네임입니다.</ErrorText>
+          )}
         </FieldGroup>
 
         <FieldGroup>
@@ -472,7 +575,7 @@ export default function EditPage() {
               <LangChip
                 key={lang}
                 type="button"
-                $selected={form.prefferred_language.includes(lang)}
+                $selected={form.preferred_language.includes(lang)}
                 onClick={() => toggleLang(lang)}
               >
                 {lang}
@@ -497,7 +600,7 @@ export default function EditPage() {
                 type="text"
                 value={form.extralanguage}
                 onChange={handleChange("extralanguage")}
-                placeholder="추가로 선호하는 언어를 입력하세요 (쉼표로 구분해도 됨)"
+                placeholder="추가로 선호하는 언어를 입력하세요 (쉼표로 구분 가능)"
                 style={{ marginTop: "8px" }}
               />
             </div>
@@ -604,7 +707,9 @@ export default function EditPage() {
         </FieldGroup>
 
         <ButtonRow>
-          <PrimaryButton type="submit">저장</PrimaryButton>
+          <PrimaryButton type="button" onClick={handleSubmit}>
+            저장
+          </PrimaryButton>
           <GhostButton type="button" onClick={handleReset}>
             변경사항 초기화
           </GhostButton>

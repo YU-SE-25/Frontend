@@ -13,6 +13,7 @@ import {
   GroupHeader,
   GroupName,
   GroupDescription,
+  GroupLeader,
   MemberListContainer,
   MemberItem,
   SmallButton,

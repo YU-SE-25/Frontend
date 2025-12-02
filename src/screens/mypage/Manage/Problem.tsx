@@ -1,20 +1,32 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { userProfileAtom } from "../../../atoms";
 import { useAtomValue } from "jotai";
-
+import { fetchPendingProblemList } from "../../../api/manage_api";
 /* -----------------------------------------------------
-   타입 & 더미 데이터
+   타입
 ----------------------------------------------------- */
 
 type Difficulty = "EASY" | "MEDIUM" | "HARD";
 
 interface ProblemItem {
-  id: number;
+  problemId: number;
   title: string;
+  tags: string[];
   difficulty: Difficulty;
-  author: string;
+  viewCount: number;
   createdAt: string;
+  isSolved: boolean;
+  author?: string;
+}
+
+interface ProblemListResponse {
+  content: ProblemItem[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  empty: boolean;
 }
 
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
@@ -22,30 +34,6 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   MEDIUM: "보통",
   HARD: "어려움",
 };
-
-const DUMMY_PROBLEMS: ProblemItem[] = [
-  {
-    id: 1,
-    title: "두 수의 합",
-    difficulty: "EASY",
-    author: "gamppe",
-    createdAt: "2025-11-20",
-  },
-  {
-    id: 2,
-    title: "최단 경로",
-    difficulty: "HARD",
-    author: "알고장인",
-    createdAt: "2025-11-18",
-  },
-  {
-    id: 3,
-    title: "괄호 검사",
-    difficulty: "MEDIUM",
-    author: "자료구조매니아",
-    createdAt: "2025-11-10",
-  },
-];
 
 /* -----------------------------------------------------
    styled-components
@@ -153,12 +141,13 @@ const Td = styled.td`
 ----------------------------------------------------- */
 
 export default function ProblemManagementScreen() {
-  const [problems, setProblems] = useState<ProblemItem[]>(DUMMY_PROBLEMS);
+  const [problems, setProblems] = useState<ProblemItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedPendingId, setSelectedPendingId] = useState<number | null>(
     null
   );
   const [selectedMyId, setSelectedMyId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const userProfile = useAtomValue(userProfileAtom) ?? {
     nickname: "guest",
@@ -166,29 +155,45 @@ export default function ProblemManagementScreen() {
     userId: "0",
   };
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await fetchPendingProblemList({ page: 0, size: 100 });
+        setProblems(data.content);
+      } catch (e) {
+        console.error(e);
+        alert("문제 목록을 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return problems;
     const q = search.toLowerCase();
-    return problems.filter(
-      (p) =>
+    return problems.filter((p) => {
+      const author = p.author ?? "";
+      return (
         p.title.toLowerCase().includes(q) ||
-        p.author.toLowerCase().includes(q) ||
+        author.toLowerCase().includes(q) ||
         DIFFICULTY_LABEL[p.difficulty].toLowerCase().includes(q)
-    );
+      );
+    });
   }, [problems, search]);
 
   const filteredMine = useMemo(
-    () => filtered.filter((p) => p.author === userProfile.nickname),
+    () => filtered.filter((p) => p.author && p.author === userProfile.nickname),
     [filtered, userProfile.nickname]
   );
 
   const selectedPending = useMemo(
-    () => problems.find((p) => p.id === selectedPendingId) ?? null,
+    () => problems.find((p) => p.problemId === selectedPendingId) ?? null,
     [problems, selectedPendingId]
   );
 
   const selectedMine = useMemo(
-    () => problems.find((p) => p.id === selectedMyId) ?? null,
+    () => problems.find((p) => p.problemId === selectedMyId) ?? null,
     [problems, selectedMyId]
   );
 
@@ -202,13 +207,13 @@ export default function ProblemManagementScreen() {
     setSelectedMyId(null);
   };
 
-  const handleSelectPending = (id: number) => {
-    setSelectedPendingId((prev) => (prev === id ? null : id));
+  const handleSelectPending = (problemId: number) => {
+    setSelectedPendingId((prev) => (prev === problemId ? null : problemId));
     setSelectedMyId(null);
   };
 
-  const handleSelectMine = (id: number) => {
-    setSelectedMyId((prev) => (prev === id ? null : id));
+  const handleSelectMine = (problemId: number) => {
+    setSelectedMyId((prev) => (prev === problemId ? null : problemId));
     setSelectedPendingId(null);
   };
 
@@ -242,7 +247,9 @@ export default function ProblemManagementScreen() {
     )
       return;
 
-    setProblems((prev) => prev.filter((p) => p.id !== selectedPending.id));
+    setProblems((prev) =>
+      prev.filter((p) => p.problemId !== selectedPending.problemId)
+    );
     setSelectedPendingId(null);
   };
 
@@ -255,13 +262,22 @@ export default function ProblemManagementScreen() {
     )
       return;
 
-    setProblems((prev) => prev.filter((p) => p.id !== selectedPending.id));
+    setProblems((prev) =>
+      prev.filter((p) => p.problemId !== selectedPending.problemId)
+    );
     setSelectedPendingId(null);
   };
 
+  if (loading) {
+    return (
+      <Wrap>
+        <div style={{ padding: 16 }}>문제 목록을 불러오는 중입니다...</div>
+      </Wrap>
+    );
+  }
+
   return (
     <Wrap>
-      {/* 검색 + 버튼: 모든 유저 공용 */}
       <TopBar>
         <SearchInput
           value={search}
@@ -304,7 +320,6 @@ export default function ProblemManagementScreen() {
         </ButtonGroup>
       </TopBar>
 
-      {/* 위: 관리자 전용 - 제출된 문제 관리 테이블 */}
       {userProfile.role === "MANAGER" && (
         <>
           <SectionTitle>제출된 문제 관리</SectionTitle>
@@ -333,14 +348,14 @@ export default function ProblemManagementScreen() {
 
                 {filtered.map((p) => (
                   <Tr
-                    key={p.id}
-                    selected={selectedPendingId === p.id}
-                    onClick={() => handleSelectPending(p.id)}
+                    key={p.problemId}
+                    selected={selectedPendingId === p.problemId}
+                    onClick={() => handleSelectPending(p.problemId)}
                   >
                     <Td>{p.title}</Td>
                     <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
-                    <Td>{p.author}</Td>
-                    <Td>{p.createdAt}</Td>
+                    <Td>{p.author ?? "-"}</Td>
+                    <Td>{p.createdAt.split("T")[0]}</Td>
                   </Tr>
                 ))}
               </tbody>
@@ -349,7 +364,6 @@ export default function ProblemManagementScreen() {
         </>
       )}
 
-      {/* 아래: 내 제출 문제 목록 (모든 유저) */}
       <SectionTitle>내가 제출한 문제</SectionTitle>
       <TableWrap>
         <Table>
@@ -373,14 +387,14 @@ export default function ProblemManagementScreen() {
 
             {filteredMine.map((p) => (
               <Tr
-                key={p.id}
-                selected={selectedMyId === p.id}
-                onClick={() => handleSelectMine(p.id)}
+                key={p.problemId}
+                selected={selectedMyId === p.problemId}
+                onClick={() => handleSelectMine(p.problemId)}
               >
                 <Td>{p.title}</Td>
                 <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
-                <Td>{p.author}</Td>
-                <Td>{p.createdAt}</Td>
+                <Td>{p.author ?? "-"}</Td>
+                <Td>{p.createdAt.split("T")[0]}</Td>
               </Tr>
             ))}
           </tbody>

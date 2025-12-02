@@ -23,8 +23,6 @@ api.interceptors.request.use(
 );
 
 //응답 인터셉터 (AccessToken 만료 → 자동 재발급)
-//응답 인터셉터 (AccessToken 만료 → 자동 재발급)
-// 응답 인터셉터
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
