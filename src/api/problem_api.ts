@@ -126,6 +126,12 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
   };
 }
 
+//스터디 그룹 문제 목록 생성 시 사용되는 타입
+export interface SimpleProblem {
+  problemId: number;
+  problemTitle: string;
+}
+
 // 태그 목록
 export async function fetchAvailableTags(): Promise<string[]> {
   try {
@@ -205,5 +211,29 @@ export async function registerProblem(
   } catch (err) {
     console.error("문제 등록 실패 → 더미 ProblemId 99999 반환");
     return 99999; // 문제 등록 실패 시 더미 아이디
+  }
+}
+
+//스터디 그룹용 문제 목록 띄우기
+export async function fetchSimpleProblems(): Promise<SimpleProblem[]> {
+  try {
+    const res = await api.get<{ content: ProblemListItemDto[] }>("/problems");
+
+    if (!res.data?.content) {
+      throw new Error("empty");
+    }
+
+    return res.data.content.map((item) => ({
+      problemId: item.problemId,
+      problemTitle: item.title,
+    }));
+  } catch (e) {
+    console.error("문제 목록 API 실패 → SimpleProblem 더미로 대체");
+
+    // DUMMY_PROBLEM_LIST 기반으로 SimpleProblem 변환
+    return DUMMY_PROBLEM_LIST.map((item) => ({
+      problemId: item.problemId,
+      problemTitle: item.title,
+    }));
   }
 }

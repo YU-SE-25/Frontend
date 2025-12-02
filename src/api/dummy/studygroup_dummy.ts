@@ -1,11 +1,8 @@
-// 스터디 그룹 리스트
 import type {
   StudyGroup,
   StudyGroupDetail,
-  AssignedProblem,
   AssignedProblemList,
   ActivityLog,
-  SimpleProblem,
 } from "../studygroup_api";
 
 export const DUMMY_GROUPS: StudyGroup[] = [
@@ -29,16 +26,15 @@ export const DUMMY_GROUPS: StudyGroup[] = [
   },
   {
     groupId: 3,
-    groupName: "자료구조 입문반",
-    groupDescription: "스택/큐/트리로 기초 다지기",
+    groupName: "자료구조 스터디",
+    groupDescription: "B-Tree, B+Tree, Red-Black Tree 공부",
     maxMembers: 8,
-    currentMembers: 2,
-    leaderName: "최지훈",
+    currentMembers: 3,
+    leaderName: "박철수",
     myRole: "NONE",
   },
 ];
 
-// 스터디 그룹 상세
 export const DUMMY_GROUP_DETAIL: StudyGroupDetail = {
   groupId: 1,
   groupName: "알고리즘 스터디",
@@ -64,108 +60,95 @@ export const DUMMY_GROUP_DETAIL: StudyGroupDetail = {
       userName: "이철수",
       role: "MEMBER",
     },
+    {
+      groupMemberId: 13,
+      userId: 5,
+      userName: "김영희",
+      role: "MEMBER",
+    },
   ],
 
   myRole: "LEADER",
 };
 
-// 문제 A
-export const PROBLEMS_SET_A: AssignedProblem[] = [
-  {
-    problemId: 101,
-    problemTitle: "피보나치 수열",
-    anonymity: false,
-    likeCount: 1,
-    commentCount: 0,
-    createTime: "2025-10-25T10:00:00Z",
-    userStatus: "SUBMITTED",
-  },
-  {
-    problemId: 102,
-    problemTitle: "최단 거리",
-    anonymity: false,
-    likeCount: 0,
-    commentCount: 0,
-    createTime: "2025-10-25T10:00:00Z",
-    userStatus: "NOT_SUBMITTED",
-  },
-  {
-    problemId: 103,
-    problemTitle: "BFS 기본",
-    anonymity: false,
-    likeCount: 5,
-    commentCount: 2,
-    createTime: "2025-10-26T11:00:00Z",
-    userStatus: "SUBMITTED",
-  },
-];
-
-// 문제 B
-export const PROBLEMS_SET_B: AssignedProblem[] = [
-  {
-    problemId: 201,
-    problemTitle: "그리디 문제 1",
-    anonymity: false,
-    likeCount: 3,
-    commentCount: 0,
-    createTime: "2025-10-27T12:00:00Z",
-    userStatus: "SUBMITTED",
-  },
-  {
-    problemId: 202,
-    problemTitle: "투 포인터",
-    anonymity: false,
-    likeCount: 0,
-    commentCount: 0,
-    createTime: "2025-10-27T12:00:00Z",
-    userStatus: "NOT_SUBMITTED",
-  },
-];
-
-// 문제 리스트
 export const DUMMY_ASSIGNED_LISTS: AssignedProblemList[] = [
   {
     problemListId: 1,
     listTitle: "이번주 문제",
     dueDate: "2025-11-05",
-    submittedCount: 3,
-    problems: PROBLEMS_SET_A,
+    problems: [
+      {
+        problemId: 1,
+        problemTitle: "이진 검색 트리 설계",
+        userStatus: "NOT_SUBMITTED",
+      },
+      {
+        problemId: 2,
+        problemTitle: "큐/스택 구현",
+        userStatus: "SUBMITTED",
+      },
+    ],
   },
   {
     problemListId: 2,
-    listTitle: "다음주 DP 연습",
-    dueDate: "2025-11-12",
-    submittedCount: 1,
-    problems: PROBLEMS_SET_B,
+    listTitle: "다음주 문제",
+    dueDate: "2025-11-15",
+    problems: [
+      {
+        problemId: 3,
+        problemTitle: "그래프 DFS/BFS",
+        userStatus: "NOT_SUBMITTED",
+      },
+      {
+        problemId: 4,
+        problemTitle: "동적 프로그래밍 기본",
+        userStatus: "NOT_SUBMITTED",
+      },
+    ],
   },
 ];
 
-// 활동 로그
+export const DUMMY_ASSIGNED_LIST_DETAIL: AssignedProblemList = {
+  problemListId: 1,
+  listTitle: "이번주 문제",
+  dueDate: "2025-11-05",
+  problems: [
+    {
+      problemId: 1,
+      problemTitle: "이진 검색 트리 설계",
+      userStatus: "NOT_SUBMITTED",
+    },
+    {
+      problemId: 2,
+      problemTitle: "큐/스택 구현",
+      userStatus: "SUBMITTED",
+    },
+  ],
+};
+
 export const DUMMY_ACTIVITY_LOGS: ActivityLog[] = [
   {
-    activityId: 1001,
-    type: "PROBLEM_SUBMIT",
-    userId: 4,
-    userName: "이철수",
-    description: "백준 101번 문제 풀이 제출",
-    createdAt: "2025-11-02T21:30:00",
+    activityId: 4,
+    type: "LEAVE",
+    userId: 2,
+    userName: "김철수",
+    description: "김철수 스터디 그룹에서 탈퇴",
+    createdAt: "2025-11-28T02:52:04",
   },
   {
-    activityId: 1002,
-    type: "JOIN",
-    userId: 5,
-    userName: "김영희",
-    description: "스터디 그룹에 가입",
-    createdAt: "2025-11-03T10:00:00",
+    activityId: 3,
+    type: "KICK",
+    userId: 2,
+    userName: "김철수",
+    description: "송인재 멤버 강퇴",
+    createdAt: "2025-11-28T02:51:37",
   },
-];
-
-//문제 목록 더미
-export const DUMMY_PROBLEMS: SimpleProblem[] = [
-  { problemId: 1001, problemTitle: "Hello World!" },
-  { problemId: 1002, problemTitle: "A+B 문제" },
-  { problemId: 1003, problemTitle: "피보나치 수열" },
-  { problemId: 1004, problemTitle: "최단 경로" },
-  { problemId: 1005, problemTitle: "DFS와 BFS" },
-  { problemId: 1006, problemTitle: "DP 기초 문제" },
+  {
+    activityId: 2,
+    type: "JOIN",
+    userId: 13,
+    userName: "송인재",
+    description: "송인재 스터디 그룹에 가입",
+    createdAt: "2025-11-28T02:37:59",
+  },
 ];

@@ -17,25 +17,31 @@ import {
   ProblemItem,
   RemoveButton,
 } from "../../theme/StudyGroupDetail.Style";
+
 import ProblemSearch from "./ProblemSearch";
-import type { SimpleProblem } from "../../api/studygroup_api";
+import type { SimpleProblem } from "../../api/problem_api";
 
 import { useState } from "react";
+import { createProblemList } from "../../api/studygroup_api";
 
 interface Props {
   onClose: () => void;
+  groupId: number; // 그룹ID 꼭 받아야 함
+  onCreated: () => void;
 }
 
-export default function ProblemListCreateModal({ onClose }: Props) {
+export default function ProblemListCreateModal({
+  onClose,
+  groupId,
+  onCreated,
+}: Props) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
 
   const [problems, setProblems] = useState<SimpleProblem[]>([]);
 
-  //문제 검색 모달 ON/OFF
   const [showSearchModal, setShowSearchModal] = useState(false);
 
-  // 문제 선택 시 리스트 추가하는 함수
   const handleSelectProblem = (p: SimpleProblem) => {
     setProblems((prev) => [...prev, p]);
     setShowSearchModal(false);
@@ -45,9 +51,35 @@ export default function ProblemListCreateModal({ onClose }: Props) {
     setShowSearchModal(true);
   };
 
-  /*문제 리스트 생성 (임시) */
-  const handleCreate = () => {
-    alert("문제 리스트 생성!");
+  //문제 리스트 생성 API 연결
+  const handleCreate = async () => {
+    if (!title.trim()) {
+      alert("목록명을 입력해주세요!");
+      return;
+    }
+    if (!dueDate.trim()) {
+      alert("마감일을 선택해주세요!");
+      return;
+    }
+    if (problems.length === 0) {
+      alert("문제를 하나 이상 선택해주세요!");
+      return;
+    }
+
+    try {
+      await createProblemList(groupId, {
+        listTitle: title,
+        dueDate,
+        problems: problems.map((p) => p.problemId),
+      });
+
+      alert("문제 리스트가 생성되었습니다!");
+      onCreated();
+      onClose();
+    } catch (err) {
+      console.error("문제 리스트 생성 실패:", err);
+      alert("문제 리스트 생성에 실패했습니다.");
+    }
   };
 
   return (
@@ -109,6 +141,7 @@ export default function ProblemListCreateModal({ onClose }: Props) {
             <PrimaryButton onClick={handleCreate}>생성하기</PrimaryButton>
           </ButtonContainer>
         </PLWrapper>
+
         {showSearchModal && (
           <ProblemSearch
             onClose={() => setShowSearchModal(false)}

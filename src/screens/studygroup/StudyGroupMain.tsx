@@ -42,18 +42,15 @@ export default function StudyGroupListPage() {
   const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<StudyGroup | null>(null);
-
   //초기 데이터 로딩
+  const reloadGroups = async () => {
+    const all = await fetchStudyGroups();
+    setGroups(all);
+    setMyGroups(all.filter((g) => g.myRole !== "NONE"));
+  };
+
   useEffect(() => {
-    const load = async () => {
-      const all = await fetchStudyGroups();
-      setGroups(all);
-
-      const mine = all.filter((g) => g.myRole !== "NONE");
-      setMyGroups(mine);
-    };
-
-    load();
+    reloadGroups();
   }, []);
 
   // 검색 필터
@@ -92,6 +89,12 @@ export default function StudyGroupListPage() {
 
     setShowJoinModal(false);
     navigate(`/studygroup/${selectedGroup.groupId}`);
+  };
+
+  //스터디 그룹 생성 완료 콜백
+  const handleCreated = async () => {
+    await reloadGroups(); // 데이터 다시 불러오기
+    setShowCreateModal(false); // 모달 닫기
   };
 
   return (
@@ -183,7 +186,10 @@ export default function StudyGroupListPage() {
 
       {/* 생성 모달 */}
       {showCreateModal && (
-        <CreateStudyGroup onClose={() => setShowCreateModal(false)} />
+        <CreateStudyGroup
+          onClose={() => setShowCreateModal(false)}
+          onCreated={handleCreated}
+        />
       )}
 
       {/* 가입 모달 */}

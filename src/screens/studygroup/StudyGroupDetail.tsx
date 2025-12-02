@@ -13,6 +13,7 @@ import {
   GroupHeader,
   GroupName,
   GroupDescription,
+  GroupLeader,
   MemberListContainer,
   MemberItem,
   SmallButton,
@@ -49,13 +50,16 @@ export default function StudyGroupDetailPage() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   // 그룹 상세 정보 불러오기
+  const loadGroupDetail = async () => {
+    const detail = await fetchStudyGroupDetail(numericId);
+    console.log("API에서 받은 group detail:", detail);
+    console.log("🔥 현재 로그인 사용자의 ROLE:", detail.myRole);
+    setGroup(detail);
+    setRole(detail.myRole);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      const detail = await fetchStudyGroupDetail(numericId);
-      setGroup(detail);
-      setRole(detail.myRole);
-    };
-    load();
+    loadGroupDetail();
   }, [numericId]);
 
   // 탈퇴 처리
@@ -65,8 +69,20 @@ export default function StudyGroupDetailPage() {
     navigate("/studygroup");
   };
 
-  // 로딩 중
-  if (!group) return <div>Loading...</div>;
+  // 로딩 단계 (아직 fetch 중)
+  if (group === null) {
+    return <div>Loading...</div>;
+  }
+
+  // API 실패 + fallback 실패 시
+  if (!group) {
+    return <div>데이터를 불러오지 못했습니다.</div>;
+  }
+
+  // members 필드가 없는 경우 (이론상 거의 안 일어남)
+  if (!group.members) {
+    return <div>그룹 멤버 정보가 없습니다.</div>;
+  }
 
   return (
     <Wrapper>
@@ -89,10 +105,12 @@ export default function StudyGroupDetailPage() {
               {group.members.map((m) => (
                 <MemberItem
                   key={m.groupMemberId}
-                  isLeader={m.role === "LEADER"}
-                  isSelf={false} // 필요하면 여기서 본인 ID 비교 넣어도 됨
+                  isLeader={m.role?.toUpperCase() === "LEADER"}
+                  isSelf={false}
                 >
-                  {m.role === "LEADER" ? `그룹장: ${m.userName}` : m.userName}
+                  {m.role?.toUpperCase() === "LEADER"
+                    ? `그룹장: ${m.userName}`
+                    : m.userName}
                 </MemberItem>
               ))}
             </MemberListContainer>
@@ -157,6 +175,7 @@ export default function StudyGroupDetailPage() {
         <StudyGroupManage
           group={group}
           onClose={() => setShowManageModal(false)}
+          onUpdated={loadGroupDetail}
         />
       )}
 

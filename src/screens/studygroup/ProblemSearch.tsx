@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import styled from "styled-components";
-import type { SimpleProblem } from "../../api/studygroup_api";
-import { DUMMY_PROBLEMS } from "../../api/dummy/studygroup_dummy";
+
+import { fetchSimpleProblems, type SimpleProblem } from "../../api/problem_api";
 
 interface Props {
   onClose: () => void;
@@ -14,12 +14,24 @@ export default function ProblemSearchModal({
 }: Props) {
   const [keyword, setKeyword] = useState("");
 
+  // 실제 문제 목록 상태
+  const [problems, setProblems] = useState<SimpleProblem[]>([]);
+
+  // API로 문제 목록 불러오기
+  useEffect(() => {
+    const load = async () => {
+      const list = await fetchSimpleProblems(); // <-- SimpleProblem[] 반환됨
+      setProblems(list);
+    };
+
+    load();
+  }, []);
+
+  //검색
   const filtered = useMemo(() => {
     const lower = keyword.toLowerCase();
-    return DUMMY_PROBLEMS.filter((p) =>
-      p.problemTitle.toLowerCase().includes(lower)
-    );
-  }, [keyword]);
+    return problems.filter((p) => p.problemTitle.toLowerCase().includes(lower));
+  }, [keyword, problems]);
 
   return (
     <Overlay>
@@ -47,7 +59,6 @@ export default function ProblemSearchModal({
   );
 }
 
-/* 스타일 */
 const Overlay = styled.div`
   position: fixed;
   top: 0;

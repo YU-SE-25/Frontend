@@ -371,3 +371,11 @@ export const RemoveButton = styled(GlobalSecondaryButton)`
   font-size: 13px;
   border-radius: 6px;
 `;
+
+/*그룹장 이름*/
+export const GroupLeader = styled.div`
+  font-weight: bold;
+  color: ${({ theme }) => theme.logoColor};
+  margin-top: 5px;
+  margin-bottom: 10px;
+`;

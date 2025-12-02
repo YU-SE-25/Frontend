@@ -14,7 +14,6 @@ import ResetPassword from "./screens/ResetPassword";
 import Register from "./screens/Register";
 import RegisterSuccess from "./screens/RegisterSuccess";
 import VerifySuccess from "./screens/VerifySuccess";
-import NicknameSetup from "./screens/NicknameSetup";
 
 // 마이페이지
 import MypageLayout from "./screens/mypage/MypageLayout";
