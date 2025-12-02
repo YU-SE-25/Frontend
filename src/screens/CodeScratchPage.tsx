@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import CodeEditorView from "../screens/problem/CodeEditorView";
-
+import { api } from "../api/axios";
 // dummy 문제 가져오는 함수
 import { getDummyProblemDetail } from "../api/dummy/problem_dummy";
 
@@ -105,24 +105,49 @@ const DeleteButton = styled.button`
     transform: scale(1.05);
   }
 `;
+const languageMap: Record<string, string> = {
+  Python: "PYTHON",
+  "C++": "CPP",
+  Java: "JAVA",
+};
+
+//백엔드 api
+interface ProblemDetailResponse {
+  problemId: number;
+  title: string;
+  description: string;
+  inputOutputExample: string;
+}
+
+async function fetchProblemDetailWithFallback(problemId: number) {
+  try {
+    // 백엔드 문제 상세 API
+    const res = await api.get(`/problems/detail/${problemId}`);
+
+    const dto = res.data as ProblemDetailResponse;
+
+    return {
+      problemId: dto.problemId,
+      title: dto.title,
+      description: dto.description,
+      inputDescription: dto.inputOutputExample ?? "",
+      outputDescription: "",
+      examples: [],
+    };
+  } catch (e) {
+    console.warn("백엔드 문제 불러오기 실패 → 더미로 대체");
+
+    return null;
+  }
+}
 
 export default function CodeScratchPage() {
-  // 패널 접기 상태
   const [open, setOpen] = useState(true);
-
-  // 문제 선택
   const [problemIdInput, setProblemIdInput] = useState("");
-
-  // 현재 문제 정보
   const [problem, setProblem] = useState<any | null>(null);
-
-  // 코드 & 언어
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("Python");
-
-  // 패널 토글
   const togglePanel = () => setOpen((prev) => !prev);
-
   // 문제별 코드 저장 키
   const codeKey = problem ? `scratch-${problem.problemId}` : "scratch-null";
 
@@ -143,7 +168,7 @@ export default function CodeScratchPage() {
 
   // 문제 불러오기 기능
   const loadProblem = async () => {
-    if (!problemIdInput.trim()) return alert("문제 번호 입력해!");
+    if (!problemIdInput.trim()) return alert("문제를 선택해주세요.");
 
     // 코드 저장 여부
     if (code.trim()) {
@@ -152,7 +177,9 @@ export default function CodeScratchPage() {
     }
 
     try {
-      const data = await getDummyProblemDetail(problemIdInput.trim());
+      const data = await fetchProblemDetailWithFallback(
+        Number(problemIdInput.trim())
+      );
       if (!data) return alert("문제를 찾을 수 없습니다!");
 
       setProblem(data);
@@ -168,7 +195,7 @@ export default function CodeScratchPage() {
     await IDEAPI.saveDraft({
       problemId: Number(problem.problemId),
       code,
-      language,
+      language: languageMap[language],
     });
 
     alert("임시 저장 완료!");
@@ -181,7 +208,14 @@ export default function CodeScratchPage() {
     const saved = await IDEAPI.loadDraft(Number(problem.problemId));
 
     setCode(saved.code);
-    setLanguage(saved.language);
+
+    const reverseMap: Record<string, string> = {
+      PYTHON: "Python",
+      CPP: "C++",
+      JAVA: "Java",
+    };
+
+    setLanguage(reverseMap[saved.language] ?? "Python");
 
     alert("불러오기 완료!");
   };
@@ -190,7 +224,7 @@ export default function CodeScratchPage() {
   const executeCode = async () => {
     const result = await IDEAPI.run({
       code,
-      language,
+      language: languageMap[language],
       input: "",
     });
 

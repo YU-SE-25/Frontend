@@ -363,6 +363,29 @@ export default function EditPage() {
     reminderAmPm: "AM",
     reminderHour12: 9,
   });
+  const [isChecking, setIsChecking] = useState(false);
+  const [valid, setValid] = useState<boolean | null>(null);
+
+  async function checkDuplicate() {
+    if (!form.username.trim()) {
+      alert("닉네임을 입력하세요.");
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const res = await AuthAPI.checkNickname(form.username);
+      if (res.data.available) {
+        setValid(true);
+      } else {
+        setValid(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setValid(false);
+    }
+    setIsChecking(false);
+  }
 
   const [isChecking, setIsChecking] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);

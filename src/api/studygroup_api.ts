@@ -65,6 +65,14 @@ export interface ActivityLog {
   createdAt: string;
 }
 
+export interface ActivityResponse {
+  content: ActivityLog[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+}
+
 export interface CreateStudyGroupResponse {
   message: string;
   groupId?: number;
@@ -358,14 +366,21 @@ export async function deleteProblemList(
 // 활동 기록 조회
 export async function fetchActivityLogs(
   groupId: number
-): Promise<ActivityLog[]> {
+): Promise<ActivityResponse> {
   try {
-    const res = await api.get<ActivityLog[]>(
+    const res = await api.get<ActivityResponse>(
       `/studygroup/${groupId}/activities`
     );
     return res.data;
   } catch (err) {
     console.error("fetchActivityLogs 실패 → fallback");
-    return DUMMY_ACTIVITY_LOGS;
+
+    return {
+      content: DUMMY_ACTIVITY_LOGS,
+      page: 1,
+      size: 10,
+      totalPages: 1,
+      totalElements: DUMMY_ACTIVITY_LOGS.length,
+    };
   }
 }

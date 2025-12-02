@@ -3,7 +3,6 @@ import styled from "styled-components";
 import type { ActivityLog } from "../../api/studygroup_api";
 import { fetchActivityLogs } from "../../api/studygroup_api";
 
-// ⭐ Props 타입 정의
 interface Props {
   groupId: number;
 }
@@ -48,12 +47,16 @@ export default function ActivityTab({ groupId }: Props) {
   useEffect(() => {
     const load = async () => {
       const data = await fetchActivityLogs(groupId);
-      data.sort(
+      console.log("Activity response:", data);
+
+      const logsArray = [...(data.content ?? [])];
+
+      logsArray.sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      setLogs(data);
+      setLogs(logsArray);
     };
     load();
   }, [groupId]);

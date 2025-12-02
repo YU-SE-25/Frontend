@@ -215,25 +215,30 @@ export async function registerProblem(
 }
 
 //스터디 그룹용 문제 목록 띄우기
+
+export interface SimpleProblem {
+  problemId: number;
+  problemTitle: string;
+}
+
 export async function fetchSimpleProblems(): Promise<SimpleProblem[]> {
   try {
-    const res = await api.get<{ content: ProblemListItemDto[] }>("/problems");
+    const res = await api.get<{
+      content: {
+        problemId: number;
+        title: string;
+      }[];
+    }>("/problems/list");
 
-    if (!res.data?.content) {
-      throw new Error("empty");
-    }
-
-    return res.data.content.map((item) => ({
-      problemId: item.problemId,
-      problemTitle: item.title,
+    return res.data.content.map((p) => ({
+      problemId: p.problemId,
+      problemTitle: p.title,
     }));
-  } catch (e) {
-    console.error("문제 목록 API 실패 → SimpleProblem 더미로 대체");
-
-    // DUMMY_PROBLEM_LIST 기반으로 SimpleProblem 변환
-    return DUMMY_PROBLEM_LIST.map((item) => ({
-      problemId: item.problemId,
-      problemTitle: item.title,
-    }));
+  } catch (err) {
+    console.error("문제 목록 조회 실패 → 더미 사용");
+    return [
+      { problemId: 1, problemTitle: "더미 문제 1" },
+      { problemId: 2, problemTitle: "더미 문제 2" },
+    ];
   }
 }
