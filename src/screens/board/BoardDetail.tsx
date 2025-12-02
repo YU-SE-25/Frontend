@@ -612,6 +612,7 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
           <ReportButton
             targetContentId={stablePost.post_id}
             targetContentType="post"
+            onManagerDelete={handleDeletePost}
           />
         </HeaderActions>
       </DetailHeader>
@@ -652,6 +653,9 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                         <ReportButton
                           targetContentId={c.comment_id}
                           targetContentType="comment"
+                          onManagerDelete={() =>
+                            handleDeleteComment(c.comment_id)
+                          }
                         />
                         {isOwner({
                           author: c.author_name,

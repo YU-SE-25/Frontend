@@ -26,7 +26,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
 import { fetchDiscussList } from "../../api/board_api";
 import { isOwner } from "../../utils/isOwner";
-
+import { myRole } from "../../utils/myRole";
 export interface BoardTag {
   id: number;
   name: string;
@@ -234,10 +234,11 @@ export default function BoardList({
   const handleViewDetails = (post: BoardContent) => {
     // 비공개 글인데, 내가 작성자도 아니고 관리자도 아니면 막기
     if (post.is_private) {
-      const canView = isOwner({
-        author: post.author,
-        anonymity: post.anonymity,
-      });
+      const canView =
+        isOwner({
+          author: post.author,
+          anonymity: post.anonymity,
+        }) || myRole() === "MANAGER";
 
       if (!canView) {
         alert("비공개 글은 작성자 또는 관리자만 열람할 수 있습니다.");

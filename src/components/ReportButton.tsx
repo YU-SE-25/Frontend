@@ -3,7 +3,6 @@ import styled from "styled-components";
 import ReportModal from "../screens/ReportModal";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../atoms";
-import { useNavigate } from "react-router-dom";
 
 interface Props {
   targetContentId: number;
@@ -15,29 +14,29 @@ interface Props {
     | "review"
     | "submission"
     | "reviewComment";
+  onManagerDelete?: () => void; // 매니저용 삭제 콜백
+  managerConfirmMessage?: string; // 매니저용 confirm 문구
 }
 
 export default function ReportButton({
   targetContentId,
   targetContentType,
+  onManagerDelete,
+  managerConfirmMessage = "정말로 삭제하시겠습니까?",
 }: Props) {
   const [open, setOpen] = useState(false);
   const userRole = useAtomValue(userProfileAtom)?.role;
-  const navigate = useNavigate();
-  if (userRole === "MANAGER") {
+
+  if (userRole === "MANAGER" && onManagerDelete) {
+    const handleDelete = () => {
+      const yes = window.confirm(managerConfirmMessage);
+      if (!yes) return;
+      onManagerDelete();
+    };
+
     return (
       <>
-        <Btn
-          onClick={() => {
-            const yes = window.confirm("정말로 삭제하시겠습니까?");
-            if (yes) {
-              alert(
-                "삭제되었습니다. (실제 삭제 기능은 구현되어 있지 않습니다.)"
-              );
-              navigate(-1);
-            }
-          }}
-        >
+        <Btn type="button" onClick={handleDelete}>
           🚨삭제
         </Btn>
       </>
@@ -46,7 +45,9 @@ export default function ReportButton({
 
   return (
     <>
-      <Btn onClick={() => setOpen(true)}>🚨신고</Btn>
+      <Btn type="button" onClick={() => setOpen(true)}>
+        🚨신고
+      </Btn>
 
       {open && (
         <ReportModal
