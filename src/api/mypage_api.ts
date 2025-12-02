@@ -52,7 +52,7 @@ export type UserProfile = {
     // 5. 리마인더 활성화 여부
     isReminderEnabled?: boolean;
   };
-  achievements?: Achievement[];
+  achievements?: Achievement[]; //확장 가능성 고려
 };
 
 export type UserProfileDto = {
@@ -165,6 +165,7 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
   try {
     const res = await api.get<UserProfileDto>(`/mypage/${nickname}`);
     console.log("user profile fetched:", res.data);
+    console.log("mapped data : ", mapUserProfileDto(res.data));
     return mapUserProfileDto(res.data);
   } catch (err) {
     console.log("❌ getUserProfile 에러 발생, 더미 프로필로 대체:", err);
@@ -175,7 +176,6 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
 export async function getMyProfile(): Promise<UserProfile> {
   try {
     const res = await api.get<UserProfileDto>("/mypage");
-    console.log("user profile fetched:", res.data);
     return mapUserProfileDto(res.data);
   } catch (err: any) {
     // 1차 시도 실패: 프로필이 없는 경우(404) → 생성 시도 후 다시 GET
@@ -198,16 +198,8 @@ export async function getMyProfile(): Promise<UserProfile> {
   }
 }
 
-// 내 프로필 업데이트 (PATCH /api/mypage/me)
-export async function updateMyProfile(form: EditableProfile) {
-  const updateData = mapEditFormToUpdateDto(form);
-
-  try {
-    const res = await api.patch("/mypage", updateData);
-    console.log("마이페이지 수정 성공:", res.data);
-    return res.data;
-  } catch (err) {
-    console.error("마이페이지 수정 중 에러:", err);
-    throw err;
-  }
+// 내 프로필 업데이트 (PATCH /api/mypage)
+export async function updateMyProfile(payload: UpdateMyProfileDto | FormData) {
+  const res = await api.patch("/mypage", payload);
+  return res.data;
 }

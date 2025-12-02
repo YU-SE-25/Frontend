@@ -311,7 +311,9 @@ export type EditableProfile = {
   weeklyStudyGoalMinutes?: number | string;
   enableStudyReminder: boolean;
   preferDarkMode: boolean;
-  hideMyPage: boolean; // isPublic의 반대 의미
+  hideMyPage: boolean;
+
+  studyTimes: { language: string; minutes: number | string }[];
 };
 
 const ALL_LANGS = ["Python", "Java", "C++", "JavaScript"];
@@ -322,6 +324,9 @@ export default function EditPage() {
   const [isDark] = useAtom(isDarkAtom);
   const runToggleTheme = useSetAtom(toggleThemeActionAtom);
   const didInit = useRef(false);
+  const queryClient = useQueryClient();
+  const formData = new FormData();
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   // ✅ 실제 API 호출용 useQuery
   const {
     data: user,
@@ -345,12 +350,20 @@ export default function EditPage() {
     bio: "",
     preferred_language: [],
     extralanguage: "",
+
     dailyMinimumStudyMinutes: "",
     weeklyStudyGoalMinutes: "",
+
     enableStudyReminder: false,
     preferDarkMode: isDark,
     hideMyPage: false,
+
+    // ✅ 기본 학습 알림 설정값
+    reminderDayOfWeek: "MON",
+    reminderAmPm: "AM",
+    reminderHour12: 9,
   });
+
   const [isChecking, setIsChecking] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
 
@@ -395,6 +408,10 @@ export default function EditPage() {
       enableStudyReminder: user.goals?.isReminderEnabled ?? false,
       preferDarkMode: isDark,
       hideMyPage: user.isPublic === false,
+
+      reminderDayOfWeek: user.goals?.reminderDayOfWeek ?? "MON",
+      reminderAmPm: user.goals?.reminderAmPm ?? "AM",
+      reminderHour12: user.goals?.reminderHour12 ?? 9,
     });
   }, [user, isDark]);
 
@@ -429,16 +446,40 @@ export default function EditPage() {
         new Set([...form.preferred_language, ...extraList])
       );
 
-      await updateMyProfile({
+      // ✅ AM/PM + 12시간 → 24시간으로 변환
+      const reminderHour24 = to24Hour(form.reminderAmPm, form.reminderHour12);
+
+      // 서버로 보낼 실제 payload
+      const profilePayload = {
         ...form,
         preferred_language: finalPreferred,
-      });
+        // ✅ 백엔드가 쓸 24시간 값
+        reminderHour24,
+      };
 
-      await useQueryClient().invalidateQueries({
+      if (avatarFile) {
+        const fd = new FormData();
+        fd.append("avatar", avatarFile);
+        fd.append(
+          "profile",
+          new Blob([JSON.stringify(profilePayload)], {
+            type: "application/json",
+          })
+        );
+
+        await updateMyProfile(fd);
+      } else {
+        await updateMyProfile(profilePayload);
+      }
+
+      await queryClient.invalidateQueries({
         queryKey: ["userProfile"],
       });
+
       alert("프로필이 성공적으로 업데이트되었습니다!");
+      window.location.reload();
     } catch (err) {
+      console.error(err);
       alert("프로필 수정 중 오류가 발생했습니다.");
     }
   };
@@ -450,8 +491,14 @@ export default function EditPage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // 미리보기용 blob URL
     const url = URL.createObjectURL(file);
+
+    // 화면에 보여줄 URL 업데이트
     setForm((prev) => ({ ...prev, avatarUrl: url }));
+
+    // 서버 전송용 실제 파일도 저장
+    setAvatarFile(file);
   };
 
   const handleReset = () => {
@@ -473,8 +520,23 @@ export default function EditPage() {
       enableStudyReminder: user.goals?.isReminderEnabled ?? false,
       preferDarkMode: isDark,
       hideMyPage: user.isPublic === false,
+
+      // 🔽 새로 추가된 리마인더 관련 필드들
+      reminderDayOfWeek: user.goals?.reminderDayOfWeek ?? "MON",
+      reminderAmPm: user.goals?.reminderAmPm ?? "AM",
+      reminderHour12: user.goals?.reminderHour12 ?? 9,
     });
   };
+
+  function to24Hour(amPm: "AM" | "PM", hour12: number | string): number {
+    const h = Number(hour12);
+
+    if (amPm === "AM") {
+      return h === 12 ? 0 : h; // 12AM → 0시
+    } else {
+      return h === 12 ? 12 : h + 12; // 12PM → 12시, 나머진 +12
+    }
+  }
 
   if (!username) {
     return <ErrorText>잘못된 접근입니다. (username 없음)</ErrorText>;
@@ -591,7 +653,6 @@ export default function EditPage() {
           </LangChipRow>
           {showExtraLang && (
             <div>
-              {/* 🚫 form 안에 form 중첩 방지: div로 변경 */}
               <Hint>
                 구분자(,)를 이용해 프로필에 표시할 언어를 추가로 작성할 수
                 있습니다.
@@ -671,6 +732,60 @@ export default function EditPage() {
                 <ToggleThumb $enable={form.enableStudyReminder} />
               </ToggleButton>
             </SettingItem>
+            {form.enableStudyReminder && (
+              <SettingItem>
+                <SettingTextGroup>
+                  <SettingDescription>
+                    매주
+                    <select
+                      value={form.reminderDayOfWeek}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          reminderDayOfWeek: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="MON">월</option>
+                      <option value="TUE">화</option>
+                      <option value="WED">수</option>
+                      <option value="THU">목</option>
+                      <option value="FRI">금</option>
+                      <option value="SAT">토</option>
+                      <option value="SUN">일</option>
+                    </select>
+                    <select
+                      value={form.reminderAmPm}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          reminderAmPm: e.target.value as "AM" | "PM",
+                        }))
+                      }
+                    >
+                      <option value="AM">오전</option>
+                      <option value="PM">오후</option>
+                    </select>
+                    <select
+                      value={form.reminderHour12}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          reminderHour12: e.target.value,
+                        }))
+                      }
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                    시에 메일로 알려드릴게요
+                  </SettingDescription>
+                </SettingTextGroup>
+              </SettingItem>
+            )}
 
             <SettingItem>
               <SettingTextGroup>
