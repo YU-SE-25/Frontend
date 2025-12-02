@@ -30,12 +30,12 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={lightTheme}>
-        <ResetStyle />
-        <RouterProvider router={router} />
-      </ThemeProvider>
-    </QueryClientProvider>
-  </StrictMode>
+  // <StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider theme={lightTheme}>
+      <ResetStyle />
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  </QueryClientProvider>
+  // </StrictMode>
 );
