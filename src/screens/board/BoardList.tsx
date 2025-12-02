@@ -25,7 +25,6 @@ import {
 } from "../../theme/ProblemList.Style";
 import BoardDetail from "./BoardDetail";
 import { useQuery } from "@tanstack/react-query";
-import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
 import { fetchBoardList } from "../../api/board_api";
 
 export interface BoardTag {
@@ -55,12 +54,6 @@ export interface BoardContent {
   contents: string; // 본문 내용 (상세 보기에서 추가됨)
 
   comments: BoardComment[]; // 댓글 배열 포함 (상세용)
-}
-
-//스터디그룹용
-interface BoardListProps {
-  mode?: "global" | "study";
-  groupId?: number;
 }
 
 const CATEGORY_LABEL = {
@@ -109,10 +102,7 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
 `;
 
 // 기존 함수 선언 → props 형태로 변경됨
-export default function BoardList({
-  mode = "global",
-  groupId,
-}: BoardListProps) {
+export default function BoardList() {
   const navigate = useNavigate();
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -134,32 +124,8 @@ export default function BoardList({
   const [posts, setPosts] = useState<BoardContent[]>([]);
   //스터디그룹 api 추가
   React.useEffect(() => {
-    if (mode === "study" && groupId) {
-      //스터디 그룹 API 호출
-      fetchStudyGroupPosts(groupId, 1) // page = 1
-        .then((res) => {
-          //StudyGroupPostSummary[] → BoardContent[] 변환
-          const converted: BoardContent[] = res.posts.map((p) => ({
-            post_id: p.post_id,
-            post_title: p.post_title,
-            author: p.author,
-            tag: { id: 0, name: "" }, // 스터디그룹에는 태그 개념이 없음
-            anonymity: p.anonymity,
-            like_count: p.like_count,
-            comment_count: p.comment_count,
-            create_time: p.create_time,
-
-            //BoardContent에서 필요한데 API 요약에 없는 값들:
-            contents: "", // 상세내용은 없음 → 비워두기
-            comments: [], // 댓글 목록도 없음 → 빈 배열
-          }));
-          setPosts(converted);
-        })
-        .catch((err) => console.error(err));
-    } else {
-      setPosts(DUMMY_POSTS_BY_CATEGORY[currentCategory]);
-    }
-  }, [mode, groupId, currentCategory]);
+    setPosts(DUMMY_POSTS_BY_CATEGORY[currentCategory]);
+  }, [currentCategory]);
 
   // URL의 ?no=값을 읽어서 선택된 글 ID로 사용
   const selectedPostId = searchParams.get("no");
@@ -200,10 +166,6 @@ export default function BoardList({
   };
 
   const handleWritePost = () => {
-    if (mode === "study" && groupId) {
-      navigate(`/studygroup/${groupId}/discuss/write`);
-      return;
-    }
     navigate(`/board/${currentCategory}/write`);
   };
 
@@ -253,7 +215,7 @@ export default function BoardList({
   };
 
   return (
-    <BoardListWrapper $fullWidth={mode === "study"}>
+    <BoardListWrapper>
       <PageTitleContainer
         style={{ flexDirection: "column", alignItems: "flex-start", gap: 8 }}
       >
@@ -268,19 +230,18 @@ export default function BoardList({
           <PageTitle>{CATEGORY_LABEL[currentCategory]}</PageTitle>
           <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
         </div>
-        {mode !== "study" && (
-          <CategoryTabs>
-            {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
-              <CategoryTab
-                key={key}
-                $active={currentCategory === key}
-                onClick={() => handleChangeCategory(key as BoardCategory)}
-              >
-                {label}
-              </CategoryTab>
-            ))}
-          </CategoryTabs>
-        )}
+
+        <CategoryTabs>
+          {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
+            <CategoryTab
+              key={key}
+              $active={currentCategory === key}
+              onClick={() => handleChangeCategory(key as BoardCategory)}
+            >
+              {label}
+            </CategoryTab>
+          ))}
+        </CategoryTabs>
       </PageTitleContainer>
       {selectedPost && <BoardDetail post={selectedPost} />}
 

@@ -24,44 +24,47 @@ api.interceptors.request.use(
 
 //응답 인터셉터 (AccessToken 만료 → 자동 재발급)
 //응답 인터셉터 (AccessToken 만료 → 자동 재발급)
+// 응답 인터셉터
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
 
-    // 1) 로그인 요청에서 발생한 401 → 토큰 재발급 금지!
-    if (original?.url === "/auth/login") {
-      return Promise.reject(error);
-    }
+    // 로그인 요청 자체가 401이면 그냥 에러
+    if (original?.url === "/auth/login") return Promise.reject(error);
+    if (original?.url === "/auth/refresh") return Promise.reject(error);
 
-    // 2) 리프레시 자체가 401 → 더 반복하면 무한루프라 금지
-    if (original?.url === "/auth/refresh") {
-      return Promise.reject(error);
-    }
-
-    // 3) Access Token 만료
+    // 401인데 아직 재시도 안 한 경우 → refresh 시도
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
       const refreshToken = store.get(refreshTokenAtom);
-      if (!refreshToken) throw error; // 리프레시도 없으면 그대로 에러
 
-      // 새 토큰 재발급 API 호출
-      const refreshResponse = await AuthAPI.refresh(refreshToken);
+      // refreshToken 자체가 없으면 → 로그아웃은 하지 말고 그냥 실패만 전달
+      if (!refreshToken) return Promise.reject(error);
 
-      // jotai 상태 업데이트 (새 AccessToken 저장)
-      store.set(refreshActionAtom, refreshResponse);
-      localStorage.setItem("accessToken", refreshResponse.accessToken);
+      try {
+        // refresh 시도
+        const refreshResponse = await AuthAPI.refresh(refreshToken);
 
-      // 원래 요청에 새 토큰 삽입해서 재요청
-      original.headers[
-        "Authorization"
-      ] = `Bearer ${refreshResponse.accessToken}`;
+        // 성공 → 토큰 저장 + 원래 요청 재전송
+        store.set(refreshActionAtom, refreshResponse);
+        localStorage.setItem("accessToken", refreshResponse.accessToken);
 
-      return api(original);
+        original.headers[
+          "Authorization"
+        ] = `Bearer ${refreshResponse.accessToken}`;
+        return api(original);
+      } catch (e) {
+        //refresh 실패 → 이때만 강제 로그아웃
+        localStorage.clear();
+        window.location.href = "/login";
+        return;
+      }
     }
 
-    // 4) 다른 에러면 그대로 던짐
-    throw error;
+    // refresh 시도도 아니고 그냥 일반적인 401 → 아무것도 안 함
+    // (강제 로그아웃 안 함)
+    return Promise.reject(error);
   }
 );
