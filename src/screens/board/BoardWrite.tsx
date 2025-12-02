@@ -1,14 +1,18 @@
+// src/pages/board/BoardWrite.tsx
 import { useAtomValue } from "jotai";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
+import { createDiscussPost, updateDiscussPost } from "../../api/board_api"; // ✅ 추가
 
-type BoardCategory = "discussion" | "qna";
+export type BoardCategory = "daily" | "lecture" | "promotion" | "typo";
 
 const CATEGORY_LABEL: Record<BoardCategory, string> = {
-  discussion: "토론게시판",
-  qna: "Q&A 게시판",
+  daily: "토론 게시판",
+  lecture: "강의",
+  promotion: "홍보",
+  typo: "오타",
 };
 
 const Page = styled.div`
@@ -206,19 +210,34 @@ export default function BoardWrite({
 
   const initialCategory: BoardCategory =
     editPost?.category ??
-    (routeCategory === "qna" || routeCategory === "discussion"
+    (routeCategory === "daily" ||
+    routeCategory === "lecture" ||
+    routeCategory === "promotion" ||
+    routeCategory === "typo"
       ? (routeCategory as BoardCategory)
-      : "discussion");
+      : "daily");
+
+  const initialTitle = editPost?.title ?? "";
+  const initialContent = editPost?.content ?? "";
+  const initialIsAnonymous = editPost?.isAnonymous ?? false;
+  const initialIsPrivate = editPost?.isPrivate ?? false;
 
   const [category, setCategory] = useState<BoardCategory>(initialCategory);
-  const [title, setTitle] = useState(editPost?.title ?? "");
-  const [content, setContent] = useState(editPost?.content ?? "");
+  const [title, setTitle] = useState(initialTitle);
+  const [content, setContent] = useState(initialContent);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(
-    editPost?.isAnonymous ?? false
-  );
-  const [isPrivate, setIsPrivate] = useState(editPost?.isPrivate ?? false);
+  const [isAnonymous, setIsAnonymous] = useState(initialIsAnonymous);
+  const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
+
+  const isValid = title.trim().length > 0 && content.trim().length > 0;
+
+  const isDirty =
+    title !== initialTitle ||
+    content !== initialContent ||
+    isAnonymous !== initialIsAnonymous ||
+    isPrivate !== initialIsPrivate ||
+    category !== initialCategory;
 
   useEffect(() => {
     if (!user) {
@@ -228,25 +247,46 @@ export default function BoardWrite({
 
   useEffect(() => {
     if (isStudy) {
-      setCategory("discussion");
+      setCategory("daily");
       setIsPrivate(false);
     }
   }, [isStudy]);
 
-  const isValid = title.trim().length > 0 && content.trim().length > 0;
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   const handleCancel = () => {
-    const ok = window.confirm("작성 중인 내용을 취소할까요?");
-    if (!ok) return;
+    if (isDirty) {
+      const ok = window.confirm(
+        "작성 중인 내용이 저장되지 않았습니다. 나가시겠습니까?"
+      );
+      if (!ok) return;
+    }
     navigate(-1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!isValid) {
       setError("제목과 내용을 모두 입력해 주세요.");
       return;
     }
+
+    const ok = window.confirm(
+      isEditMode ? "게시글을 수정하시겠습니까?" : "게시글을 등록하시겠습니까?"
+    );
+    if (!ok) return;
+
     setError(null);
 
     try {
@@ -266,11 +306,9 @@ export default function BoardWrite({
             id: editPost.id,
             ...studyPayload,
           });
-          // await api.patch(`/api/studygroup/${effectiveGroupId}/discuss/${editPost.id}`, studyPayload);
           alert("스터디그룹 글 수정 완료! (더미)");
         } else {
           console.log("스터디그룹 글 작성 payload:", studyPayload);
-          // await api.post(`/api/studygroup/${effectiveGroupId}/discuss`, studyPayload);
           alert("스터디그룹 글 작성 완료! (더미)");
         }
 
@@ -283,32 +321,26 @@ export default function BoardWrite({
       }
 
       const payload = {
-        authorId: user?.userId ?? 0,
-        category,
+        anonymous: isAnonymous,
         title: title.trim(),
-        content: content.trim(),
-        isAnonymous,
+        contents: content.trim(),
         privatePost: isPrivate,
+        attachmentUrl: null,
       };
 
       if (isEditMode && editPost) {
-        console.log("게시글 수정 payload", { id: editPost.id, ...payload });
-        // await api.patch(`/api/board/${editPost.id}`, payload);
+        await updateDiscussPost(editPost.id, payload);
       } else {
-        console.log("게시글 전송 payload", payload);
-        // await api.post(`/api/board`, payload);
+        await createDiscussPost(payload);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
       if (isEditMode && editPost) {
-        // 상세 페이지로 돌려보내고 싶으면 이런식으로
-        // navigate(`/board/${category}/${editPost.id}`);
         navigate(-1);
       } else {
         navigate("/board/" + category);
       }
     } catch (e) {
+      console.error("게시글 저장 오류:", e);
       setError("글 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsSubmitting(false);
