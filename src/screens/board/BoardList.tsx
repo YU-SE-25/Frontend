@@ -25,6 +25,7 @@ import BoardDetail from "./BoardDetail";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
 import { fetchDiscussList } from "../../api/board_api";
+import { isOwner } from "../../utils/isOwner";
 
 export interface BoardTag {
   id: number;
@@ -32,23 +33,41 @@ export interface BoardTag {
 }
 
 export interface BoardComment {
-  id: number;
-  author: string;
-  contents: string;
+  comment_id: number;
+  post_id: number;
+  parent_id: number;
+
+  author_id: number;
+  author_name: string;
+
   anonymity: boolean;
-  create_time: string;
+  content: string;
+  is_private: boolean;
+
+  like_count: number;
+  viewer_liked: boolean;
+
+  created_at: string;
+  updated_at: string;
+
+  message: string | null;
 }
 
 export interface BoardContent {
   post_id: number;
   post_title: string;
   author: string;
-  tag: BoardTag;
+  author_id: number;
+  updated_time: string;
+  viewer_liked: boolean;
+  attachment_url: string | null;
+  message: string | null;
+  tag: { id: number; name: string };
   anonymity: boolean;
   like_count: number;
-  is_private?: boolean;
   comment_count: number;
   create_time: string;
+  is_private: boolean;
   contents: string;
   comments: BoardComment[];
 }
@@ -120,7 +139,6 @@ export default function BoardList({
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const [posts, setPosts] = useState<BoardContent[]>([]);
 
@@ -128,9 +146,9 @@ export default function BoardList({
     data: globalList,
     isLoading,
     isFetching,
-  } = useQuery<BoardContent[]>({
+  } = useQuery({
     queryKey: ["boardList", mode, currentCategory, currentPage],
-    queryFn: () => fetchDiscussList(currentPage),
+    queryFn: () => fetchDiscussList(currentPage), // 여기서 DiscussPostPage 형태로 받는다고 가정
     enabled: mode === "global",
     staleTime: 0,
     refetchOnMount: "always",
@@ -143,7 +161,8 @@ export default function BoardList({
     if (mode === "study" && groupId) {
       fetchStudyGroupPosts(groupId, currentPage)
         .then((res) => {
-          const converted: BoardContent[] = res.posts.map((p: any) => ({
+          /*  내용물 보충 작업 -- 이전코드
+         const converted: BoardContent[] = res.posts.map((p: any) => ({
             post_id: p.post_id,
             post_title: p.post_title,
             author: p.author,
@@ -154,6 +173,26 @@ export default function BoardList({
             create_time: p.create_time,
             contents: "",
             comments: [],
+          }));*/
+          const converted: BoardContent[] = res.posts.map((p: any) => ({
+            post_id: p.post_id,
+            post_title: p.post_title,
+            author: p.author,
+
+            author_id: p.author_id ?? 0,
+            updated_time: p.updated_time ?? p.create_time ?? "",
+            viewer_liked: p.viewer_liked ?? false,
+            attachment_url: p.attachment_url ?? null,
+            message: p.message ?? null,
+
+            tag: { id: 0, name: "" },
+            anonymity: p.anonymity,
+            like_count: p.like_count,
+            comment_count: p.comment_count,
+            create_time: p.create_time,
+            is_private: p.is_private ?? false,
+            contents: "",
+            comments: [] as BoardComment[],
           }));
           setPosts(converted);
         })
@@ -165,7 +204,9 @@ export default function BoardList({
     }
 
     if (mode === "global") {
-      setPosts(globalList ?? []);
+      // fetchDiscussList가 mapDiscussPostPage를 거쳐서
+      // { content: BoardContent[], page, size, totalPages, ... } 형태로 온다고 가정
+      setPosts(globalList?.content ?? []);
     }
   }, [mode, groupId, currentPage, globalList]);
 
@@ -190,11 +231,24 @@ export default function BoardList({
     if (e.key === "Enter") handleSearch();
   };
 
-  const handleViewDetails = (postId: number) => {
+  const handleViewDetails = (post: BoardContent) => {
+    // 비공개 글인데, 내가 작성자도 아니고 관리자도 아니면 막기
+    if (post.is_private) {
+      const canView = isOwner({
+        author: post.author,
+        anonymity: post.anonymity,
+      });
+
+      if (!canView) {
+        alert("비공개 글은 작성자 또는 관리자만 열람할 수 있습니다.");
+        return;
+      }
+    }
+
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        next.set("no", String(postId));
+        next.set("no", String(post.post_id));
         return next;
       },
       { replace: true }
@@ -242,19 +296,15 @@ export default function BoardList({
     return result;
   }, [posts, searchTerm, sortType]);
 
-  const totalItems = filteredAndSortedPosts.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  // 이제 페이지 수는 서버에서 온 totalPages를 쓰기
+  const totalPages = mode === "global" ? globalList?.totalPages ?? 1 : 1;
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPosts = filteredAndSortedPosts.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
+  const currentPosts = filteredAndSortedPosts;
 
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
+      window.scrollTo(0, 0);
     }
   };
 
@@ -319,13 +369,10 @@ export default function BoardList({
 
         <SortSelect
           value={sortType}
-          onChange={(e) =>
-            setSortType(e.target.value as "latest" | "views" | "id")
-          }
+          onChange={(e) => setSortType(e.target.value as "latest" | "views")}
         >
           <option value="latest">최신순</option>
-          <option value="views">조회순</option>
-          <option value="id">번호순</option>
+          <option value="views">추천순</option>
         </SortSelect>
       </ControlBar>
 
@@ -349,7 +396,7 @@ export default function BoardList({
             currentPosts.map((post) => (
               <TableRow
                 key={post.post_id}
-                onClick={() => handleViewDetails(post.post_id)}
+                onClick={() => handleViewDetails(post)}
                 style={{ cursor: "pointer" }}
               >
                 <TableCell>{post.post_id}</TableCell>

@@ -1,4 +1,7 @@
-import type { BoardContent } from "../screens/board/BoardList.tsx";
+import type {
+  BoardComment,
+  BoardContent,
+} from "../screens/board/BoardList.tsx";
 import { api } from "./axios.ts";
 
 /* ========================== 게시글 DTO & 매핑 ========================== */
@@ -11,28 +14,82 @@ export interface DiscussPostDto {
   title: string;
   contents: string;
   privatePost: boolean;
-  message?: string;
+  message: string | null; // null까지 받아서 이렇게
   likeCount: number;
   commentCount: number;
-  attachmentUrl?: string;
-  viewerLiked?: boolean;
+  attachmentUrl: string | null; // null까지
+  createdAt: string; // "2025-12-01T16:40:04.527742"
+  updatedAt: string;
+  viewerLiked: boolean;
+}
+export interface DiscussPostPage {
+  content: DiscussPostDto[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
 }
 /* 게시글 DTO → BoardContent 매핑 */
 export function mapDiscussPost(dto: DiscussPostDto): BoardContent {
   return {
     post_id: dto.postId,
     post_title: dto.title,
-    // authorNickname이 없고 authorId만 있으니까 일단 이렇게 표시
+
     author: dto.authorName,
-    tag: { id: 0, name: "" }, // 아직 태그 정보 없으니까 기본값
+    author_id: dto.authorId,
+
+    tag: { id: 0, name: "" },
     anonymity: dto.anonymous,
+
     like_count: dto.likeCount,
     comment_count: dto.commentCount,
-    // 지금 응답에 createdAt 같은 게 없으니 일단 빈 문자열
-    create_time: "",
+
+    create_time: dto.createdAt,
+    updated_time: dto.updatedAt,
+
     is_private: dto.privatePost,
     contents: dto.contents,
-    comments: [], // 댓글 목록은 별도 API로 채울 예정
+
+    viewer_liked: dto.viewerLiked,
+    attachment_url: dto.attachmentUrl,
+    message: dto.message,
+
+    comments: [], // 댓글은 별도 API로 가져올 예정
+  };
+}
+
+export function mapDiscussPostPage(pageDto: DiscussPostPage) {
+  return {
+    content: pageDto.content.map(mapDiscussPost),
+    page: pageDto.page,
+    size: pageDto.size,
+    totalElements: pageDto.totalElements,
+    totalPages: pageDto.totalPages,
+    last: pageDto.last,
+  };
+}
+
+export function mapCommentDto(dto: any): BoardComment {
+  return {
+    comment_id: dto.comment_id,
+    post_id: dto.post_id,
+    parent_id: dto.parent_id,
+
+    author_id: dto.author_id,
+    author_name: dto.author_name,
+
+    anonymity: dto.anonymity,
+    content: dto.content,
+    is_private: dto.is_private,
+
+    like_count: dto.like_count,
+    viewer_liked: dto.viewerLiked,
+
+    created_at: dto.created_at,
+    updated_at: dto.updated_at,
+
+    message: dto.message,
   };
 }
 
@@ -57,12 +114,11 @@ export async function deleteDiscussPost(postId: number) {
 }
 
 /* 게시글 목록(페이지 기반): GET /api/dis_board?page= */
-export async function fetchDiscussList(page: number): Promise<BoardContent[]> {
-  const res = await api.get<DiscussPostDto[]>("/dis_board/list", {
+export async function fetchDiscussList(page = 1) {
+  const res = await api.get<DiscussPostPage>("/dis_board", {
     params: { page },
   });
-  const raw = Array.isArray(res.data) ? res.data : [];
-  return raw.map(mapDiscussPost);
+  return mapDiscussPostPage(res.data);
 }
 /* 게시글 생성: POST /api/dis_board */
 export async function createDiscussPost(payload: any) {
@@ -136,9 +192,9 @@ export async function searchDiscussPosts(params: DiscussSearchParams) {
 /* ========================== 댓글 API ========================== */
 
 /* 단일 댓글 조회: GET /api/dis_board/comment/{commentId} */
-export async function fetchCommentById(commentId: number) {
-  const res = await api.get(`/dis_board/comment/${commentId}`);
-  return res.data;
+export async function fetchCommentsById(postId: number) {
+  const res = await api.get(`/dis_board/comment/${postId}`);
+  return res.data.map(mapCommentDto);
 }
 
 /* 댓글 수정: PUT /api/dis_board/comment/{commentId} */
