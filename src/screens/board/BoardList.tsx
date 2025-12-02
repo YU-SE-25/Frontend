@@ -133,9 +133,8 @@ export default function BoardList() {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ["boardList", mode, currentCategory, currentPage],
+    queryKey: ["boardList", currentCategory, currentPage],
     queryFn: () => fetchDiscussList(currentPage), // 여기서 DiscussPostPage 형태로 받는다고 가정
-    enabled: mode === "global",
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
