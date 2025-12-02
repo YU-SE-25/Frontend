@@ -17,7 +17,6 @@ import {
 import Sidebar from "../../components/mypage_sidebar";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
-import { useEffect } from "react";
 const USE_DUMMY = false; //더미 데이터 사용 여부!
 
 //css styles
@@ -180,15 +179,15 @@ export default function MyPageLayout() {
             <>
               <Bio>{user.bio}</Bio>
               <Chips>
-                {user.prefferred_language?.slice(0, 5).map((lang) => (
+                {user.preferred_language?.slice(0, 5).map((lang) => (
                   <LangChip key={lang} tone={lang}>
                     {LangIcon(lang)}
                     <span>{lang}</span>
                   </LangChip>
                 ))}
-                {(user.prefferred_language?.length ?? 0) > 5 && (
+                {(user.preferred_language?.length ?? 0) > 5 && (
                   <LangChip tone="more">
-                    + {(user.prefferred_language?.length ?? 0) - 5}..
+                    + {(user.preferred_language?.length ?? 0) - 5}..
                   </LangChip>
                 )}
               </Chips>

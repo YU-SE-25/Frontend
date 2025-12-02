@@ -26,7 +26,7 @@ export type UserProfile = {
   solvedProblems: number[];
   bookmarkedProblems: number[];
   recentSubmissions: Submission[];
-  prefferred_language?: string[];
+  preferred_language?: string[];
   role: string;
   isPublic?: boolean;
   stats: {
@@ -102,7 +102,7 @@ export function mapEditFormToUpdateDto(
 ): UpdateMyProfileDto {
   return {
     nickname: form.username,
-    preferredLanguage: form.prefferred_language,
+    preferredLanguage: form.preferred_language,
     bio: form.bio || null,
     isPublic: !form.hideMyPage,
     goals: {
@@ -129,7 +129,7 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
     solvedProblems: dto.solvedProblems ?? [],
     bookmarkedProblems: dto.bookmarkedProblems ?? [],
     recentSubmissions: dto.recentSubmissions ?? [],
-    prefferred_language: dto.preferredLanguage ?? [],
+    preferred_language: dto.preferredLanguage ?? [],
     role: dto.role,
     isPublic: dto.isPublic,
     stats: {
@@ -172,7 +172,7 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
 export async function updateMyProfile(form: EditableProfile) {
   const updateData = {
     nickname: form.username,
-    preferredLanguage: form.prefferred_language,
+    preferredLanguage: form.preferred_language,
     // bio, isPublic, goals... 등 나머지도 여기서 추가
   };
 

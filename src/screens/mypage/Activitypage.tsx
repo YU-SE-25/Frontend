@@ -408,6 +408,7 @@ export default function ActivityPage() {
             <CardTitle>내가 푼 문제</CardTitle>
             <Muted>{isLoading ? "동기화 중…" : ""}</Muted>
           </CardTitleRow>
+
           <Row>
             <Button
               onClick={goSolved}
@@ -423,16 +424,25 @@ export default function ActivityPage() {
               새로고침
             </Button>
           </Row>
-          <Chips>
-            {solvedPreview.map((id) => (
-              <Chip key={id} onClick={() => goDetail(id)}>
-                #{id}
-              </Chip>
-            ))}
-            {solvedIds.length > solvedPreview.length && (
-              <Muted>+ {solvedIds.length - solvedPreview.length} 더보기</Muted>
-            )}
-          </Chips>
+
+          {/*length가 0일 때 */}
+          {!isLoading && solvedIds.length === 0 ? (
+            <Muted>아직 푼 문제가 없습니다.</Muted>
+          ) : (
+            <Chips>
+              {solvedPreview.map((id) => (
+                <Chip key={id} onClick={() => goDetail(id)}>
+                  #{id}
+                </Chip>
+              ))}
+
+              {solvedIds.length > solvedPreview.length && (
+                <Muted>
+                  + {solvedIds.length - solvedPreview.length} 더보기
+                </Muted>
+              )}
+            </Chips>
+          )}
         </Card>
 
         <Card>
