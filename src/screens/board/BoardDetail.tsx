@@ -3,9 +3,20 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import ReportButton from "../../components/ReportButton";
 import { useNavigate } from "react-router-dom";
-import type { BoardComment, BoardContent } from "./BoardList";
+import type { BoardCategory, BoardComment, BoardContent } from "./BoardList";
 import EditButton from "../../components/EditButton";
 import { isOwner } from "../../utils/isOwner";
+import {
+  fetchDiscussPost,
+  fetchCommentsByPostId,
+  createComment as apiCreateComment,
+  updateComment as apiUpdateComment,
+  deleteComment as apiDeleteComment,
+  likeDiscussPost,
+  deleteDiscussPost,
+  mapCommentDto,
+} from "../../api/board_api";
+import { useQuery } from "@tanstack/react-query";
 
 interface BoardDetailProps {
   post: BoardContent;
@@ -13,6 +24,7 @@ interface BoardDetailProps {
 }
 
 const DetailCard = styled.section`
+  position: relative;
   width: 100%;
   max-width: 960px;
   margin: 20px auto 24px;
@@ -47,9 +59,7 @@ const DetailTitle = styled.h2`
   color: ${({ theme }) => theme.textColor};
 `;
 
-const MetaRow = styled.div<{
-  isDisabled?: boolean;
-}>`
+const MetaRow = styled.div<{ isDisabled?: boolean }>`
   font-size: 13px;
   color: ${({ theme }) => theme.textColor}60;
 
@@ -61,64 +71,60 @@ const MetaRow = styled.div<{
   span,
   strong {
     transition: none;
-
     color: inherit;
   }
-  //Metarow의 첫번째 자식
+
   & > span:first-child {
     color: ${({ theme }) => theme.textColor};
     cursor: pointer;
 
-    ${(props) =>
-      props.isDisabled &&
+    ${({ isDisabled, theme }) =>
+      isDisabled &&
       `
-    color: ${props.theme.textColor}60; 
-    cursor: not-allowed;
-    pointer-events: none; /* 클릭 이벤트 자체를 막음 */
-  `}
+        color: ${theme.textColor}60;
+        cursor: not-allowed;
+        pointer-events: none;
+      `}
 
-    /* 호버 효과 (비활성화 아닐 때만) */
-  &:not([aria-disabled="true"]):hover {
+    &:not([aria-disabled="true"]):hover {
       text-decoration: underline;
     }
   }
 `;
 
-const VotePanel = styled.div`
+const LikePanel = styled.button<{ $active?: boolean }>`
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 50%; /* 완벽한 원 */
+  border: 1px solid ${({ theme }) => `${theme.textColor}22`};
+  background: ${({ theme, $active }) =>
+    $active ? theme.focusColor : theme.bgColor};
+  color: ${({ theme, $active }) => ($active ? theme.bgColor : theme.textColor)};
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 999px; /* 둥근 직사각형 */
-  border: 1px solid ${({ theme }) => theme.textColor}20;
-  background: ${({ theme }) => theme.bgCardColor};
-`;
-
-const VoteButton = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid
-    ${({ theme }) => theme.textColor ?? "rgba(255,255,255,0.15)"};
-  background: transparent;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 14px;
+  gap: 2px;
   cursor: pointer;
-  color: ${({ theme }) => theme.textColor};
+  padding: 0;
+  outline: none;
+
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
 
   &:hover {
-    background: ${({ theme }) => theme.bgColor}60;
+    transform: translateY(-1px);
+    border-color: ${({ theme }) => `${theme.focusColor}88`};
   }
 `;
 
-const VoteCount = styled.span`
-  font-size: 14px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.textColor};
+const LikeCount = styled.div`
+  font-size: 18px; /* 숫자 크게 */
+  font-weight: 700;
+  line-height: 1;
 `;
+
 const HeaderActions = styled.div`
   display: flex;
   align-items: center;
@@ -159,6 +165,7 @@ const ContentArea = styled.div`
     border-radius: 8px;
   }
 `;
+
 const DetailBody = styled.div`
   display: flex;
   align-items: flex-start;
@@ -206,6 +213,7 @@ const CommentList = styled.ul`
   margin: 0;
   padding: 0;
 `;
+
 const CommentActionButton = styled.button<{ $danger?: boolean }>`
   margin-left: 8px;
   font-size: 12px;
@@ -234,9 +242,7 @@ const CommentItem = styled.li`
   }
 `;
 
-const CommentMeta = styled.div<{
-  isDisabled?: boolean;
-}>`
+const CommentMeta = styled.div<{ isDisabled?: boolean }>`
   font-size: 12px;
   color: ${({ theme }) => theme.textColor}70;
   margin-bottom: 2px;
@@ -245,16 +251,16 @@ const CommentMeta = styled.div<{
     color: ${({ theme }) => theme.textColor};
     font-weight: 600;
     cursor: pointer;
-    ${(props) =>
-      props.isDisabled &&
-      `
-    color: ${props.theme.textColor}60; 
-    cursor: not-allowed;
-    pointer-events: none; /* 클릭 이벤트 자체를 막음 */
-  `}
 
-    /* 호버 효과 (비활성화 아닐 때만) */
-  &:not([aria-disabled="true"]):hover {
+    ${({ isDisabled, theme }) =>
+      isDisabled &&
+      `
+        color: ${theme.textColor}60;
+        cursor: not-allowed;
+        pointer-events: none;
+      `}
+
+    &:not([aria-disabled="true"]):hover {
       text-decoration: underline;
     }
   }
@@ -295,6 +301,7 @@ const CommentTextarea = styled.textarea`
 const CommentSubmitRow = styled.div`
   display: flex;
   justify-content: flex-end;
+
   & > label > span {
     font-size: 13px;
     color: ${({ theme }) => theme.textColor};
@@ -328,152 +335,294 @@ const EmptyText = styled.p`
   text-align: left;
 `;
 
+const LoadingOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.15); /* 좀 더 뿌옇게 */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  pointer-events: auto; /* 클릭 막기 */
+  z-index: 10; /* 내용보다 위 */
+`;
+
 export default function BoardDetail({ post, onClose }: BoardDetailProps) {
   const nav = useNavigate();
-  const [anonymity, setAnonimity] = useState(false);
+  const postId = post.post_id;
+
+  const currentCategory =
+    (window.location.pathname.split("/")[2] as BoardCategory) ?? "daily";
+
+  // 1) 서버에서 최신 글 정보 & 댓글 가져오기
+  const { data: postData, isFetching: isPostFetching } = useQuery<BoardContent>(
+    {
+      queryKey: ["postDetail", postId],
+      queryFn: () => fetchDiscussPost(postId),
+      staleTime: 0,
+      refetchOnMount: "always",
+    }
+  );
+
+  const { data: commentsData, isFetching: isCommentsFetching } = useQuery<
+    BoardComment[]
+  >({
+    queryKey: ["postComments", postId],
+    queryFn: async () => {
+      const res = await fetchCommentsByPostId(postId);
+      const raw = Array.isArray(res) ? res : res.comments ?? res.content ?? [];
+      return raw.map(mapCommentDto); // DTO → BoardComment
+    },
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  // 2) 화면에 실제로 보여줄 "안정된" 상태
+  const [stablePost, setStablePost] = useState<BoardContent>(post);
   const [localComments, setLocalComments] = useState<BoardComment[]>(
     post.comments ?? []
   );
-  const [vote, setVote] = useState(post.like_count); // 투표
-  const [voteState, setVoteState] = useState<"up" | "down" | null>(null);
+  const [like, setLike] = useState(post.like_count);
+  const [likeState, setLikeState] = useState<"up" | null>(() =>
+    post.viewer_liked ? "up" : null
+  );
 
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
-  useEffect(() => {
-    setLocalComments(post.comments ?? []);
-    window.scrollTo(0, 0);
-  }, [post.post_id]);
-  useEffect(() => {
-    setVote(post.like_count);
-  }, [post.like_count]);
+  const [anonymity, setAnonymity] = useState(false);
+  const isLikeActive = likeState === "up";
+  // 이 글(postId)에 대해 "스크롤을 이미 위로 올렸는지" 여부
+  const [hasScrolledForPost, setHasScrolledForPost] = useState(false);
 
-  const displayAuthor = post.anonymity ? "익명" : post.author;
+  const isLoadingAll = isPostFetching || isCommentsFetching;
 
-  //투표
-  const handleUpvote = () => {
-    setVoteState("up");
-    setVote((v) => (voteState === "down" ? v + 2 : v + 1));
+  // 🔁 서버에서 새 글 데이터를 다 가져왔을 때만 화면 상태 교체
+  useEffect(() => {
+    if (postData) {
+      setStablePost(postData);
+      setLike(postData.like_count);
+      setLikeState(postData.viewer_liked ? "up" : null);
+      console.log("postdata : ", postData);
+    }
+  }, [postData]);
+
+  // 🔁 서버에서 새 댓글 데이터를 다 가져왔을 때만 화면 댓글 교체
+  useEffect(() => {
+    if (commentsData) {
+      setLocalComments(commentsData);
+    }
+  }, [commentsData]);
+
+  // 🔁 postId가 바뀌면 “이번 글에 대해서는 아직 스크롤 안 했다”로 초기화
+  useEffect(() => {
+    setHasScrolledForPost(false);
+  }, [postId]);
+
+  // 🔁 로딩이 모두 끝난 순간에만, 그리고 딱 한 번만 스크롤 위로 고정
+  useEffect(() => {
+    if (!hasScrolledForPost && !isPostFetching && !isCommentsFetching) {
+      window.scrollTo(0, 0);
+      setHasScrolledForPost(true);
+    }
+  }, [hasScrolledForPost, isPostFetching, isCommentsFetching, postId]);
+
+  const displayAuthor = stablePost.anonymity ? "익명" : stablePost.author;
+
+  // ✅ 게시글 수정 버튼 클릭 시
+  const handleEditPost = () => {
+    nav(`/board/${currentCategory}/write`, {
+      state: {
+        post: {
+          id: stablePost.post_id,
+          category: currentCategory,
+          title: stablePost.post_title,
+          content: stablePost.contents,
+          isAnonymous: stablePost.anonymity,
+          isPrivate: stablePost.is_private,
+          groupId: null,
+        },
+      },
+    });
   };
 
-  const handleDownvote = () => {
-    setVoteState("down");
-    setVote((v) => (voteState === "up" ? v - 2 : v - 1));
+  // ✅ 게시글 삭제 버튼 클릭 시
+  const handleDeletePost = async () => {
+    const ok = window.confirm("정말로 게시글을 삭제하시겠습니까?");
+    if (!ok) return;
+
+    try {
+      await deleteDiscussPost(stablePost.post_id);
+      alert("삭제되었습니다.");
+      window.location.reload(); // 또는 nav(0);
+    } catch (e) {
+      console.error("게시글 삭제 실패:", e);
+      alert("게시글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+  const handleLikeToggle = async () => {
+    // 좋아요 → 취소
+    if (likeState === "up") {
+      setLikeState(null);
+      setLike((v) => v - 1);
+
+      try {
+        await likeDiscussPost(stablePost.post_id); // 서버가 토글(취소) 처리한다고 가정
+      } catch (e) {
+        console.error("좋아요 취소 실패:", e);
+      }
+      return;
+    }
+
+    // 좋아요 누르기
+    setLikeState("up");
+    setLike((v) => v + 1);
+
+    try {
+      await likeDiscussPost(stablePost.post_id);
+    } catch (e) {
+      console.error("좋아요 실패:", e);
+    }
   };
 
-  //댓글 수정 삭제
+  // ✅ 댓글 수정 시작
   const handleEditComment = (comment: BoardComment) => {
-    setDraft(comment.contents);
-    setAnonimity(comment.anonymity);
-    setEditingCommentId(comment.id);
+    setDraft(comment.content);
+    setAnonymity(comment.anonymity);
+    setEditingCommentId(comment.comment_id);
   };
-  const handleDeleteComment = (commentId: number) => {
+
+  // ✅ 댓글 삭제
+  const handleDeleteComment = async (commentId: number) => {
     const ok = window.confirm("삭제하시겠습니까?");
     if (!ok) return;
 
-    setLocalComments((prev) => prev.filter((c) => c.id !== commentId));
+    try {
+      await apiDeleteComment(commentId);
+      setLocalComments((prev) =>
+        prev.filter((c) => c.comment_id !== commentId)
+      );
 
-    // 수정 중이던 댓글이 삭제되었다면 입력창도 초기화
-    if (editingCommentId === commentId) {
-      setEditingCommentId(null);
-      setDraft("");
+      if (editingCommentId === commentId) {
+        setEditingCommentId(null);
+        setDraft("");
+      }
+    } catch (e) {
+      console.error("댓글 삭제 실패:", e);
+      alert("댓글 삭제 중 오류가 발생했습니다.");
     }
-
-    alert("삭제되었습니다.");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ✅ 댓글 작성 / 수정 제출
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
 
-    if (editingCommentId !== null) {
-      // 수정 모드
-      setLocalComments((prev) =>
-        prev.map((c) =>
-          c.id === editingCommentId
-            ? {
-                ...c,
-                contents: text,
-                anonymity: anonymity,
-                // create_time 그대로 둘지, 수정시간 따로 둘지는 나중에 결정
-              }
-            : c
-        )
-      );
-      setEditingCommentId(null);
+    try {
+      // ✏️ 수정 모드
+      if (editingCommentId !== null) {
+        const payload = {
+          content: text, // 백엔드가 content(단수)를 받는다고 가정
+          anonymity,
+          is_private: stablePost.is_private ?? false,
+        };
+
+        await apiUpdateComment(editingCommentId, payload);
+
+        setLocalComments((prev) =>
+          prev.map((c) =>
+            c.comment_id === editingCommentId
+              ? {
+                  ...c,
+                  content: text,
+                  anonymity,
+                }
+              : c
+          )
+        );
+        setEditingCommentId(null);
+        setDraft("");
+        return;
+      }
+
+      // 🆕 새 댓글 작성
+      const payload = {
+        contents: text,
+        anonymity,
+        is_private: stablePost.is_private ?? false,
+        parent_id: 0,
+      };
+
+      const created = await apiCreateComment(stablePost.post_id, payload);
+      const newComment = mapCommentDto(created); // DTO → BoardComment
+
+      setLocalComments((prev) => [...prev, newComment]);
       setDraft("");
-      return;
+    } catch (e) {
+      console.error("댓글 저장 실패:", e);
+      alert("댓글 저장 중 오류가 발생했습니다.");
     }
-
-    // 새 댓글 작성 모드
-    const next: BoardComment = {
-      id: Date.now(),
-      author: "Guest",
-      contents: text,
-      anonymity: anonymity,
-      create_time: new Date().toISOString(),
-    };
-
-    setLocalComments((prev) => [...prev, next]);
-    setDraft("");
   };
 
   const handleNavigateMypage = (username: string) => () => {
+    if (!username || username === "익명") return;
     nav(`/mypage/${username}`);
   };
 
   return (
     <DetailCard>
+      {(isPostFetching || isCommentsFetching) && (
+        <LoadingOverlay>
+          <div style={{ color: "white", fontSize: 16 }}>로딩중...</div>
+        </LoadingOverlay>
+      )}
       <DetailHeader>
         <TitleBlock>
-          <DetailTitle>{post.post_title}</DetailTitle>
+          <DetailTitle>{stablePost.post_title}</DetailTitle>
 
-          <MetaRow isDisabled={post.anonymity}>
+          <MetaRow isDisabled={stablePost.anonymity}>
             <span onClick={handleNavigateMypage(displayAuthor)}>
               <strong>작성자:</strong> {displayAuthor}
             </span>
             <span>
-              <strong>작성일:</strong> {post.create_time.slice(0, 10)}
+              <strong>작성일:</strong> {stablePost.create_time.slice(0, 10)}
             </span>
             <span>
-              <strong>조회수:</strong> {vote}
+              <strong>추천수:</strong> {like}
             </span>
+            {isLoadingAll && (
+              <span style={{ fontSize: 12, opacity: 0.6 }}>업데이트 중…</span>
+            )}
           </MetaRow>
         </TitleBlock>
 
         <HeaderActions>
-          {isOwner({ author: post.author, anonymity: post.anonymity }) && (
-            <EditButton
-              to={`/board/edit/write`}
-              state={{
-                post: {
-                  state: "edit",
-                  id: post.post_id,
-                  category: post.tag,
-                  title: post.post_title,
-                  content: post.contents,
-                  isAnonymous: post.anonymity,
-                  isPrivate: post.is_private,
-                  groupId: null,
-                },
-              }}
-            />
+          {isOwner({
+            author: stablePost.author,
+            anonymity: stablePost.anonymity,
+          }) && (
+            <EditButton onEdit={handleEditPost} onDelete={handleDeletePost} />
           )}
           <ReportButton
-            targetContentId={post.post_id}
+            targetContentId={stablePost.post_id}
             targetContentType="post"
+            onManagerDelete={handleDeletePost}
           />
-          {onClose && <CloseButton onClick={onClose}>닫기</CloseButton>}
         </HeaderActions>
       </DetailHeader>
 
-      {/* 👇 여기부터 새로 감싼 부분 */}
       <DetailBody>
         <DetailMain>
-          <ContentArea>{post.contents}</ContentArea>
+          <ContentArea>{stablePost.contents}</ContentArea>
 
           <StatsRow>
-            <span>👍 {post.like_count}</span>
+            <span>👍 {like}</span>
             <span>💬 {localComments.length}</span>
           </StatsRow>
 
@@ -483,24 +632,35 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
             </CommentsHeader>
 
             {localComments.length === 0 ? (
-              <EmptyText>첫 번째 댓글을 남겨보세요.</EmptyText>
+              <EmptyText>
+                {isLoadingAll
+                  ? "댓글을 불러오는 중입니다…"
+                  : "첫 번째 댓글을 남겨보세요."}
+              </EmptyText>
             ) : (
               <CommentList>
                 {localComments.map((c) => {
-                  const commentAuthor = c.anonymity ? "익명" : c.author;
-                  const date = c.create_time.slice(0, 10);
+                  const commentAuthor = c.anonymity ? "익명" : c.author_name;
+                  const date = c.created_at.slice(0, 10);
+
                   return (
-                    <CommentItem key={c.id}>
+                    <CommentItem key={c.comment_id}>
                       <CommentMeta isDisabled={c.anonymity}>
                         <strong onClick={handleNavigateMypage(commentAuthor)}>
                           {commentAuthor}
                         </strong>{" "}
                         · {date}
                         <ReportButton
-                          targetContentId={c.id}
+                          targetContentId={c.comment_id}
                           targetContentType="comment"
+                          onManagerDelete={() =>
+                            handleDeleteComment(c.comment_id)
+                          }
                         />
-                        {isOwner(c) && (
+                        {isOwner({
+                          author: c.author_name,
+                          anonymity: c.anonymity,
+                        }) && (
                           <>
                             <CommentActionButton
                               type="button"
@@ -512,14 +672,14 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                             <CommentActionButton
                               type="button"
                               $danger
-                              onClick={() => handleDeleteComment(c.id)}
+                              onClick={() => handleDeleteComment(c.comment_id)}
                             >
                               삭제
                             </CommentActionButton>
                           </>
                         )}
                       </CommentMeta>
-                      <CommentContent>{c.contents}</CommentContent>
+                      <CommentContent>{c.content}</CommentContent>
                     </CommentItem>
                   );
                 })}
@@ -541,7 +701,7 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
                   <input
                     type="checkbox"
                     checked={anonymity}
-                    onChange={(e) => setAnonimity(e.target.checked)}
+                    onChange={(e) => setAnonymity(e.target.checked)}
                   />
                 </label>
 
@@ -552,13 +712,10 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
             </CommentForm>
           </CommentsSection>
         </DetailMain>
-
-        {/* 👉 오른쪽 투표 패널 */}
-        <VotePanel>
-          <VoteButton onClick={handleUpvote}>▲</VoteButton>
-          <VoteCount>{vote}</VoteCount>
-          <VoteButton onClick={handleDownvote}>▼</VoteButton>
-        </VotePanel>
+        <LikePanel onClick={handleLikeToggle} $active={isLikeActive}>
+          <span style={{ fontSize: 11, lineHeight: 1 }}>▲</span>
+          <LikeCount>{like}</LikeCount>
+        </LikePanel>
       </DetailBody>
     </DetailCard>
   );

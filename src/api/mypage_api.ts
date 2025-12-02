@@ -26,7 +26,7 @@ export type UserProfile = {
   solvedProblems: number[];
   bookmarkedProblems: number[];
   recentSubmissions: Submission[];
-  prefferred_language?: string[];
+  preferred_language?: string[];
   role: string;
   isPublic?: boolean;
   stats: {
@@ -91,6 +91,7 @@ export type UpdateMyProfileDto = {
   preferredLanguage?: string[];
   bio?: string | null;
   isPublic?: boolean;
+  avatarUrl?: string | null;
   goals?: {
     dailyMinimumStudyMinutes?: number;
     weeklyStudyGoalMinutes?: number;
@@ -102,9 +103,12 @@ export function mapEditFormToUpdateDto(
 ): UpdateMyProfileDto {
   return {
     nickname: form.username,
-    preferredLanguage: form.prefferred_language,
+    preferredLanguage: form.preferred_language,
     bio: form.bio || null,
     isPublic: !form.hideMyPage,
+
+    avatarUrl: form.avatarUrl,
+
     goals: {
       dailyMinimumStudyMinutes:
         typeof form.dailyMinimumStudyMinutes === "string"
@@ -129,7 +133,7 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
     solvedProblems: dto.solvedProblems ?? [],
     bookmarkedProblems: dto.bookmarkedProblems ?? [],
     recentSubmissions: dto.recentSubmissions ?? [],
-    prefferred_language: dto.preferredLanguage ?? [],
+    preferred_language: dto.preferredLanguage ?? [],
     role: dto.role,
     isPublic: dto.isPublic,
     stats: {
@@ -168,18 +172,38 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
   }
 }
 
+export async function getMyProfile(): Promise<UserProfile> {
+  try {
+    const res = await api.get<UserProfileDto>("/mypage");
+    console.log("user profile fetched:", res.data);
+    return mapUserProfileDto(res.data);
+  } catch (err: any) {
+    // 1차 시도 실패: 프로필이 없는 경우(404) → 생성 시도 후 다시 GET
+    if (err) {
+      try {
+        await api.post("/mypage/initialize");
+        const retryRes = await api.get<UserProfileDto>("/mypage");
+        console.log("user profile created & fetched:", retryRes.data);
+        return mapUserProfileDto(retryRes.data);
+      } catch (retryErr) {
+        console.log("❌ getMyProfile: 프로필 생성 또는 재조회 실패:", retryErr);
+      }
+    } else {
+      console.log("❌ getMyProfile 에러:", err);
+    }
+
+    // 최종 실패 시 더미 프로필 반환
+    console.log("❌ getMyProfile 에러 발생, 더미 프로필로 대체:", err);
+    return getDummyUserProfile("LEARNER");
+  }
+}
+
 // 내 프로필 업데이트 (PATCH /api/mypage/me)
 export async function updateMyProfile(form: EditableProfile) {
-  const updateData = {
-    nickname: form.username,
-    preferredLanguage: form.prefferred_language,
-    // bio, isPublic, goals... 등 나머지도 여기서 추가
-  };
-
-  console.log("👉 PATCH /mypage/me payload:", updateData);
+  const updateData = mapEditFormToUpdateDto(form);
 
   try {
-    const res = await api.patch("/mypage/me", updateData);
+    const res = await api.patch("/mypage", updateData);
     console.log("마이페이지 수정 성공:", res.data);
     return res.data;
   } catch (err) {

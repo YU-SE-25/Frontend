@@ -1,8 +1,6 @@
-// src/pages/board/BoardList.tsx
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
-import { BOARD_DUMMY } from "../../api/dummy/board_dummy";
 import {
   ProblemListWrapper as BoardListWrapper,
   PageTitle,
@@ -24,40 +22,56 @@ import {
   AddButton,
 } from "../../theme/ProblemList.Style";
 import BoardDetail from "./BoardDetail";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
-import { fetchBoardList } from "../../api/board_api";
-
+import { fetchDiscussList } from "../../api/board_api";
+import { isOwner } from "../../utils/isOwner";
+import { myRole } from "../../utils/myRole";
 export interface BoardTag {
-  id: number; // tag_id
-  name: string; // 예: "토론 게시판", "강의", "홍보", "오타"
-}
-// 댓글(Comment)
-export interface BoardComment {
-  id: number; // 댓글 ID (API 제공 or 클라이언트 생성)
-  author: string; // 작성자
-  contents: string; // 댓글 내용
-  anonymity: boolean; // 익명 여부
-  create_time: string; // ISO 날짜
+  id: number;
+  name: string;
 }
 
-// 게시글(Post)
+export interface BoardComment {
+  comment_id: number;
+  post_id: number;
+  parent_id: number;
+
+  author_id: number;
+  author_name: string;
+
+  anonymity: boolean;
+  content: string;
+  is_private: boolean;
+
+  like_count: number;
+  viewer_liked: boolean;
+
+  created_at: string;
+  updated_at: string;
+
+  message: string | null;
+}
+
 export interface BoardContent {
   post_id: number;
   post_title: string;
   author: string;
-  tag: BoardTag; //카테고리
-  anonymity: boolean; // 익명 여부
+  author_id: number;
+  updated_time: string;
+  viewer_liked: boolean;
+  attachment_url: string | null;
+  message: string | null;
+  tag: { id: number; name: string };
+  anonymity: boolean;
   like_count: number;
-  is_private?: boolean;
   comment_count: number;
-  create_time: string; // ISO 날짜
-  contents: string; // 본문 내용 (상세 보기에서 추가됨)
-
-  comments: BoardComment[]; // 댓글 배열 포함 (상세용)
+  create_time: string;
+  is_private: boolean;
+  contents: string;
+  comments: BoardComment[];
 }
 
-//스터디그룹용
 interface BoardListProps {
   mode?: "global" | "study";
   groupId?: number;
@@ -72,19 +86,12 @@ const CATEGORY_LABEL = {
 
 export type BoardCategory = keyof typeof CATEGORY_LABEL;
 
-// 더미 데이터 임포트
-const DUMMY_POSTS_BY_CATEGORY: Record<BoardCategory, BoardContent[]> = {
-  daily: BOARD_DUMMY["daily"],
-  lecture: BOARD_DUMMY["lecture"],
-  promotion: BOARD_DUMMY["promotion"],
-  typo: BOARD_DUMMY["typo"],
-};
-
 const CategoryTabs = styled.div`
   display: flex;
   gap: 8px;
   margin-top: 8px;
 `;
+
 const PostTitle = styled.span`
   font-size: 16px;
   color: ${(props) => props.theme.textColor};
@@ -108,7 +115,12 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
   }
 `;
 
-// 기존 함수 선언 → props 형태로 변경됨
+/**
+ * 백엔드 응답 → BoardContent로 변환
+ * 가능한 여러 케이스(카멜/스네이크)를 동시에 커버하게 작성
+ * 실제 DTO 필드명에 맞춰서 필요하면 나중에 좁혀도 됨.
+ */
+
 export default function BoardList({
   mode = "global",
   groupId,
@@ -117,51 +129,87 @@ export default function BoardList({
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  //params로 받은 category가 유효한지 검사
   const isBoardCategory = (value: string | undefined): value is BoardCategory =>
     !!value && value in CATEGORY_LABEL;
 
   const currentCategory: BoardCategory = isBoardCategory(category)
     ? category
-    : "daily"; // 기본값: 토론 게시판
+    : "daily";
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-  //기존 posts 제거하고 상태로 관리하도록 변경됨
   const [posts, setPosts] = useState<BoardContent[]>([]);
-  //스터디그룹 api 추가
-  React.useEffect(() => {
+
+  const {
+    data: globalList,
+    isLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: ["boardList", mode, currentCategory, currentPage],
+    queryFn: () => fetchDiscussList(currentPage), // 여기서 DiscussPostPage 형태로 받는다고 가정
+    enabled: mode === "global",
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    placeholderData: keepPreviousData,
+  });
+
+  useEffect(() => {
     if (mode === "study" && groupId) {
-      //스터디 그룹 API 호출
-      fetchStudyGroupPosts(groupId, 1) // page = 1
+      fetchStudyGroupPosts(groupId, currentPage)
         .then((res) => {
-          //StudyGroupPostSummary[] → BoardContent[] 변환
-          const converted: BoardContent[] = res.posts.map((p) => ({
+          /*  내용물 보충 작업 -- 이전코드
+         const converted: BoardContent[] = res.posts.map((p: any) => ({
             post_id: p.post_id,
             post_title: p.post_title,
             author: p.author,
-            tag: { id: 0, name: "" }, // 스터디그룹에는 태그 개념이 없음
+            tag: { id: 0, name: "" },
             anonymity: p.anonymity,
             like_count: p.like_count,
             comment_count: p.comment_count,
             create_time: p.create_time,
+            contents: "",
+            comments: [],
+          }));*/
+          const converted: BoardContent[] = res.posts.map((p: any) => ({
+            post_id: p.post_id,
+            post_title: p.post_title,
+            author: p.author,
 
-            //BoardContent에서 필요한데 API 요약에 없는 값들:
-            contents: "", // 상세내용은 없음 → 비워두기
-            comments: [], // 댓글 목록도 없음 → 빈 배열
+            author_id: p.author_id ?? 0,
+            updated_time: p.updated_time ?? p.create_time ?? "",
+            viewer_liked: p.viewer_liked ?? false,
+            attachment_url: p.attachment_url ?? null,
+            message: p.message ?? null,
+
+            tag: { id: 0, name: "" },
+            anonymity: p.anonymity,
+            like_count: p.like_count,
+            comment_count: p.comment_count,
+            create_time: p.create_time,
+            is_private: p.is_private ?? false,
+            contents: "",
+            comments: [] as BoardComment[],
           }));
           setPosts(converted);
         })
-        .catch((err) => console.error(err));
-    } else {
-      setPosts(DUMMY_POSTS_BY_CATEGORY[currentCategory]);
+        .catch((err) => {
+          console.error("스터디 그룹 게시글 조회 실패:", err);
+          setPosts([]);
+        });
+      return;
     }
-  }, [mode, groupId, currentCategory]);
 
-  // URL의 ?no=값을 읽어서 선택된 글 ID로 사용
+    if (mode === "global") {
+      // fetchDiscussList가 mapDiscussPostPage를 거쳐서
+      // { content: BoardContent[], page, size, totalPages, ... } 형태로 온다고 가정
+      setPosts(globalList?.content ?? []);
+    }
+  }, [mode, groupId, currentPage, globalList]);
+
   const selectedPostId = searchParams.get("no");
 
   const selectedPost = useMemo(() => {
@@ -172,10 +220,6 @@ export default function BoardList({
   }, [selectedPostId, posts]);
 
   const handleSearch = () => {
-    if (searchTerm.trim().length === 0) {
-      alert("검색어를 입력해 주세요.");
-      return;
-    }
     if (searchTerm.trim().length < 2) {
       alert("두 자 이상의 문자를 입력해 주세요.");
       return;
@@ -187,11 +231,25 @@ export default function BoardList({
     if (e.key === "Enter") handleSearch();
   };
 
-  const handleViewDetails = (postId: number) => {
+  const handleViewDetails = (post: BoardContent) => {
+    // 비공개 글인데, 내가 작성자도 아니고 관리자도 아니면 막기
+    if (post.is_private) {
+      const canView =
+        isOwner({
+          author: post.author,
+          anonymity: post.anonymity,
+        }) || myRole() === "MANAGER";
+
+      if (!canView) {
+        alert("비공개 글은 작성자 또는 관리자만 열람할 수 있습니다.");
+        return;
+      }
+    }
+
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        next.set("no", String(postId)); // 무조건 열기만 함 (닫기 없음)
+        next.set("no", String(post.post_id));
         return next;
       },
       { replace: true }
@@ -239,17 +297,16 @@ export default function BoardList({
     return result;
   }, [posts, searchTerm, sortType]);
 
-  const totalItems = filteredAndSortedPosts.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPosts = filteredAndSortedPosts.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
+  // 이제 페이지 수는 서버에서 온 totalPages를 쓰기
+  const totalPages = mode === "global" ? globalList?.totalPages ?? 1 : 1;
+
+  const currentPosts = filteredAndSortedPosts;
 
   const handlePageChange = (pageNumber: number) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+      window.scrollTo(0, 0);
+    }
   };
 
   return (
@@ -268,6 +325,7 @@ export default function BoardList({
           <PageTitle>{CATEGORY_LABEL[currentCategory]}</PageTitle>
           <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
         </div>
+
         {mode !== "study" && (
           <CategoryTabs>
             {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
@@ -282,7 +340,22 @@ export default function BoardList({
           </CategoryTabs>
         )}
       </PageTitleContainer>
-      {selectedPost && <BoardDetail post={selectedPost} />}
+
+      {selectedPost && (
+        <BoardDetail
+          post={selectedPost}
+          onClose={() =>
+            setSearchParams(
+              (prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete("no");
+                return next;
+              },
+              { replace: true }
+            )
+          }
+        />
+      )}
 
       <ControlBar>
         <SearchContainer>
@@ -297,13 +370,10 @@ export default function BoardList({
 
         <SortSelect
           value={sortType}
-          onChange={(e) =>
-            setSortType(e.target.value as "latest" | "views" | "id")
-          }
+          onChange={(e) => setSortType(e.target.value as "latest" | "views")}
         >
           <option value="latest">최신순</option>
-          <option value="views">조회순</option>
-          <option value="id">번호순</option>
+          <option value="views">추천순</option>
         </SortSelect>
       </ControlBar>
 
@@ -313,17 +383,21 @@ export default function BoardList({
             <HeaderCell width="8%">번호</HeaderCell>
             <HeaderCell width="50%">제목</HeaderCell>
             <HeaderCell width="12%">작성자</HeaderCell>
-            <HeaderCell width="10%">조회수</HeaderCell>
+            <HeaderCell width="10%">추천수</HeaderCell>
             <HeaderCell width="15%">작성일</HeaderCell>
           </tr>
         </TableHead>
 
         <tbody>
-          {currentPosts.length > 0 ? (
+          {isLoading && posts.length === 0 ? (
+            <TableRow>
+              <EmptyCell colSpan={5}>게시글을 불러오는 중입니다…</EmptyCell>
+            </TableRow>
+          ) : currentPosts.length > 0 ? (
             currentPosts.map((post) => (
               <TableRow
                 key={post.post_id}
-                onClick={() => handleViewDetails(post.post_id)}
+                onClick={() => handleViewDetails(post)}
                 style={{ cursor: "pointer" }}
               >
                 <TableCell>{post.post_id}</TableCell>
@@ -335,9 +409,7 @@ export default function BoardList({
                   )}
                 </TitleCell>
                 <TableCell>{post.anonymity ? "익명" : post.author}</TableCell>
-                {/* 조회수 컬럼은 현재 like_count로 대체 */}
                 <TableCell>{post.like_count}</TableCell>
-                {/* 작성일은 ISO 문자열에서 날짜만 잘라서 사용 */}
                 <TableCell>{post.create_time.slice(0, 10)}</TableCell>
               </TableRow>
             ))
@@ -380,6 +452,12 @@ export default function BoardList({
           다음 &gt;
         </PageLink>
       </PaginationContainer>
+
+      {isFetching && (
+        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
+          새 게시글을 불러오는 중…
+        </div>
+      )}
     </BoardListWrapper>
   );
 }

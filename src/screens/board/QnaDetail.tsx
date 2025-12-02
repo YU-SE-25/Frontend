@@ -421,6 +421,7 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
           <ReportButton
             targetContentId={post.post_id}
             targetContentType="post"
+            onManagerDelete={undefined}
           />
           {onClose && <CloseButton onClick={onClose}>닫기</CloseButton>}
         </HeaderActions>
@@ -458,6 +459,7 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
                         <ReportButton
                           targetContentId={c.id}
                           targetContentType="comment"
+                          onManagerDelete={undefined}
                         />
                       </CommentMeta>
                       <CommentContent>{c.contents}</CommentContent>

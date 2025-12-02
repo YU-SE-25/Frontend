@@ -275,7 +275,6 @@ export default function Topbar() {
 
   // (미사용이긴 하지만 혹시 쓸 수도 있으니 그대로 둠)
   const userName = userProfile?.nickname || "guest";
-  console.log("userProfile in Topbar:", userProfile);
   // 게시판 드롭다운 열림 상태
   const [isBoardOpen, setIsBoardOpen] = useState(false);
 
