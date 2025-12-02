@@ -20,10 +20,10 @@ import {
 } from "../../theme/StudyGroupDetail.Style";
 
 import ProblemListTab from "./ProblemListTab";
-import BoardList from "../board/BoardList";
 import ActivityTab from "./ActivityTab";
 import CommonModal from "./CommomModal";
 import StudyGroupManage from "./StudyGroupManage";
+import StudyGroupBoardList from "./StudyGroupBoardList";
 
 import type { StudyGroupDetail, GroupRole } from "../../api/studygroup_api";
 import {
@@ -53,7 +53,7 @@ export default function StudyGroupDetailPage() {
   const loadGroupDetail = async () => {
     const detail = await fetchStudyGroupDetail(numericId);
     console.log("API에서 받은 group detail:", detail);
-    console.log("🔥 현재 로그인 사용자의 ROLE:", detail.myRole);
+    console.log("현재 로그인 사용자의 ROLE:", detail.myRole);
     setGroup(detail);
     setRole(detail.myRole);
   };
@@ -160,8 +160,9 @@ export default function StudyGroupDetailPage() {
             {activeTab === "problem" && (
               <ProblemListTab role={role} groupId={group.groupId} />
             )}
+
             {activeTab === "discussion" && (
-              <BoardList mode="study" groupId={group.groupId} />
+              <StudyGroupBoardList groupId={group.groupId} />
             )}
             {activeTab === "activity" && (
               <ActivityTab groupId={group.groupId} />

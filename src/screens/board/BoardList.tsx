@@ -23,7 +23,6 @@ import {
 } from "../../theme/ProblemList.Style";
 import BoardDetail from "./BoardDetail";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { fetchStudyGroupPosts } from "../../api/studygroupdiscussion_api";
 import { fetchDiscussList } from "../../api/board_api";
 import { isOwner } from "../../utils/isOwner";
 import { myRole } from "../../utils/myRole";
@@ -72,11 +71,6 @@ export interface BoardContent {
   comments: BoardComment[];
 }
 
-interface BoardListProps {
-  mode?: "global" | "study";
-  groupId?: number;
-}
-
 const CATEGORY_LABEL = {
   daily: "토론 게시판",
   lecture: "강의",
@@ -115,16 +109,8 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
   }
 `;
 
-/**
- * 백엔드 응답 → BoardContent로 변환
- * 가능한 여러 케이스(카멜/스네이크)를 동시에 커버하게 작성
- * 실제 DTO 필드명에 맞춰서 필요하면 나중에 좁혀도 됨.
- */
-
-export default function BoardList({
-  mode = "global",
-  groupId,
-}: BoardListProps) {
+// 기존 함수 선언 → props 형태로 변경됨
+export default function BoardList() {
   const navigate = useNavigate();
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -158,57 +144,8 @@ export default function BoardList({
   });
 
   useEffect(() => {
-    if (mode === "study" && groupId) {
-      fetchStudyGroupPosts(groupId, currentPage)
-        .then((res) => {
-          /*  내용물 보충 작업 -- 이전코드
-         const converted: BoardContent[] = res.posts.map((p: any) => ({
-            post_id: p.post_id,
-            post_title: p.post_title,
-            author: p.author,
-            tag: { id: 0, name: "" },
-            anonymity: p.anonymity,
-            like_count: p.like_count,
-            comment_count: p.comment_count,
-            create_time: p.create_time,
-            contents: "",
-            comments: [],
-          }));*/
-          const converted: BoardContent[] = res.posts.map((p: any) => ({
-            post_id: p.post_id,
-            post_title: p.post_title,
-            author: p.author,
-
-            author_id: p.author_id ?? 0,
-            updated_time: p.updated_time ?? p.create_time ?? "",
-            viewer_liked: p.viewer_liked ?? false,
-            attachment_url: p.attachment_url ?? null,
-            message: p.message ?? null,
-
-            tag: { id: 0, name: "" },
-            anonymity: p.anonymity,
-            like_count: p.like_count,
-            comment_count: p.comment_count,
-            create_time: p.create_time,
-            is_private: p.is_private ?? false,
-            contents: "",
-            comments: [] as BoardComment[],
-          }));
-          setPosts(converted);
-        })
-        .catch((err) => {
-          console.error("스터디 그룹 게시글 조회 실패:", err);
-          setPosts([]);
-        });
-      return;
-    }
-
-    if (mode === "global") {
-      // fetchDiscussList가 mapDiscussPostPage를 거쳐서
-      // { content: BoardContent[], page, size, totalPages, ... } 형태로 온다고 가정
-      setPosts(globalList?.content ?? []);
-    }
-  }, [mode, groupId, currentPage, globalList]);
+    setPosts(globalList?.content ?? []);
+  }, [currentPage, globalList]);
 
   const selectedPostId = searchParams.get("no");
 
@@ -258,10 +195,6 @@ export default function BoardList({
   };
 
   const handleWritePost = () => {
-    if (mode === "study" && groupId) {
-      navigate(`/studygroup/${groupId}/discuss/write`);
-      return;
-    }
     navigate(`/board/${currentCategory}/write`);
   };
 
@@ -310,7 +243,7 @@ export default function BoardList({
   };
 
   return (
-    <BoardListWrapper $fullWidth={mode === "study"}>
+    <BoardListWrapper>
       <PageTitleContainer
         style={{ flexDirection: "column", alignItems: "flex-start", gap: 8 }}
       >
@@ -326,19 +259,17 @@ export default function BoardList({
           <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
         </div>
 
-        {mode !== "study" && (
-          <CategoryTabs>
-            {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
-              <CategoryTab
-                key={key}
-                $active={currentCategory === key}
-                onClick={() => handleChangeCategory(key as BoardCategory)}
-              >
-                {label}
-              </CategoryTab>
-            ))}
-          </CategoryTabs>
-        )}
+        <CategoryTabs>
+          {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
+            <CategoryTab
+              key={key}
+              $active={currentCategory === key}
+              onClick={() => handleChangeCategory(key as BoardCategory)}
+            >
+              {label}
+            </CategoryTab>
+          ))}
+        </CategoryTabs>
       </PageTitleContainer>
 
       {selectedPost && (

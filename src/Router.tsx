@@ -40,6 +40,9 @@ import QnaWrite from "./screens/board/QnaWrite";
 // 스터디 그룹
 import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
+import StudyGroupBoardDetail from "./screens/studygroup/StudyGroupBoardDetail";
+import StudyGroupBoardWrite from "./screens/studygroup/StudyGroupBoardWrite";
+
 import SolvedProblemShow from "./screens/problem/reviews/SolvedProblemShow";
 import MySubmissionsDetail from "./screens/problem/MySubmissionsDetail";
 
@@ -91,8 +94,16 @@ const router = createBrowserRouter([
       { path: "studygroup-main", element: <StudyGroupMain /> },
       { path: "studygroup/:groupId", element: <StudyGroupDetail /> },
       {
+        path: "studygroup/:groupId/discuss/:postId",
+        element: <StudyGroupBoardDetail />,
+      },
+      {
         path: "studygroup/:groupId/discuss/write",
-        element: <BoardWrite mode="study" />,
+        element: <StudyGroupBoardWrite />,
+      },
+      {
+        path: "studygroup/:groupId/discuss/:postId/edit",
+        element: <StudyGroupBoardWrite />,
       },
 
       {
