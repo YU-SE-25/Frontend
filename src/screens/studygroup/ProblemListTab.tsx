@@ -20,7 +20,10 @@ import {
   fetchAssignedProblemLists,
   fetchAssignedProblemListDetail,
 } from "../../api/studygroup_api";
+
+import { api } from "../../api/axios"; // 제출 API 불러오기 위함
 import CreateProblemList from "./CreateProblemList";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   role: GroupRole | undefined;
@@ -31,16 +34,47 @@ export default function ProblemListTab({ role, groupId }: Props) {
   const [lists, setLists] = useState<AssignedProblemList[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [solvedSet, setSolvedSet] = useState<Set<number>>(new Set()); // 🔥 제출된 문제 ID 저장
+  const navigate = useNavigate();
 
-  // 전체 문제 리스트 불러오기
+  // 제출 이력 전체 불러오기
+  interface SubmissionsResponse {
+    submissions: {
+      submissionId: number;
+      problemId: number;
+      problemTitle: string;
+      status: string;
+      submittedAt: string;
+    }[];
+  }
+
+  const loadSubmissions = useCallback(async () => {
+    try {
+      const res = await api.get<SubmissionsResponse>("/submissions", {
+        params: { size: 1000 },
+      });
+
+      const setData = new Set<number>(
+        res.data.submissions.map((s) => s.problemId)
+      );
+
+      setSolvedSet(setData);
+    } catch (e) {
+      console.error("제출 기록 불러오기 실패", e);
+    }
+  }, []);
+
+  //전체 문제 리스트 불러오기
   const loadLists = useCallback(async () => {
     const data = await fetchAssignedProblemLists(groupId);
     setLists(data);
   }, [groupId]);
 
+  // 최초 로딩: 문제 + 제출 이력 모두
   useEffect(() => {
     loadLists();
-  }, [loadLists]);
+    loadSubmissions();
+  }, [loadLists, loadSubmissions]);
 
   // 펼칠 때 문제 상세 데이터 가져오기
   const toggleExpand = async (problemListId: number) => {
@@ -84,9 +118,9 @@ export default function ProblemListTab({ role, groupId }: Props) {
         {lists.map((list) => {
           const isOpen = expanded === list.problemListId;
 
-          //제출된 문제 수 계산 (SUBMITTED 기준)
-          const submittedCount = list.problems.filter(
-            (p) => p.userStatus === "SUBMITTED"
+          //제출된 문제 수 계산: 프런트 계산 기반
+          const submittedCount = list.problems.filter((p) =>
+            solvedSet.has(p.problemId)
           ).length;
 
           return (
@@ -107,19 +141,29 @@ export default function ProblemListTab({ role, groupId }: Props) {
 
               {isOpen && (
                 <ProblemDetailList>
-                  {list.problems.map((p) => (
-                    <ProblemDetailItem key={p.problemId}>
-                      <ProblemListInfoContainer>
-                        <ProblemTitleLink>{p.problemTitle}</ProblemTitleLink>
-                      </ProblemListInfoContainer>
+                  {list.problems.map((p) => {
+                    const isSolved = solvedSet.has(p.problemId);
 
-                      <StatusBadge
-                        $status={p.userStatus === "SUBMITTED" ? "ok" : "none"}
-                      >
-                        {p.userStatus === "SUBMITTED" ? "제출완료" : "미제출"}
-                      </StatusBadge>
-                    </ProblemDetailItem>
-                  ))}
+                    return (
+                      <ProblemDetailItem key={p.problemId}>
+                        <ProblemListInfoContainer>
+                          {/* 문제 상세 이동 */}
+                          <ProblemTitleLink
+                            onClick={() =>
+                              navigate(`/problems/detail/${p.problemId}`)
+                            }
+                          >
+                            {p.problemTitle}
+                          </ProblemTitleLink>
+                        </ProblemListInfoContainer>
+
+                        {/* 제출 여부 표시 */}
+                        <StatusBadge $status={isSolved ? "ok" : "none"}>
+                          {isSolved ? "제출완료" : "미제출"}
+                        </StatusBadge>
+                      </ProblemDetailItem>
+                    );
+                  })}
                 </ProblemDetailList>
               )}
             </ProblemAccordionItem>
@@ -135,7 +179,10 @@ export default function ProblemListTab({ role, groupId }: Props) {
         <CreateProblemList
           onClose={() => setShowCreateModal(false)}
           groupId={groupId}
-          onCreated={loadLists}
+          onCreated={() => {
+            loadLists();
+            loadSubmissions(); // 갱신!
+          }}
         />
       )}
     </>

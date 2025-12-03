@@ -108,9 +108,11 @@ export async function fetchStudyGroups(
       params: { pageSize },
     });
 
-    // literal 타입 강제 변환
-    return res.data.map((g) => ({
+    return res.data.map((g: any) => ({
       ...g,
+      // leaderName이 null이면 leader.leaderName을 fallback으로 사용
+      leaderName:
+        g.leaderName ?? g.leader?.leaderName ?? g.leader?.userName ?? "미정",
       myRole: g.myRole as GroupRole,
     }));
   } catch (err) {

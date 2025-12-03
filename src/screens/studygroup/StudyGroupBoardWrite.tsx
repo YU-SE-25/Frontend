@@ -170,7 +170,7 @@ export default function StudyGroupBoardWrite() {
       alert("오류가 발생했습니다!");
     }
 
-    navigate(`/studygroup/${groupId}`);
+    navigate(`/studygroup/${groupId}?tab=discussion`);
   };
 
   return (

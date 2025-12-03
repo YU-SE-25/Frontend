@@ -113,7 +113,7 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
   };
 }
 
-// ✅ 상세 DTO → IProblem 매핑 (여긴 기존 로직 유지)
+// 상세 DTO → IProblem 매핑 (여긴 기존 로직 유지)
 export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
   return {
     problemId: dto.problemId,
@@ -147,14 +147,38 @@ export interface SimpleProblem {
   problemTitle: string;
 }
 
+export const TAG_LABEL_MAP: Record<string, string> = {
+  IMPLEMENTATION: "구현",
+  SORTING: "정렬",
+  PRIORITY_QUEUE: "우선순위 큐",
+  GRAPH: "그래프",
+  DFS: "DFS",
+  BFS: "BFS",
+  DP: "DP",
+  GREEDY: "그리디",
+  BINARY_SEARCH: "이진탐색",
+  TWO_POINTER: "투 포인터",
+  SLIDING_WINDOW: "슬라이딩 윈도우",
+  STACK: "스택",
+  QUEUE: "큐",
+  HASH: "해시",
+  STRING: "문자열",
+  MATH: "수학",
+  SIMULATION: "시뮬레이션",
+  BRUTE_FORCE: "브루트 포스",
+  BACKTRACKING: "백트래킹",
+  TREE: "트리",
+};
+
 // 태그 목록
 export async function fetchAvailableTags(): Promise<string[]> {
   try {
-    const res = await api.get<string[]>("/problems/tags");
+    const res = await api.get("/problems/tags");
+    console.log("TAG RAW:", res.data);
     return res.data;
   } catch (err) {
-    console.error("태그 조회 실패 → 더미 NONE 반환");
-    return []; // 태그 더미 없으니 빈 배열 반환!
+    console.error(err);
+    return [];
   }
 }
 
@@ -192,7 +216,7 @@ export async function fetchProblemDetail(problemId: number): Promise<IProblem> {
   }
 }
 
-// ✅ 문제 등록 (이제 JSON 바디로 보낸다고 가정)
+// 문제 등록 (이제 JSON 바디로 보낸다고 가정)
 export async function registerProblem(
   payload: ProblemRegisterPayload
 ): Promise<number> {
@@ -211,7 +235,6 @@ export async function registerProblem(
 }
 
 //스터디 그룹용 문제 목록 띄우기
-
 export interface SimpleProblem {
   problemId: number;
   problemTitle: string;

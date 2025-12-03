@@ -20,7 +20,11 @@ import {
   RemoveTagButton,
 } from "../../theme/ProblemAdd.Style";
 
-import { fetchAvailableTags, registerProblem } from "../../api/problem_api";
+import {
+  fetchAvailableTags,
+  registerProblem,
+  TAG_LABEL_MAP,
+} from "../../api/problem_api";
 import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
 
 const USE_DUMMY = true;
@@ -150,7 +154,7 @@ export default function ProblemAdd() {
                 .filter((t) => !tags.includes(t))
                 .map((t) => (
                   <option key={t} value={t}>
-                    {t}
+                    {TAG_LABEL_MAP[t] ?? t}
                   </option>
                 ))}
             </StyledSelect>
