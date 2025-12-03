@@ -41,60 +41,56 @@ const STATUS_LABEL: Record<SubmissionStatus, string> = {
   MLE: "메모리 초과",
   DRAFT: "임시 저장",
 };
+
 const USE_DUMMY = true;
 
-const scaleBig = keyframes`
- 0% {
-    max-height: 0px;
-    transform: scale(0);
+const openPanel = keyframes`
+  from {
+    max-height: 0;
+    opacity: 0;
+    transform: scale(0.96);
   }
-
-  100% {
-    max-height: 400px;
-    margin-bottom: 150px;
-    transform: scale(1.2);
+  to {
+    max-height: 50vh;
+    opacity: 1;
+    transform: scale(1);
   }
 `;
-const scaleSmall = keyframes`
- 0% {
-    max-height: 400px;
-    margin-bottom: 150px;
-    transform: scale(1.2);
-  }
 
-  100% {
-    max-height: 0px;
-    transform: scale(0);
+const closePanel = keyframes`
+  from {
+    max-height: 50vh;
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    max-height: 0;
+    opacity: 0;
+    transform: scale(0.96);
   }
 `;
 
 const Blankdiv = styled.div<{
-  $show: boolean;
-  $animate: "none" | "open" | "close";
+  $visible: boolean;
+  $animate: "open" | "close" | "none";
 }>`
   width: 100%;
-  display: flex;
+  display: ${({ $visible }) => ($visible ? "flex" : "none")};
   justify-content: center;
   align-items: center;
-
   transform-origin: top;
-  max-height: ${({ $show }) => ($show ? "600px" : "0")};
 
-  animation: ${({ $animate }) => {
-    if ($animate === "open") {
-      return css`
-        ${scaleBig} 0.7s cubic-bezier(0.368, 0.016, 0.491, 1.005) 0.2s 1 normal
-          both
-      `;
-    }
-    if ($animate === "close") {
-      return css`
-        ${scaleSmall} 0.7s cubic-bezier(0.368, 0.016, 0.491, 1.005) 0s 1 normal
-          both
-      `;
-    }
-    return "none";
-  }};
+  ${({ $animate }) =>
+    $animate === "open" &&
+    css`
+      animation: ${openPanel} 1s ease forwards;
+    `}
+
+  ${({ $animate }) =>
+    $animate === "close" &&
+    css`
+      animation: ${closePanel} 0.45s ease forwards;
+    `}
 `;
 
 const ResultCellInner = styled.div`
@@ -118,20 +114,20 @@ const StatusChip = styled.span<{ $status: SubmissionStatus }>`
   background-color: ${({ $status }) => {
     switch ($status) {
       case "CA":
-        return "#16a34a"; // 정답 - 초록
+        return "#16a34a";
       case "WA":
-        return "#ef4444"; // 오답 - 빨강
+        return "#ef4444";
       case "PENDING":
       case "GRADING":
-        return "#0ea5e9"; // 채점중 - 파랑
+        return "#0ea5e9";
       case "CE":
       case "RE":
       case "TLE":
       case "MLE":
-        return "#f97316"; // 에러류 - 주황
+        return "#f97316";
       case "DRAFT":
       default:
-        return "#6b7280"; // 임시저장 - 회색
+        return "#6b7280";
     }
   }};
 `;
@@ -174,6 +170,7 @@ export const ProblemListWrapper = styled.div`
   flex-direction: column;
   background-color: ${(props) => props.theme.bgColor};
 `;
+
 export const WholeWrapper = styled.div`
   height: 100%;
   width: 80%;
@@ -202,12 +199,15 @@ export default function MySubmissionsList() {
   const selectedSubmissionId = searchParams.get("id")
     ? Number(searchParams.get("id"))
     : null;
-  const showResult = searchParams.get("showResult") === "true";
 
-  const show = selectedSubmissionId !== null && showResult;
+  const rawShowResult = searchParams.get("showResult");
+  const showResult: boolean | null =
+    rawShowResult === "true" ? true : rawShowResult === "false" ? false : null;
 
-  const [animate, setAnimate] = useState<"none" | "open" | "close">("none");
-  const firstRenderRef = React.useRef(true);
+  const [panelVisible, setPanelVisible] = useState(false);
+  const [panelAnimate, setPanelAnimate] = useState<"open" | "close" | "none">(
+    "none"
+  );
 
   const [filter, setFilter] = useState<StatusFilter>("all");
 
@@ -217,18 +217,32 @@ export default function MySubmissionsList() {
 
   const isLoggedIn = true;
 
-  // 제출 목록 로딩
+  useEffect(() => {
+    if (showResult === true && selectedSubmissionId !== null) {
+      setPanelVisible(true);
+      setPanelAnimate("open");
+    } else if (showResult === false) {
+      setPanelAnimate("close");
+      const t = setTimeout(() => {
+        setPanelVisible(false);
+        setPanelAnimate("none");
+      }, 450);
+      return () => clearTimeout(t);
+    } else if (showResult === null) {
+      setPanelVisible(false);
+      setPanelAnimate("none");
+    }
+  }, [showResult, selectedSubmissionId]);
+
   useEffect(() => {
     let mounted = true;
     const run = async () => {
       setLoading(true);
       setError(null);
       try {
-        // 이후 실제 API 생기면 여기 분기 추가
         const data = USE_DUMMY
           ? await fetchSubmissions()
-          : await fetchSubmissions(); // TODO: 실제 fetchSubmissions로 교체
-
+          : await fetchSubmissions();
         if (mounted) setSubmissions(data.submissions);
       } catch (e) {
         if (mounted) setError("제출 목록을 불러오는 데 실패했습니다.");
@@ -241,20 +255,6 @@ export default function MySubmissionsList() {
       mounted = false;
     };
   }, []);
-
-  // 결과 패널 애니메이션 제어
-  useEffect(() => {
-    if (firstRenderRef.current) {
-      firstRenderRef.current = false;
-      return;
-    }
-
-    if (show) {
-      setAnimate("open");
-    } else {
-      setAnimate("close");
-    }
-  }, [show]);
 
   const handleSearch = () => {
     if (searchTerm.trim().length === 0) {
@@ -269,9 +269,23 @@ export default function MySubmissionsList() {
   };
 
   const toggleShowResult = (submissionId: number) => {
-    searchParams.set("id", String(submissionId));
-    searchParams.set("showResult", "true");
-    setSearchParams(searchParams, { replace: true });
+    // 이미 이 제출의 결과가 열려 있으면 → 닫기
+    if (showResult === true && selectedSubmissionId === submissionId) {
+      closeResult();
+      return;
+    }
+
+    // 아니면 → 이 제출 결과 열기
+    const next = new URLSearchParams(searchParams);
+    next.set("id", String(submissionId));
+    next.set("showResult", "true");
+    setSearchParams(next);
+  };
+
+  const closeResult = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set("showResult", "false");
+    setSearchParams(next);
   };
 
   const handleDirectSolve = (problemId: number) => {
@@ -282,12 +296,10 @@ export default function MySubmissionsList() {
     }
   };
 
-  // 검색 + 필터 + 정렬
   const filteredAndSorted = React.useMemo(() => {
     const term = searchTerm.trim();
 
     let list = submissions.filter((s) => {
-      // 검색어: 문제 ID 또는 제목
       if (term.length > 0) {
         const asNumber = Number(term);
         const matchId =
@@ -296,28 +308,21 @@ export default function MySubmissionsList() {
         if (!matchId && !matchTitle) return false;
       }
 
-      // 상태 필터
-      // 상태 필터
       if (filter === "correct") return s.status === "CA";
       if (filter === "wrong") return s.status === "WA";
-
-      if (filter === "pending") {
+      if (filter === "pending")
         return s.status === "PENDING" || s.status === "GRADING";
-      }
-
-      if (filter === "error") {
+      if (filter === "error")
         return (
           s.status === "CE" ||
           s.status === "RE" ||
           s.status === "TLE" ||
           s.status === "MLE"
         );
-      }
 
-      return true; // "all"
+      return true;
     });
 
-    // 정렬
     list = [...list].sort((a, b) => {
       switch (sortType) {
         case "latest":
@@ -343,7 +348,6 @@ export default function MySubmissionsList() {
     return list;
   }, [submissions, searchTerm, filter, sortType]);
 
-  // 페이지네이션
   const totalItems = filteredAndSorted.length;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -359,8 +363,9 @@ export default function MySubmissionsList() {
 
   return (
     <WholeWrapper>
-      <Blankdiv $show={show} $animate={animate}>
+      <Blankdiv $visible={panelVisible} $animate={panelAnimate}>
         <CodeResult />
+        {/* 필요하면 여기서 closeResult를 CodeResult에 prop으로 넘겨서 닫기 버튼 연결 */}
       </Blankdiv>
 
       <ProblemListWrapper>
@@ -379,7 +384,6 @@ export default function MySubmissionsList() {
             <SearchButton onClick={handleSearch}>검색</SearchButton>
           </SearchContainer>
 
-          {/* 정렬 */}
           <SortSelect
             value={sortType}
             onChange={(e) => setSortType(e.target.value)}
@@ -392,7 +396,6 @@ export default function MySubmissionsList() {
             <option value="memory_desc">메모리 ↓</option>
           </SortSelect>
 
-          {/* 상태 필터 */}
           <SortSelect
             value={filter}
             onChange={(e) => {

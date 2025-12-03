@@ -164,8 +164,9 @@ ${result.compileTimeMs} ms
     navigate(
       "/problems/" +
         userProfile?.nickname +
-        "/submitted?showResult=true&id=" +
-        problemId
+        "/submitted?id=" +
+        problemId +
+        "&showResult=true"
     );
   };
 
