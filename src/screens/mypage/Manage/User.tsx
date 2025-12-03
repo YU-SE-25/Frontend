@@ -1,11 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import type { Role } from "../../../api/dummy/user_dummy";
-import { DUMMY_USERS, ROLE_LABEL } from "../../../api/dummy/user_dummy";
+import {
+  addToBlacklist,
+  fetchUserList,
+  updateUserRole,
+} from "../../../api/manage_api";
 /* -----------------------------------------------------
    styled-components
 ----------------------------------------------------- */
-
+type Role = "LEARNER" | "INSTRUCTOR" | "MANAGER";
 const Wrap = styled.div`
   display: flex;
   flex-direction: column;
@@ -108,35 +111,55 @@ const Td = styled.td`
 ----------------------------------------------------- */
 
 export default function UserManagementScreen() {
-  const [users, setUsers] = useState(DUMMY_USERS);
+  const [users, setUsers] = useState<any[]>([]);
   const [blacklist, setBlacklist] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
+  const ROLE_LABEL: Record<string, string> = {
+    LEARNER: "회원",
+    INSTRUCTOR: "강사",
+    MANAGER: "관리자",
+  };
+
   const selectedUser = useMemo(
-    () => users.find((u) => u.id === selectedId) ?? null,
+    () => users.find((u) => u.userId === selectedId) ?? null,
     [users, selectedId]
   );
 
+  // 🔥 검색 필터
   const filtered = useMemo(() => {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
+
     return users.filter(
       (u) =>
-        u.userId.toLowerCase().includes(q) ||
+        String(u.userId).toLowerCase().includes(q) ||
         u.nickname.toLowerCase().includes(q)
     );
   }, [search, users]);
 
   const isDisabled = !selectedUser;
 
+  // 🔥 진짜 데이터 불러오기
+  useEffect(() => {
+    async function load() {
+      const result = await fetchUserList();
+      console.log("fetchUserList result:", result);
+
+      // result = { currentPage, totalElements, totalPages, users: [...] }
+      setUsers(result.users ?? []);
+    }
+    load();
+  }, []);
+
   const handleChange = (value: string) => {
     setSearch(value);
     setSelectedId(null);
   };
 
-  const handleSelect = (id: number) => {
-    setSelectedId((prev) => (prev === id ? null : id));
+  const handleSelect = (userId: number) => {
+    setSelectedId((prev) => (prev === userId ? null : userId));
   };
 
   const copyInfo = async () => {
@@ -145,8 +168,9 @@ export default function UserManagementScreen() {
     alert("유저 정보가 클립보드에 복사되었습니다!");
   };
 
-  const blacklistUser = () => {
+  const blacklistUser = async () => {
     if (!selectedUser) return;
+
     if (
       !window.confirm(
         `${selectedUser.nickname} (${selectedUser.userId}) 을 블랙리스트에 추가하고 제거할까요?`
@@ -154,24 +178,48 @@ export default function UserManagementScreen() {
     )
       return;
 
-    setBlacklist((prev) => [...prev, selectedUser.userId]);
-    setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
-    setSelectedId(null);
+    const reason = window.prompt(
+      "블랙리스트 사유를 입력하세요.",
+      "운영정책 위반"
+    );
+    if (!reason) return;
+
+    try {
+      await addToBlacklist({
+        email: selectedUser.email,
+        phone: selectedUser.phone,
+        name: selectedUser.name ?? selectedUser.nickname,
+        reason,
+      });
+
+      // 로컬 상태에서도 제거 + 블랙리스트 목록 갱신
+      setBlacklist((prev) => [...prev, String(selectedUser.userId)]);
+      setUsers((prev) => prev.filter((u) => u.userId !== selectedUser.userId));
+      setSelectedId(null);
+
+      alert("블랙리스트에 추가되었습니다.");
+    } catch (err) {
+      console.error(err);
+      alert("블랙리스트 추가 중 오류가 발생했습니다.");
+    }
   };
 
   const removeUser = () => {
     if (!selectedUser) return;
     if (!window.confirm("정말 제거하시겠습니까?")) return;
-    setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
+
+    setUsers((prev) => prev.filter((u) => u.userId !== selectedUser.userId));
     setSelectedId(null);
   };
 
-  const changeRole = () => {
+  const changeRole = async () => {
     if (!selectedUser) return;
+
     const input = window.prompt(
       "역할을 입력하세요: 회원 / 강사 / 관리자",
       ROLE_LABEL[selectedUser.role]
     );
+
     if (!input) return;
 
     let next: Role | null = null;
@@ -181,9 +229,26 @@ export default function UserManagementScreen() {
 
     if (!next) return alert("잘못된 역할입니다.");
 
-    setUsers((prev) =>
-      prev.map((u) => (u.id === selectedUser.id ? { ...u, role: next! } : u))
-    );
+    try {
+      // 🔥 1) 서버에 역할 변경 요청
+      const res = await updateUserRole(selectedUser.userId, next);
+
+      // 🔥 2) 성공하면 로컬 상태 업데이트
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.userId === selectedUser.userId ? { ...u, role: next } : u
+        )
+      );
+
+      alert(
+        `역할이 '${ROLE_LABEL[res.oldRole]}' → '${
+          ROLE_LABEL[res.newRole]
+        }'로 변경되었습니다.`
+      );
+    } catch (err) {
+      console.error(err);
+      alert("역할 변경 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -202,7 +267,11 @@ export default function UserManagementScreen() {
           <ActionButton onClick={blacklistUser} disabled={isDisabled}>
             블랙리스트
           </ActionButton>
-          <ActionButton onClick={removeUser} disabled={isDisabled}>
+          <ActionButton
+            onClick={removeUser}
+            disabled={true}
+            title="추후 구현 예정..."
+          >
             유저 제거
           </ActionButton>
           <ActionButton onClick={changeRole} disabled={isDisabled}>
@@ -233,9 +302,9 @@ export default function UserManagementScreen() {
 
             {filtered.map((u) => (
               <Tr
-                key={u.id}
-                selected={selectedId === u.id}
-                onClick={() => handleSelect(u.id)}
+                key={u.userId}
+                selected={selectedId === u.userId}
+                onClick={() => handleSelect(u.userId)}
               >
                 <Td>{u.userId}</Td>
                 <Td>{u.nickname}</Td>

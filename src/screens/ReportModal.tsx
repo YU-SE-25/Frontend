@@ -1,20 +1,23 @@
 import { useState } from "react";
 import styled from "styled-components";
-import { createReport } from "../api/report_api";
+import { createReport, type ReportTargetType } from "../api/report_api";
 
 interface Props {
   targetContentId: number;
-  targetContentType: string;
+  targetContentType: ReportTargetType;
   onClose: () => void;
+  extraId?: number;
 }
 
 export default function ReportModal({
   targetContentId,
   targetContentType,
   onClose,
+  extraId,
 }: Props) {
   const [reportType, setReportType] = useState("");
   const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!reportType) {
@@ -26,20 +29,24 @@ export default function ReportModal({
       return;
     }
 
+    const fullReason = `[${reportType}] ${reason.trim()}`;
+
     try {
-      const res = await createReport({
-        reporter_name: "홍길동", // 이름 더미, 나중에 로그인 유저로 변경
-        report_title: reportType,
-        target_content_type: targetContentType,
-        target_content_id: targetContentId,
-        reason,
+      setLoading(true);
+      await createReport({
+        targetContentType,
+        targetContentId,
+        reason: fullReason,
+        extraId,
       });
 
-      alert(res.message);
+      alert("신고가 접수되었습니다.");
       onClose();
     } catch (error) {
       console.error(error);
       alert("전송 실패. 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,14 +75,17 @@ export default function ReportModal({
         />
 
         <ButtonRow>
-          <CancelBtn onClick={onClose}>취소</CancelBtn>
-          <SubmitBtn onClick={handleSubmit}>신고하기</SubmitBtn>
+          <CancelBtn onClick={onClose} disabled={loading}>
+            취소
+          </CancelBtn>
+          <SubmitBtn onClick={handleSubmit} disabled={loading}>
+            {loading ? "전송 중..." : "신고하기"}
+          </SubmitBtn>
         </ButtonRow>
       </Modal>
     </Overlay>
   );
 }
-
 //css
 const Overlay = styled.div`
   position: fixed;

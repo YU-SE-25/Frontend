@@ -344,6 +344,27 @@ export default function ActivityPage() {
   const submissions: Submission[] = user?.recentSubmissions ?? [];
   const stat = user?.stats;
   const goal = user?.goals;
+  const reminders = user?.reminders;
+  function mapDayNumberToKorean(day: number) {
+    switch (day) {
+      case 1:
+        return "월";
+      case 2:
+        return "화";
+      case 3:
+        return "수";
+      case 4:
+        return "목";
+      case 5:
+        return "금";
+      case 6:
+        return "토";
+      case 7:
+        return "일";
+      default:
+        return "";
+    }
+  }
 
   // 🔹 2) useMemo도 조건 밖에서 항상 호출
   const solvedPreview = useMemo(() => solvedIds.slice(0, 10), [solvedIds]);
@@ -564,9 +585,14 @@ export default function ActivityPage() {
               <MiniGoalTextGroup>
                 <MiniGoalLabel>학습 알림 시간</MiniGoalLabel>
                 <MiniGoalValue>
-                  {goal?.reminderTimes && goal.reminderTimes.length > 0
-                    ? goal.reminderTimes.join(", ")
-                    : "알림 시간을 설정해보세요."}
+                  {reminders && reminders.length > 0 ? (
+                    <>
+                      {mapDayNumberToKorean(reminders[0].day)}요일{" "}
+                      {reminders[0].times?.join(", ")}
+                    </>
+                  ) : (
+                    "알림 시간을 설정해보세요."
+                  )}
                 </MiniGoalValue>
               </MiniGoalTextGroup>
             </MiniGoalBox>

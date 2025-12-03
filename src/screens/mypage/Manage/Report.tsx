@@ -1,10 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import type { Role } from "../../../api/dummy/user_dummy";
-import { ROLE_LABEL } from "../../../api/dummy/user_dummy";
+import {
+  fetchAdminReports,
+  fetchBlacklist,
+  resolveReport,
+} from "../../../api/manage_api";
 
 /* 타입 정의 */
 type Category = "REPORT" | "BLACKLIST";
+type Role = "LEARNER" | "INSTRUCTOR" | "MANAGER";
+const ROLE_LABEL = { LEARNER: "회원", INSTRUCTOR: "강사", MANAGER: "관리자" };
 
 interface ReportItem {
   id: number;
@@ -46,25 +51,6 @@ const DUMMY_REPORTS: ReportItem[] = [
     createdAt: "2025-11-19",
     content:
       "특정 유저를 지칭하며 욕설과 비방이 포함되어 있습니다. 운영 정책 위반으로 보입니다.",
-  },
-];
-
-const DUMMY_BLACKLIST: BlacklistUser[] = [
-  {
-    id: 1,
-    userId: "toxicUser",
-    nickname: "욕설러",
-    role: "LEARNER",
-    joinedAt: "2025-08-01",
-    blacklistedAt: "2025-11-10",
-  },
-  {
-    id: 2,
-    userId: "spammer01",
-    nickname: "스패머",
-    role: "LEARNER",
-    joinedAt: "2025-09-15",
-    blacklistedAt: "2025-11-18",
   },
 ];
 
@@ -219,8 +205,8 @@ const DetailContent = styled.p`
 
 export default function ReportManagementScreen() {
   const [category, setCategory] = useState<Category>("REPORT");
-  const [reportList, setReportList] = useState<ReportItem[]>(DUMMY_REPORTS);
-  const [blacklist, setBlacklist] = useState<BlacklistUser[]>(DUMMY_BLACKLIST);
+  const [reportList, setReportList] = useState<ReportItem[]>([]);
+  const [blacklist, setBlacklist] = useState<BlacklistUser[]>([]);
   const [search, setSearch] = useState("");
   const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
   const [selectedBlacklistId, setSelectedBlacklistId] = useState<number | null>(
@@ -239,6 +225,46 @@ export default function ReportManagementScreen() {
     () => blacklist.find((u) => u.id === selectedBlacklistId) ?? null,
     [blacklist, selectedBlacklistId]
   );
+
+  useEffect(() => {
+    async function loadReports() {
+      try {
+        const res = await fetchAdminReports();
+        const mapped: ReportItem[] = res.map((item) => ({
+          id: item.id,
+          title: item.reason,
+          target: item.targetName,
+          reporterNickname: item.reporterName,
+          reporterId: "-", // 백엔드에 따로 아이디가 없으니 일단 표시용
+          createdAt: item.reportedAt,
+          content: item.reason,
+        }));
+        setReportList(mapped);
+      } catch (e) {
+        console.error("신고 목록 조회 실패:", e);
+      }
+    }
+
+    async function loadBlacklist() {
+      try {
+        const res = await fetchBlacklist({ page: 0, size: 50 });
+        const mapped: BlacklistUser[] = res.blacklist.map((item) => ({
+          id: item.blacklistId,
+          userId: item.email ?? item.phone ?? String(item.blacklistId),
+          nickname: item.name,
+          role: "LEARNER",
+          joinedAt: "-",
+          blacklistedAt: item.bannedAt,
+        }));
+        setBlacklist(mapped);
+      } catch (e) {
+        console.error("블랙리스트 조회 실패:", e);
+      }
+    }
+
+    loadReports();
+    loadBlacklist();
+  }, []);
 
   const filteredReports = useMemo(() => {
     if (!search.trim()) return reportList;
@@ -285,15 +311,32 @@ export default function ReportManagementScreen() {
     }
   };
 
-  // 신고 삭제
-  const handleDeleteReport = () => {
+  const handleResolveReport = async () => {
     if (!selectedReport) return;
-    if (!window.confirm("해당 신고글을 삭제하시겠습니까?")) return;
-    setReportList((prev) => prev.filter((r) => r.id !== selectedReport.id));
-    setSelectedReportId(null);
+
+    if (!window.confirm("해당 신고를 접수(처리 완료)하시겠습니까?")) return;
+
+    const adminReason =
+      window.prompt("처리 사유를 입력하세요.", "신고 내용 확인 후 접수 처리") ??
+      "";
+    if (!adminReason.trim()) return;
+
+    try {
+      await resolveReport(selectedReport.id, {
+        status: "APPROVED",
+        adminAction: "RECEIVE",
+        adminReason,
+      });
+
+      setReportList((prev) => prev.filter((r) => r.id !== selectedReport.id));
+      setSelectedReportId(null);
+      alert("신고가 접수되었습니다.");
+    } catch (e) {
+      console.error("신고 접수 실패:", e);
+      alert("신고 접수 중 오류가 발생했습니다.");
+    }
   };
 
-  // 블랙리스트 유저 정보 보기 (클립보드)
   const handleCopyUserInfo = async () => {
     if (!selectedBlacklistUser) return;
     const text = JSON.stringify(selectedBlacklistUser, null, 2);
@@ -301,7 +344,6 @@ export default function ReportManagementScreen() {
     alert("유저 정보가 클립보드에 복사되었습니다!");
   };
 
-  // 블랙리스트 해제
   const handleUnblacklist = () => {
     if (!selectedBlacklistUser) return;
     if (
@@ -316,13 +358,12 @@ export default function ReportManagementScreen() {
     setSelectedBlacklistId(null);
   };
 
-  const isReportDeleteDisabled = !selectedReport;
+  const isReportResolveDisabled = !selectedReport;
   const isInfoDisabled = !selectedBlacklistUser;
   const isUnblacklistDisabled = !selectedBlacklistUser;
 
   return (
     <Wrap>
-      {/* 카테고리 탭 */}
       <CategoryBar>
         <CategoryButton
           $active={isReportCategory}
@@ -338,7 +379,6 @@ export default function ReportManagementScreen() {
         </CategoryButton>
       </CategoryBar>
 
-      {/* 검색 + 버튼 */}
       <TopBar>
         <SearchInput
           value={search}
@@ -353,10 +393,10 @@ export default function ReportManagementScreen() {
         <ButtonGroup>
           {isReportCategory && (
             <ActionButton
-              onClick={handleDeleteReport}
-              disabled={isReportDeleteDisabled}
+              onClick={handleResolveReport}
+              disabled={isReportResolveDisabled}
             >
-              신고 삭제
+              신고 접수
             </ActionButton>
           )}
 
@@ -379,7 +419,6 @@ export default function ReportManagementScreen() {
         </ButtonGroup>
       </TopBar>
 
-      {/* 목록 */}
       <TableWrap>
         <Table>
           <Thead>
@@ -454,7 +493,6 @@ export default function ReportManagementScreen() {
         </Table>
       </TableWrap>
 
-      {/* 신고 상세 내용은 신고 내역 탭 + 선택되었을 때만 */}
       {isReportCategory && selectedReport && (
         <DetailPanel>
           <DetailTitle>{selectedReport.title}</DetailTitle>

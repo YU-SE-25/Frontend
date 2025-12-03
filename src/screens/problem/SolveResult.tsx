@@ -3,8 +3,10 @@ import styled, { css, keyframes } from "styled-components";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getSubmissionStatus } from "../../api/codeeditor_api";
 import {
-  fetchSubmissionById,
+  fetchMySubmissions,
+  fetchSubmissionDetail,
   type Submission,
+  type SubmissionDetail,
 } from "../../api/mySubmissions_api";
 
 interface GradingResponse {
@@ -16,7 +18,10 @@ interface GradingResponse {
   runtime?: number;
   memory?: number;
 }
-
+type SolveResultProps = {
+  onLookMyCode?: (submissionId: number) => void;
+  onNavEditor?: (problemId: number, submissionId: number) => void;
+};
 const ResultCard = styled.div`
   width: 100%;
   max-width: 960px;
@@ -296,7 +301,10 @@ const ActionButton = styled.button<{ variant?: "primary" | "ghost" }>`
   }
 `;
 
-export default function SolveResult() {
+export default function SolveResult({
+  onNavEditor,
+  onLookMyCode,
+}: SolveResultProps) {
   const [sp] = useSearchParams();
   const params = useParams();
   const navigate = useNavigate();
@@ -313,25 +321,25 @@ export default function SolveResult() {
     : null;
 
   const [gradingData, setGradingData] = useState<GradingResponse | null>(null);
-  const [submission, setSubmission] = useState<Submission | null>(null);
+  const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const options = {
+    page: 0,
+    size: 1,
+    sort: "submittedAt,DESC",
+    submissionId: submissionId ?? undefined,
+  };
 
   useEffect(() => {
     if (!submissionId) return;
 
     let active = true;
 
-    fetchSubmissionById(submissionId)
-      .then((res) => {
+    fetchSubmissionDetail(submissionId)
+      .then((detail) => {
         if (!active) return;
 
-        if (!res) {
-          setSubmission(null);
-          setSubmissionError("해당 제출 기록을 찾을 수 없습니다.");
-          return;
-        }
-
-        setSubmission(res);
+        setSubmission(detail);
         setSubmissionError(null);
       })
       .catch(() => {
@@ -423,6 +431,16 @@ export default function SolveResult() {
   const problemTitle = submission?.problemTitle ?? "";
   const language = submission?.language ?? "-";
   const submittedAt = submission?.submittedAt ?? "알 수 없음";
+
+  const handleClickMyCode = () => {
+    submissionId !== null && onLookMyCode?.(submissionId);
+  };
+
+  const handleClickNavEditor = () => {
+    problemId !== undefined &&
+      submissionId !== null &&
+      onNavEditor?.(problemId, submissionId);
+  };
 
   return (
     <ResultCard>
@@ -573,14 +591,7 @@ export default function SolveResult() {
           {submissionError && ` (${submissionError})`}
         </HintText>
         <ButtonGroup>
-          <ActionButton
-            variant="ghost"
-            onClick={() =>
-              problemId
-                ? navigate(`codeView/${submissionId}`)
-                : navigate("/problem-list")
-            }
-          >
+          <ActionButton variant="ghost" onClick={handleClickMyCode}>
             내 코드 보기
           </ActionButton>
           <ActionButton
@@ -593,14 +604,7 @@ export default function SolveResult() {
           >
             코드 분석
           </ActionButton>
-          <ActionButton
-            variant="primary"
-            onClick={() =>
-              problemId
-                ? navigate(`/problems/${problemId}/solve`)
-                : navigate("/problem-list")
-            }
-          >
+          <ActionButton variant="primary" onClick={handleClickNavEditor}>
             에디터로 돌아가기
           </ActionButton>
           <ActionButton
