@@ -12,13 +12,14 @@ export interface ProblemListItemDto {
   difficulty: "EASY" | "MEDIUM" | "HARD";
   viewCount: number;
   createdAt: string;
-
-  userStatus: "SOLVED" | "ATTEMPTED" | "NONE";
+  createdByNickname: string;
+  userStatus: "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
   summary: string;
-  solvedCount: number;
-  successRate: number;
+  solverCount: number;
+  correctRate: number;
 }
 
+// (상세는 스펙 안 줬으니 기존 그대로 두되, 필요하면 나중에 또 맞추자!)
 export interface ProblemDetailDto {
   problemId: number;
   createdByNickname: string;
@@ -44,6 +45,7 @@ export interface ProblemDetailDto {
   allowedLanguages: string[];
 }
 
+// 백엔드 POST /api/problems/register 요청 DTO에 맞춤
 export interface ProblemRegisterPayload {
   title: string;
   description: string;
@@ -51,13 +53,20 @@ export interface ProblemRegisterPayload {
   difficulty: "EASY" | "MEDIUM" | "HARD";
   timeLimit: number;
   memoryLimit: number;
-  visibility: "PUBLIC" | "PRIVATE";
+
+  // visibility → status 로 변경
+  // ex) "PENDING" 하나만 쓸 수도 있고, 나중에 enum 늘어나면 여기에 추가
+  status: "PENDING" | "APPROVED" | "REJECTED";
+
   tags: string[];
   hint: string;
   source: string;
-  testcases?: File[];
+
+  // testcases(File[]) → testcaseFile(string) 로 변경
+  testcaseFile: string;
 }
 
+// UI에서 쓰는 통합 타입(조금 느슨하게 둬도 됨)
 export interface IProblem {
   problemId: number;
   title: string;
@@ -69,6 +78,7 @@ export interface IProblem {
   summary?: string;
   solvedCount?: number;
   successRate?: string;
+  // UI 쪽은 "NONE" 계속 써도 되고, DTO에서 "NOT_SOLVED" → "NONE" 변환
   userStatus?: "SOLVED" | "ATTEMPTED" | "NONE";
 
   description?: string;
@@ -83,6 +93,7 @@ export interface IProblem {
   allowedLanguages?: string[];
 }
 
+// 리스트용 DTO → UI용 IProblem 매핑
 export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
   return {
     problemId: dto.problemId,
@@ -93,12 +104,16 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
     createdAt: dto.createdAt.slice(0, 10),
 
     summary: dto.summary,
-    solvedCount: dto.solvedCount,
-    successRate: dto.successRate + "%",
-    userStatus: dto.userStatus,
+
+    solvedCount: dto.solverCount,
+
+    successRate: Math.round(dto.correctRate * 100) + "%",
+
+    userStatus: dto.userStatus === "NOT_SOLVED" ? "NONE" : dto.userStatus,
   };
 }
 
+// ✅ 상세 DTO → IProblem 매핑 (여긴 기존 로직 유지)
 export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
   return {
     problemId: dto.problemId,
@@ -143,10 +158,12 @@ export async function fetchAvailableTags(): Promise<string[]> {
   }
 }
 
-// 문제 목록 조회
+// 문제 목록 조회 (엔드포인트 /problems/list 로 맞춤)
 export async function fetchProblems(): Promise<IProblem[]> {
   try {
-    const res = await api.get<{ content: ProblemListItemDto[] }>("/problems");
+    const res = await api.get<{
+      content: ProblemListItemDto[];
+    }>("/problems/list");
 
     if (!res.data?.content) throw new Error("empty");
 
@@ -170,47 +187,26 @@ export async function fetchProblemDetail(problemId: number): Promise<IProblem> {
   } catch (err) {
     console.error("문제 상세 조회 실패 → 더미 상세로 fallback!");
 
-    // 기존 dummy 함수가 하나만 받아서 상세 리턴할 때 그대로 반환
     const dummy = await fetchDummyProblemDetail(problemId);
     return dummy;
   }
 }
 
-// 문제 등록 (테스트케이스 포함)
+// ✅ 문제 등록 (이제 JSON 바디로 보낸다고 가정)
 export async function registerProblem(
   payload: ProblemRegisterPayload
 ): Promise<number> {
   try {
-    const fd = new FormData();
-
-    fd.append("title", payload.title);
-    fd.append("description", payload.description);
-    fd.append("inputOutputExample", payload.inputOutputExample);
-    fd.append("difficulty", payload.difficulty);
-    fd.append("timeLimit", String(payload.timeLimit));
-    fd.append("memoryLimit", String(payload.memoryLimit));
-    fd.append("visibility", payload.visibility);
-    fd.append("hint", payload.hint);
-    fd.append("source", payload.source);
-
-    payload.tags.forEach((tag) => fd.append("tags", tag));
-
-    if (payload.testcases) {
-      payload.testcases.forEach((f) => fd.append("testcases", f));
-    }
-
-    const res = await api.post<{ problemId: number }>(
-      "/problems/register",
-      fd,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
-    );
+    const res = await api.post<{
+      message: string;
+      problemId: number;
+      timestamp: string;
+    }>("/problems/register", payload);
 
     return res.data.problemId;
   } catch (err) {
     console.error("문제 등록 실패 → 더미 ProblemId 99999 반환");
-    return 99999; // 문제 등록 실패 시 더미 아이디
+    return 99999;
   }
 }
 

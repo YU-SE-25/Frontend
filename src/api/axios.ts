@@ -22,7 +22,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-//응답 인터셉터 (AccessToken 만료 → 자동 재발급)
+// 응답 인터셉터 (AccessToken 만료 → 자동 재발급)
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -36,16 +36,21 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
-      const refreshToken = store.get(refreshTokenAtom);
+      // 🔥 refreshTokenAtom이 null일 수 있으니 localStorage에서 fallback으로 읽기
+      let refreshToken = store.get(refreshTokenAtom);
+      if (!refreshToken) {
+        refreshToken = localStorage.getItem("refreshToken") || null;
+      }
 
-      // refreshToken 자체가 없으면 → 로그아웃은 하지 말고 그냥 실패만 전달
+      // refreshToken 자체가 없으면 → 그냥 실패만 전달 (로그아웃 X)
       if (!refreshToken) return Promise.reject(error);
 
       try {
         // refresh 시도
         const refreshResponse = await AuthAPI.refresh(refreshToken);
 
-        // 성공 → 토큰 저장 + 원래 요청 재전송
+        // 🔥 refreshToken은 백엔드에서 새로 안 주므로 덮어쓰기 금지
+        // 성공 → accessToken 저장 + 원래 요청 재전송
         store.set(refreshActionAtom, refreshResponse);
         localStorage.setItem("accessToken", refreshResponse.accessToken);
 
@@ -54,7 +59,7 @@ api.interceptors.response.use(
         ] = `Bearer ${refreshResponse.accessToken}`;
         return api(original);
       } catch (e) {
-        //refresh 실패 → 이때만 강제 로그아웃
+        // refresh 실패 → 이때만 강제 로그아웃
         localStorage.clear();
         window.location.href = "/login";
         return;
