@@ -24,7 +24,8 @@ import CodeResult from "./SolveResult";
 import styled, { css, keyframes } from "styled-components";
 
 import {
-  fetchSubmissions,
+  fetchMySubmissions,
+  fetchSubmissionDetail,
   type Submission,
   type SubmissionStatus,
 } from "../../api/mySubmissions_api";
@@ -41,8 +42,6 @@ const STATUS_LABEL: Record<SubmissionStatus, string> = {
   MLE: "메모리 초과",
   DRAFT: "임시 저장",
 };
-
-const USE_DUMMY = true;
 
 const openPanel = keyframes`
   from {
@@ -217,6 +216,7 @@ export default function MySubmissionsList() {
 
   const isLoggedIn = true;
 
+  // ✅ URL showResult / id 에 따라 오른쪽 패널 열고 닫기
   useEffect(() => {
     if (showResult === true && selectedSubmissionId !== null) {
       setPanelVisible(true);
@@ -240,12 +240,21 @@ export default function MySubmissionsList() {
       setLoading(true);
       setError(null);
       try {
-        const data = USE_DUMMY
-          ? await fetchSubmissions()
-          : await fetchSubmissions();
-        if (mounted) setSubmissions(data.submissions);
+        // 백엔드가 페이지네이션이긴 한데,
+        // 여기서는 "내 모든 제출"이 필요하니까 size 크게 한 번만 가져오자.
+        const pageData = await fetchMySubmissions({
+          page: 0,
+          size: 1000, // 필요하면 조절
+        });
+
+        if (mounted) {
+          setSubmissions(pageData.items);
+        }
       } catch (e) {
-        if (mounted) setError("제출 목록을 불러오는 데 실패했습니다.");
+        console.error(e);
+        if (mounted) {
+          setError("제출 목록을 불러오는 데 실패했습니다.");
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -269,13 +278,11 @@ export default function MySubmissionsList() {
   };
 
   const toggleShowResult = (submissionId: number) => {
-    // 이미 이 제출의 결과가 열려 있으면 → 닫기
     if (showResult === true && selectedSubmissionId === submissionId) {
       closeResult();
       return;
     }
 
-    // 아니면 → 이 제출 결과 열기
     const next = new URLSearchParams(searchParams);
     next.set("id", String(submissionId));
     next.set("showResult", "true");
@@ -288,11 +295,25 @@ export default function MySubmissionsList() {
     setSearchParams(next);
   };
 
-  const handleDirectSolve = (problemId: number) => {
-    if (isLoggedIn) {
-      navigate(`/problems/${problemId}/solve`);
-    } else {
+  const handleDirectSolve = async (problemId: number, submissionId: number) => {
+    if (!isLoggedIn) {
       alert("로그인 후 이용 가능합니다.");
+      return;
+    }
+
+    try {
+      const detail = await fetchSubmissionDetail(submissionId);
+
+      navigate(`/problems/${problemId}/solve`, {
+        state: {
+          initialCode: detail.code, // ✅ 제출된 코드
+          language: detail.language, // ✅ 언어도 같이 넘길 수 있음
+          fromSubmission: true,
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      alert("제출 코드를 불러오지 못했습니다.");
     }
   };
 
@@ -357,6 +378,7 @@ export default function MySubmissionsList() {
     indexOfLastItem
   );
 
+  const seeMyCode = (id: number) => navigate(`codeView/${id}`);
   const handlePageChange = (pageNumber: number) => {
     if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
   };
@@ -364,8 +386,7 @@ export default function MySubmissionsList() {
   return (
     <WholeWrapper>
       <Blankdiv $visible={panelVisible} $animate={panelAnimate}>
-        <CodeResult />
-        {/* 필요하면 여기서 closeResult를 CodeResult에 prop으로 넘겨서 닫기 버튼 연결 */}
+        <CodeResult onLookMyCode={seeMyCode} onNavEditor={handleDirectSolve} />
       </Blankdiv>
 
       <ProblemListWrapper>
@@ -443,7 +464,7 @@ export default function MySubmissionsList() {
                   </TitleCell>
 
                   <TableCell>{submission.language}</TableCell>
-                  <TableCell>{submission.memory} KB</TableCell>
+                  <TableCell>{submission.memory} MB</TableCell>
                   <TableCell>{submission.runtime} ms</TableCell>
                   <TableCell>{timeConverter(submission.submittedAt)}</TableCell>
 
@@ -455,9 +476,7 @@ export default function MySubmissionsList() {
 
                       <ResultButtons>
                         <SmallResultButton
-                          onClick={() =>
-                            navigate(`codeView/${submission.submissionId}`)
-                          }
+                          onClick={() => seeMyCode(submission.submissionId)}
                         >
                           코드 보기
                         </SmallResultButton>
@@ -470,7 +489,10 @@ export default function MySubmissionsList() {
                         </SmallResultButton>
                         <SmallResultButton
                           onClick={() =>
-                            handleDirectSolve(submission.problemId)
+                            handleDirectSolve(
+                              submission.problemId,
+                              submission.submissionId
+                            )
                           }
                         >
                           다시 풀기

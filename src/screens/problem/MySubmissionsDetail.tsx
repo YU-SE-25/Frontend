@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
-import { fetchSubmissionById } from "../../api/mySubmissions_api";
 import {
   fetchReviewsBySolution,
   fetchCommentsByReview,
@@ -12,6 +11,12 @@ import { timeConverter } from "../../utils/timeConverter";
 import { ButtonContainer } from "../../theme/ProblemList.Style";
 import ReviewSection from "./reviews/Review";
 import type { Review } from "./reviews/Review";
+
+import {
+  fetchSubmissionDetail,
+  updateSubmissionShare,
+  type SubmissionDetail,
+} from "../../api/mySubmissions_api";
 
 // ===================== 스타일 =====================
 
@@ -93,9 +98,7 @@ const RetryButton = styled.button`
   }
 `;
 
-// ===================== 타입 =====================
-
-// Review 타입은 ../problem/Review 에서 import
+// ===================== 타입 / 유틸 =====================
 
 // 새 API 언어코드까지 커버하도록 확장
 const langMap: Record<string, string> = {
@@ -116,34 +119,27 @@ const langMap: Record<string, string> = {
 
 export default function MySubmissionsDetail() {
   const { solutionId } = useParams<{ solutionId: string }>();
+  const navigate = useNavigate();
 
+  // 백엔드 상세 응답 전체
+  const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
+
+  // 코드 + 언어 (하이라이팅용)
   const [code, setCode] = useState("");
   const [rawLang, setRawLang] = useState("C");
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isShared, setIsShared] = useState(false);
   const [problemId, setProblemId] = useState<number | null>(null);
 
-  const [solutionMeta, setSolutionMeta] = useState<{
-    createdAt: string;
-    memory: number;
-    runtime: number;
-  } | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const navigate = useNavigate();
+  const numericSubmissionId = solutionId ? Number(solutionId) : NaN;
 
   useEffect(() => {
-    if (!solutionId) {
+    if (!solutionId || Number.isNaN(numericSubmissionId)) {
       setError("유효하지 않은 접근입니다.");
-      setLoading(false);
-      return;
-    }
-
-    const submissionId = Number(solutionId);
-    if (Number.isNaN(submissionId)) {
-      setError("잘못된 제출 ID입니다.");
       setLoading(false);
       return;
     }
@@ -155,31 +151,24 @@ export default function MySubmissionsDetail() {
       setError(null);
 
       try {
-        const submission = await fetchSubmissionById(submissionId);
+        // 🔹 1) 제출 상세 정보 가져오기
+        const detail = await fetchSubmissionDetail(numericSubmissionId);
 
         if (!mounted) return;
 
-        if (!submission) {
+        if (!detail) {
           setError("제출 정보를 찾을 수 없습니다.");
           return;
         }
 
-        setCode(`#include <iostream>
+        setSubmission(detail);
+        setCode(detail.code ?? "");
+        setRawLang(detail.language);
+        setIsShared(detail.shared);
+        setProblemId(detail.problemId);
 
-int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
-}
-`);
-        setRawLang(submission.language);
-        setSolutionMeta({
-          createdAt: submission.submittedAt,
-          memory: submission.memory,
-          runtime: submission.runtime,
-        });
-        setProblemId(submission.problemId);
-
-        const reviewsRes = await fetchReviewsBySolution(submissionId);
+        // 🔹 2) 리뷰 + 댓글 조회
+        const reviewsRes = await fetchReviewsBySolution(numericSubmissionId);
 
         let reviewsWithComments: Review[] = [];
 
@@ -227,9 +216,30 @@ int main() {
     return () => {
       mounted = false;
     };
-  }, [solutionId]);
+  }, [solutionId, numericSubmissionId]);
 
   const hlLang = langMap[rawLang] || "text";
+
+  const handleToggleShare = async () => {
+    if (!submission || Number.isNaN(numericSubmissionId)) return;
+
+    const next = !isShared;
+    const ok = window.confirm(
+      next
+        ? "코드를 다른 사람과 공유하시겠습니까?"
+        : "코드 공유를 해제하시겠습니까?"
+    );
+
+    if (!ok) return;
+
+    try {
+      await updateSubmissionShare(numericSubmissionId, next);
+      setIsShared(next);
+    } catch (e) {
+      console.error("update share error:", e);
+      alert("공유 상태를 변경하는 중 오류가 발생했습니다.");
+    }
+  };
 
   if (loading) {
     return (
@@ -257,7 +267,7 @@ int main() {
     );
   }
 
-  if (!code) {
+  if (!code || !submission) {
     return (
       <Page>
         <Inner>
@@ -270,18 +280,6 @@ int main() {
     );
   }
 
-  const handleToggleShare = () => {
-    const ok = window.confirm(
-      isShared
-        ? "코드 공유를 해제하시겠습니까?"
-        : "코드를 다른 사람과 공유하시겠습니까?"
-    );
-
-    if (!ok) return;
-
-    setIsShared((prev) => !prev);
-  };
-
   return (
     <Page>
       <Inner>
@@ -291,16 +289,12 @@ int main() {
 
         <MetaRow>
           언어: {rawLang}
-          {solutionMeta && (
-            <>
-              {" · 제출 시각: "}
-              {timeConverter(solutionMeta.createdAt)}
-              {" · 메모리: "}
-              {solutionMeta.memory}MB
-              {" · 실행시간: "}
-              {solutionMeta.runtime}ms
-            </>
-          )}
+          {" · 제출 시각: "}
+          {timeConverter(submission.submittedAt)}
+          {" · 메모리: "}
+          {submission.memory}MB
+          {" · 실행시간: "}
+          {submission.runtime}ms
         </MetaRow>
 
         <ButtonContainer>

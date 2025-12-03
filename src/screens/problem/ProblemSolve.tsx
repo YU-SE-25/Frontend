@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 import type { IProblem } from "../../api/problem_api";
 import {
@@ -28,14 +28,17 @@ import { useAtom, useAtomValue } from "jotai";
 export default function ProblemSolvePage() {
   const { problemId } = useParams<{ problemId: string }>();
   const navigate = useNavigate();
-
+  const location = useLocation();
   const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProfile] = useAtom(userProfileAtom);
 
-  const [language, setLanguage] = useState("Python");
-  const [code, setCode] = useState("");
-
+  // 내가 푼 문제 다시 풀어보기(language type 확인 필요)
+  console.log(location.state);
+  const [language, setLanguage] = useState(
+    location.state?.language ?? "Python"
+  );
+  const [code, setCode] = useState(location.state?.initialCode ?? "");
   const token = localStorage.getItem("accessToken");
 
   // 이미 라우터에서 막더라도, 토큰이 없으면 한 번 더 보호
