@@ -10,13 +10,14 @@ import {
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 
-// 🔹 문제 상세 타입 + 더미 API (ProblemSolvePage에서 쓰던 거 그대로)
-import type { IProblem } from "../../api/problem_api";
-import {
-  getDummyProblemDetail,
-  PROBLEM_LIST,
-} from "../../api/dummy/problem_dummy";
+// QnA API
+import { createqnaPost, updateqnaPost } from "../../api/qna_api";
 
+// 문제 API
+import type { IProblem, SimpleProblem } from "../../api/problem_api";
+import { fetchProblemDetail, fetchSimpleProblems } from "../../api/problem_api";
+
+// ----------------- styled-components -----------------
 const Page = styled.div`
   width: 100%;
   min-height: 100vh;
@@ -268,12 +269,6 @@ const ExampleBlock = styled.div`
   gap: 10px;
 `;
 
-const ExampleLabel = styled.div`
-  font-size: 12px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textColor};
-`;
-
 const ExampleCode = styled.pre`
   background: ${({ theme }) => theme.bgCardColor};
   padding: 8px 10px;
@@ -330,11 +325,7 @@ const ResultItem = styled.li<{ $active?: boolean }>`
   }
 `;
 
-type SimpleProblem = {
-  id: number;
-  title: string;
-};
-
+// ----------------- 타입 -----------------
 type EditPostState = {
   state: "edit";
   id: number;
@@ -345,6 +336,16 @@ type EditPostState = {
   isPrivate: boolean;
 };
 
+type QnaWritePayload = {
+  anonymous: boolean;
+  title: string;
+  contents: string;
+  privatePost: boolean;
+  problemId: number;
+  attachmentUrl?: string | null;
+};
+
+// ----------------- 컴포넌트 -----------------
 export default function QnaWrite() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -365,20 +366,52 @@ export default function QnaWrite() {
     ? Number(initialProblemIdParam)
     : undefined;
 
-  const initialProblem =
-    initialProblemId != null
-      ? PROBLEM_LIST.find((p) => p.id === initialProblemId) ?? null
-      : null;
+  const [problemList, setProblemList] = useState<SimpleProblem[]>([]);
+  const [problemListLoading, setProblemListLoading] = useState(false);
 
   const [selectedProblem, setSelectedProblem] = useState<SimpleProblem | null>(
-    initialProblem
+    null
   );
   const [problemKeyword, setProblemKeyword] = useState(
-    initialProblem ? String(initialProblem.id) : ""
+    initialProblemId ? String(initialProblemId) : ""
   );
 
   const [problemDetail, setProblemDetail] = useState<IProblem | null>(null);
   const [problemLoading, setProblemLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadList = async () => {
+      try {
+        setProblemListLoading(true);
+        const list = await fetchSimpleProblems();
+        if (cancelled) return;
+
+        setProblemList(list);
+
+        if (initialProblemId && !selectedProblem) {
+          const found = list.find((p) => p.problemId === initialProblemId);
+          if (found) {
+            setSelectedProblem(found);
+            setProblemKeyword(String(found.problemId));
+          }
+        }
+      } catch (e) {
+        console.error("문제 목록 로드 실패:", e);
+      } finally {
+        if (!cancelled) setProblemListLoading(false);
+      }
+    };
+
+    loadList();
+
+    return () => {
+      cancelled = true;
+    };
+    // initialProblemId, selectedProblem는 초기 셋업용
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!selectedProblem) {
@@ -391,7 +424,7 @@ export default function QnaWrite() {
     const loadDetail = async () => {
       try {
         setProblemLoading(true);
-        const data = await getDummyProblemDetail(String(selectedProblem.id));
+        const data = await fetchProblemDetail(selectedProblem.problemId);
         if (!cancelled) {
           setProblemDetail(data);
         }
@@ -428,17 +461,19 @@ export default function QnaWrite() {
 
   const filteredProblems = useMemo(() => {
     const q = problemKeyword.trim().toLowerCase();
-    if (!q) return PROBLEM_LIST;
+    if (!q) return problemList;
 
-    return PROBLEM_LIST.filter(
-      (p) => p.id.toString().includes(q) || p.title.toLowerCase().includes(q)
+    return problemList.filter(
+      (p) =>
+        p.problemId.toString().includes(q) ||
+        p.problemTitle.toLowerCase().includes(q)
     );
-  }, [problemKeyword]);
+  }, [problemKeyword, problemList]);
 
   const handleSelectProblem = (p: SimpleProblem) => {
     if (isEditMode && editPost?.problemId != null) return;
     setSelectedProblem(p);
-    setProblemKeyword(String(p.id));
+    setProblemKeyword(String(p.problemId));
   };
 
   const handleCancel = () => {
@@ -461,28 +496,35 @@ export default function QnaWrite() {
     }
     setError(null);
 
+    const basePayload: QnaWritePayload = {
+      anonymous: isAnonymous,
+      title: title.trim(),
+      contents: content.trim(),
+      privatePost: isPrivate,
+      problemId: selectedProblem.problemId,
+      attachmentUrl: null,
+    };
+
     try {
       setIsSubmitting(true);
 
-      const payload = {
-        authorId: user?.userId ?? 0,
-        problemId: selectedProblem.id,
-        title: title.trim(),
-        content: content.trim(),
-        isAnonymous,
-        privatePost: isPrivate,
-      };
-
       if (isEditMode && editPost) {
-        console.log("QnA 수정 payload", { id: editPost.id, ...payload });
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const payloadWithId = { ...basePayload, postId: editPost.id };
+        await updateqnaPost(editPost.id, payloadWithId);
+        alert("질문이 수정되었습니다.");
         navigate(-1);
       } else {
-        console.log("QnA 질문 payload", payload);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        navigate(`/qna?id=${selectedProblem.id}`);
+        const created = await createqnaPost(basePayload);
+        alert("질문이 등록되었습니다.");
+
+        if (created && typeof created.postId === "number") {
+          navigate(`/qna?no=${created.postId}`);
+        } else {
+          navigate(`/qna?id=${selectedProblem.problemId}`);
+        }
       }
     } catch (e) {
+      console.error("QnA 작성/수정 실패:", e);
       setError(
         isEditMode
           ? "질문 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
@@ -528,7 +570,7 @@ export default function QnaWrite() {
               {!problemLoading && selectedProblem && problemDetail && (
                 <ProblemInfoBox>
                   <ProblemHeader>
-                    #{selectedProblem.id} {problemDetail.title}
+                    #{selectedProblem.problemId} {problemDetail.title}
                   </ProblemHeader>
 
                   <ProblemSubText>
@@ -572,16 +614,22 @@ export default function QnaWrite() {
             </ProblemBox>
 
             <ResultList>
-              {filteredProblems.map((p) => (
-                <ResultItem
-                  key={p.id}
-                  $active={selectedProblem?.id === p.id}
-                  onClick={() => handleSelectProblem(p)}
-                >
-                  <span className="pid">#{p.id}</span>
-                  <span className="ptitle">{p.title}</span>
-                </ResultItem>
-              ))}
+              {problemListLoading && filteredProblems.length === 0 ? (
+                <li style={{ padding: "8px 10px", fontSize: 13 }}>
+                  문제 목록을 불러오는 중입니다...
+                </li>
+              ) : (
+                filteredProblems.map((p) => (
+                  <ResultItem
+                    key={p.problemId}
+                    $active={selectedProblem?.problemId === p.problemId}
+                    onClick={() => handleSelectProblem(p)}
+                  >
+                    <span className="pid">#{p.problemId}</span>
+                    <span className="ptitle">{p.problemTitle}</span>
+                  </ResultItem>
+                ))
+              )}
             </ResultList>
           </LeftPane>
 

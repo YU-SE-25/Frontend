@@ -72,7 +72,7 @@ export interface BoardContent {
 }
 
 const CATEGORY_LABEL = {
-  daily: "토론 게시판",
+  daily: "일반",
   lecture: "강의",
   promotion: "홍보",
   typo: "오타",
@@ -254,7 +254,7 @@ export default function BoardList() {
             alignItems: "center",
           }}
         >
-          <PageTitle>{CATEGORY_LABEL[currentCategory]}</PageTitle>
+          <PageTitle>토론 게시판</PageTitle>
           <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
         </div>
 

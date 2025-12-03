@@ -1,12 +1,18 @@
-import type {
-  BoardComment,
-  BoardContent,
-} from "../screens/board/BoardList.tsx";
-import { api } from "./axios.ts";
+// src/api/qna_api.ts
+import type { BoardComment } from "../screens/board/BoardList";
+import type { QnaContent } from "../screens/board/QnaList";
+import { api } from "./axios";
+import { mapCommentDto } from "./board_api";
 
 /* ========================== 게시글 DTO & 매핑 ========================== */
 
-export interface qnaPostDto {
+export interface QnaProblemDto {
+  problemId: number;
+  title: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+}
+
+export interface QnaPostDto {
   authorId: number;
   authorName: string;
   postId: number;
@@ -14,27 +20,34 @@ export interface qnaPostDto {
   title: string;
   contents: string;
   privatePost: boolean;
-  message: string | null; // null까지 받아서 이렇게
+  message: string | null;
   likeCount: number;
   commentCount: number;
-  attachmentUrl: string | null; // null까지
-  createdAt: string; // "2025-12-01T16:40:04.527742"
+  attachmentUrl: string | null;
+
+  problemId: number;
+  problem?: QnaProblemDto;
+
+  createdAt: string;
   updatedAt: string;
   viewerLiked: boolean;
 }
-export interface qnaPostPage {
-  content: qnaPostDto[];
-  page: number;
+
+export interface QnaPostPage {
+  content: QnaPostDto[];
+  page: number; // 0 기반
   size: number;
   totalElements: number;
   totalPages: number;
   last: boolean;
 }
-/* 게시글 DTO → BoardContent 매핑 */
-export function mapqnaPost(dto: qnaPostDto): BoardContent {
+
+/* 게시글 DTO → QnaContent 매핑 */
+export function mapqnaPost(dto: QnaPostDto): QnaContent {
   return {
     post_id: dto.postId,
     post_title: dto.title,
+    problem_id: dto.problemId,
 
     author: dto.authorName,
     author_id: dto.authorId,
@@ -55,11 +68,11 @@ export function mapqnaPost(dto: qnaPostDto): BoardContent {
     attachment_url: dto.attachmentUrl,
     message: dto.message,
 
-    comments: [], // 댓글은 별도 API로 가져올 예정
+    comments: [],
   };
 }
 
-export function mapqnaPostPage(pageDto: qnaPostPage) {
+export function mapqnaPostPage(pageDto: QnaPostPage) {
   return {
     content: pageDto.content.map(mapqnaPost),
     page: pageDto.page,
@@ -70,63 +83,41 @@ export function mapqnaPostPage(pageDto: qnaPostPage) {
   };
 }
 
-export function mapCommentDto(dto: any): BoardComment {
-  return {
-    comment_id: dto.comment_id,
-    post_id: dto.post_id,
-    parent_id: dto.parent_id,
-
-    author_id: dto.author_id,
-    author_name: dto.author_name,
-
-    anonymity: dto.anonymity,
-    content: dto.content,
-    is_private: dto.is_private,
-
-    like_count: dto.like_count,
-    viewer_liked: dto.viewerLiked,
-
-    created_at: dto.created_at,
-    updated_at: dto.updated_at,
-
-    message: dto.message,
-  };
-}
-
 /* ========================== 게시글 API ========================== */
 
-/* 게시글 단건 조회: GET /api/qna_board/{postId} */
-export async function fetchqnaPost(postId: number): Promise<BoardContent> {
-  const res = await api.get(`/qna_board/${postId}`);
+/** 게시글 단건 조회: GET /api/qna_board/{postId} */
+export async function fetchqnaPost(postId: number): Promise<QnaContent> {
+  const res = await api.get<QnaPostDto>(`/qna_board/${postId}`);
   return mapqnaPost(res.data);
 }
 
-/* 게시글 수정: PUT /api/qna_board/{postId} */
+/** 게시글 수정: PUT /api/qna_board/{postId} */
 export async function updateqnaPost(postId: number, payload: any) {
   const res = await api.put(`/qna_board/${postId}`, payload);
   return res.data;
 }
 
-/* 게시글 삭제: DELETE /api/qna_board/{postId} */
+/** 게시글 삭제: DELETE /api/qna_board/{postId} */
 export async function deleteqnaPost(postId: number) {
   const res = await api.delete(`/qna_board/${postId}`);
   return res.data;
 }
 
-/* 게시글 목록(페이지 기반): GET /api/qna_board?page= */
-export async function fetchqnaList(page = 1) {
-  const res = await api.get<qnaPostPage>("/qna_board", {
+/** 게시글 목록(페이지 기반): GET /api/qna_board?page= */
+export async function fetchqnaList(page: number) {
+  const res = await api.get<QnaPostPage>("/qna_board", {
     params: { page },
   });
   return mapqnaPostPage(res.data);
 }
-/* 게시글 생성: POST /api/qna_board */
+
+/** 게시글 생성: POST /api/qna_board */
 export async function createqnaPost(payload: any) {
   const res = await api.post("/qna_board", payload);
   return res.data;
 }
 
-/* 게시글 신고: POST /api/qna_board/{postId}/reports */
+/** 게시글 신고: POST /api/qna_board/{postId}/reports */
 export async function reportqnaPost(postId: number, payload: any) {
   const res = await api.post(`/qna_board/${postId}/reports`, payload);
   return res.data;
@@ -134,19 +125,16 @@ export async function reportqnaPost(postId: number, payload: any) {
 
 /* ========================== 투표 API ========================== */
 
-/* 투표 정보 조회: GET /api/qna_board/{postId}/poll */
 export async function fetchqnaPoll(postId: number) {
   const res = await api.get(`/qna_board/${postId}/poll`);
   return res.data;
 }
 
-/* 투표 생성/수정: POST /api/qna_board/{postId}/poll */
 export async function createOrUpdateqnaPoll(postId: number, payload: any) {
   const res = await api.post(`/qna_board/${postId}/poll`, payload);
   return res.data;
 }
 
-/* 투표하기: POST /api/qna_board/{postId}/poll/{pollId}/vote */
 export async function voteqnaPoll(
   postId: number,
   pollId: number,
@@ -161,13 +149,11 @@ export async function voteqnaPoll(
 
 /* ========================== 좋아요 & 첨부파일 ========================== */
 
-/* 게시글 좋아요: POST /api/qna_board/{postId}/like */
 export async function likeqnaPost(postId: number) {
   const res = await api.post(`/qna_board/${postId}/like`);
   return res.data;
 }
 
-/* 첨부파일 업로드: POST /api/qna_board/{postId}/attach */
 export async function attachqnaFile(postId: number, formData: FormData) {
   const res = await api.post(`/qna_board/${postId}/attach`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -177,46 +163,57 @@ export async function attachqnaFile(postId: number, formData: FormData) {
 
 /* ========================== 게시글 검색 ========================== */
 
-/* 게시글 검색: GET /api/qna_board/search */
 export interface qnaSearchParams {
   keyword: string;
-  page?: number;
+  page?: number; // 1 기반
   size?: number;
 }
 
 export async function searchqnaPosts(params: qnaSearchParams) {
-  const res = await api.get<qnaPostPage>("/qna_board/search", { params });
+  const { page = 1, ...rest } = params;
+  const backendPage = Math.max(page - 1, 0);
+
+  const res = await api.get<QnaPostPage>("/qna_board/search", {
+    params: { ...rest, page: backendPage },
+  });
   return mapqnaPostPage(res.data);
 }
 
 /* ========================== 댓글 API ========================== */
 
-/* 단일 댓글 조회: GET /api/qna_board/comment/{commentId} */
-export async function fetchCommentsById(postId: number) {
-  const res = await api.get(`/qna_board/comment/${postId}`);
-  return res.data.map(mapCommentDto);
+/** 단일 댓글 조회: GET /api/qna_board/comment/{commentId} */
+export async function fetchCommentsById(
+  commentId: number
+): Promise<BoardComment> {
+  const res = await api.get(`/qna_board/comment/${commentId}`);
+  return mapCommentDto(res.data);
 }
 
-/* 댓글 수정: PUT /api/qna_board/comment/{commentId} */
+/** 댓글 수정: PUT /api/qna_board/comment/{commentId} */
 export async function updateComment(commentId: number, payload: any) {
   const res = await api.put(`/qna_board/comment/${commentId}`, payload);
   return res.data;
 }
 
-/* 댓글 삭제: DELETE /api/qna_board/comment/{commentId} */
+/** 댓글 삭제: DELETE /api/qna_board/comment/{commentId} */
 export async function deleteComment(commentId: number) {
   await api.delete(`/qna_board/comment/${commentId}`);
 }
 
-/* 특정 게시글의 댓글 목록 조회: GET /api/qna_board/{postId}/comments */
+/** 특정 게시글의 댓글 목록: GET /api/qna_board/{postId}/comments */
 export async function fetchCommentsByPostId(
   postId: number
 ): Promise<BoardComment[]> {
   const res = await api.get(`/qna_board/${postId}/comments`);
-  return res.data.map(mapCommentDto);
+
+  const raw = Array.isArray(res.data)
+    ? res.data
+    : res.data.comments ?? res.data.content ?? [];
+
+  return raw.map(mapCommentDto);
 }
 
-/* 특정 게시글에 댓글 작성: POST /api/qna_board/{postId}/comments */
+/** 특정 게시글에 댓글 작성: POST /api/qna_board/{postId}/comments */
 export async function createComment(
   postId: number,
   payload: {
@@ -230,12 +227,12 @@ export async function createComment(
   return res.data;
 }
 
-/* 댓글 신고: POST /api/qna_board/comment/{commentId}/reports */
+/** 댓글 신고: POST /api/qna_board/comment/{commentId}/reports */
 export async function reportComment(commentId: number, payload: any) {
   await api.post(`/qna_board/comment/${commentId}/reports`, payload);
 }
 
-/* 댓글 좋아요: POST /api/qna_board/comment/{commentId}/like */
+/** 댓글 좋아요: POST /api/qna_board/comment/{commentId}/like */
 export async function likeComment(
   commentId: number
 ): Promise<{ likeCount: number; liked: boolean }> {
