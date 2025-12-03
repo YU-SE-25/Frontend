@@ -6,21 +6,18 @@ import {
   mapDetailDtoToProblem,
 } from "../../../api/problem_api";
 import type { IProblem } from "../../../api/problem_api";
-import {
-  fetchSolvedCode,
-  fetchReviewsBySolution,
-  fetchCommentsByReview,
-} from "../../../api/solution_api";
-import {
-  fetchDummyProblemDetail,
-  increaseDummyView,
-} from "../../../api/dummy/problem_dummy_new";
+
+import { fetchSubmissionDetail } from "../../../api/mySubmissions_api";
 import ProblemMeta from "../../../components/ProblemMeta";
 import { timeConverter } from "../../../utils/timeConverter";
 import { isOwner } from "../../../utils/isOwner";
 import { ButtonContainer } from "../../../theme/ProblemList.Style";
 import ReviewSection from "./Review";
 import type { Review } from "./Review";
+import {
+  fetchCommentsByReview,
+  fetchReviewsBySubmission,
+} from "../../../api/review_api";
 const Page = styled.div`
   width: 100%;
   min-height: 100vh;
@@ -123,15 +120,10 @@ export default function SolvedProblemShow() {
     const loadProblem = async () => {
       try {
         const real = await fetchProblemDetail(Number(problemId));
-        if (mounted) setProblem(real);
-        increaseDummyView(Number(problemId));
-      } catch {
-        try {
-          const dummy = await fetchDummyProblemDetail(Number(problemId));
-          if (mounted) setProblem(mapDetailDtoToProblem(dummy));
-        } catch {
-          if (mounted) setProblem(null);
-        }
+        if (mounted) setProblem(real as IProblem);
+      } catch (e) {
+        console.error("문제 정보 로드 실패:", e);
+        if (mounted) setProblem(null);
       }
     };
 
@@ -141,7 +133,6 @@ export default function SolvedProblemShow() {
       mounted = false;
     };
   }, [problemId]);
-
   useEffect(() => {
     if (!problemId) return;
 
@@ -151,28 +142,45 @@ export default function SolvedProblemShow() {
       setLoading(true);
       setError(null);
 
+      if (!solutionId) {
+        if (mounted) {
+          setError("유효하지 않은 접근입니다.");
+          setLoading(false);
+        }
+        return;
+      }
+
+      const submissionId = Number(solutionId);
+      if (Number.isNaN(submissionId)) {
+        if (mounted) {
+          setError("잘못된 제출 ID입니다.");
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
-        const solved = await fetchSolvedCode(Number(problemId));
+        // 🔹 1) 제출 상세 정보 가져오기 (mySubmissions_api)
+        const detail = await fetchSubmissionDetail(submissionId);
 
-        if (!solved || solved.solutions.length === 0) {
-          if (mounted) setError("아직 제출된 풀이가 없습니다.");
-          return;
-        }
+        if (!mounted) return;
 
-        let targetSolution = solved.solutions[0];
+        setCode(detail.code ?? "");
+        setRawLang(detail.language);
+        setSolutionMeta({
+          createdAt: detail.submittedAt,
+          memory: detail.memory,
+          runtime: detail.runtime,
+        });
 
-        if (solutionId) {
-          const found = solved.solutions.find(
-            (s) => s.submissionId === Number(solutionId)
-          );
-          if (found) targetSolution = found;
-        }
-        setIsMine(isOwner(targetSolution));
-        setOwnerName(targetSolution.username);
+        // (지금 SubmissionDetail에 username 정보가 없으니까
+        //  isMine / ownerName은 일단 초기값 그대로 둠)
+        setIsMine(false);
+        setOwnerName(null);
 
-        const reviewsRes = await fetchReviewsBySolution(
-          targetSolution.submissionId
-        );
+        // 🔹 2) 리뷰 + 댓글 조회
+        const reviewsRes = await fetchReviewsBySubmission(submissionId);
+        console.log("Fetched reviews:", reviewsRes);
 
         let reviewsWithComments: Review[] = [];
 
@@ -204,13 +212,6 @@ export default function SolvedProblemShow() {
 
         if (!mounted) return;
 
-        setCode(targetSolution.code);
-        setRawLang(targetSolution.language);
-        setSolutionMeta({
-          createdAt: targetSolution.submittedAt,
-          memory: targetSolution.memory,
-          runtime: targetSolution.runtime,
-        });
         setReviews(reviewsWithComments);
       } catch (e) {
         if (mounted) {
@@ -339,6 +340,7 @@ export default function SolvedProblemShow() {
           language={hlLang}
           reviews={reviews}
           onChangeReviews={setReviews}
+          submissionId={Number(solutionId)}
         />
       </Inner>
     </Page>

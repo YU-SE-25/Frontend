@@ -43,8 +43,7 @@ export default function ProblemSolvePage() {
   const [loading, setLoading] = useState(true);
   const [userProfile] = useAtom(userProfileAtom);
 
-  // 내가 푼 문제 다시 풀어보기(language type 확인 필요)
-  console.log(location.state);
+  // 내가 푼 문제 다시 풀어보기(language type 확인 필요!!)
   const [language, setLanguage] = useState(
     location.state?.language ?? "Python"
   );
