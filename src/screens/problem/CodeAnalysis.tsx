@@ -1,4 +1,4 @@
-//확인용 링크: http://localhost:5173/problems/1/submissions/123
+//확인용 링크: http://localhost:5173/problems/1/analysis/123
 
 import { useRef, useState } from "react";
 import { useAtom } from "jotai";

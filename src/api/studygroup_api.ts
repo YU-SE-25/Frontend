@@ -384,3 +384,17 @@ export async function fetchActivityLogs(
     };
   }
 }
+
+//내 스터디그룹 조회
+export async function fetchMyStudyGroups(): Promise<StudyGroup[]> {
+  try {
+    const res = await api.get<StudyGroup[]>("/studygroup/my");
+    return res.data.map((g) => ({
+      ...g,
+      myRole: g.myRole as GroupRole,
+    }));
+  } catch (err) {
+    console.error("fetchMyStudyGroups 실패 → 더미 사용");
+    return DUMMY_GROUPS.filter((g) => g.myRole !== "NONE");
+  }
+}
