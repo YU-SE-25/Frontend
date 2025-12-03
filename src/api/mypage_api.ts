@@ -246,8 +246,6 @@ export function getDummyUserProfile(): UserProfile {
 export async function getUserProfile(nickname: string): Promise<UserProfile> {
   try {
     const res = await api.get<UserProfileDto>(`/mypage/${nickname}`);
-    console.log("user profile fetched:", res.data);
-    console.log("mapped data : ", mapUserProfileDto(res.data));
     return mapUserProfileDto(res.data);
   } catch (err: any) {
     const status = err?.response?.status;

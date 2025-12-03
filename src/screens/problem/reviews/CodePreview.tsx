@@ -96,14 +96,6 @@ const Label = styled.label`
   color: ${({ theme }) => theme.textColor};
 `;
 
-const StyledSelect = styled.select`
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.textColor}44;
-  background: ${({ theme }) => theme.bgColor};
-  color: ${({ theme }) => theme.textColor};
-`;
-
 const StyledTextarea = styled.textarea`
   padding: 10px;
   height: 120px;
@@ -253,6 +245,7 @@ export default function CodePreview({
 
   useEffect(() => {
     if (!editReviewTarget) return;
+
     setReviewTarget({
       lineNumber: editReviewTarget.lineNumber,
       lineCode: editReviewTarget.lineCode,

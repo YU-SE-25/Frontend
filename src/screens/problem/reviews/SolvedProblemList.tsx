@@ -32,22 +32,15 @@ import { userProfileAtom } from "../../../atoms";
 
 import ProblemMeta from "../../../components/ProblemMeta";
 import type { IProblem } from "../../../api/problem_api";
-import { fetchSolvedCode } from "../../../api/solution_api";
+import {
+  fetchProblemDetail,
+  mapDetailDtoToProblem,
+} from "../../../api/problem_api";
 
-type SolutionItem = {
-  submissionId: number;
-  username: string;
-  submittedAt: string;
-  language: string;
-  runtime: number;
-  memory: number;
-  code: string;
-};
-
-type SolvedCodeResult = {
-  problem: IProblem | null;
-  solutions: SolutionItem[];
-};
+import {
+  fetchSharedSolutionsByProblem,
+  type SharedSolution,
+} from "../../../api/publicSubmission_api";
 
 const DetailsButton = styled.button`
   padding: 8px 14px;
@@ -87,7 +80,7 @@ export default function SolvedProblemListPage() {
   const isLoggedIn = !!user;
 
   const [problem, setProblem] = useState<IProblem | null>(null);
-  const [solutions, setSolutions] = useState<SolutionItem[]>([]);
+  const [solutions, setSolutions] = useState<SharedSolution[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,6 +94,13 @@ export default function SolvedProblemListPage() {
   useEffect(() => {
     if (!problemId) return;
 
+    const numericId = Number(problemId);
+    if (Number.isNaN(numericId)) {
+      setError("잘못된 문제 ID입니다.");
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     const load = async () => {
@@ -108,20 +108,18 @@ export default function SolvedProblemListPage() {
       setError(null);
 
       try {
-        const data = (await fetchSolvedCode(
-          Number(problemId)
-        )) as SolvedCodeResult | null;
+        // 문제 정보 + 공유된 풀이 목록을 병렬로 가져오기
+        const [problemDto, sharedPage] = await Promise.all([
+          fetchProblemDetail(numericId),
+          fetchSharedSolutionsByProblem(numericId),
+        ]);
 
         if (!mounted) return;
-        if (!data) {
-          setProblem(null);
-          setSolutions([]);
-          return;
-        }
 
-        setProblem(data.problem ?? null);
-        setSolutions(data.solutions ?? []);
-      } catch {
+        setProblem(problemDto ? problemDto : null);
+        setSolutions(sharedPage.items ?? []);
+      } catch (e) {
+        console.error("공유 풀이 목록 로드 오류:", e);
         if (mounted) {
           setError("공유된 풀이 목록을 불러올 수 없습니다.");
         }
@@ -151,7 +149,7 @@ export default function SolvedProblemListPage() {
       if (!keyword) return true;
       return (
         s.language.toLowerCase().includes(keyword) ||
-        s.username.toLowerCase().includes(keyword)
+        s.nickname.toLowerCase().includes(keyword)
       );
     })
     .sort((a, b) => {
@@ -159,10 +157,14 @@ export default function SolvedProblemListPage() {
         return b.submittedAt.localeCompare(a.submittedAt);
       }
       if (sortType === "memory") {
-        return a.memory - b.memory;
+        const memA = a.memory ?? Number.MAX_SAFE_INTEGER;
+        const memB = b.memory ?? Number.MAX_SAFE_INTEGER;
+        return memA - memB;
       }
       if (sortType === "time") {
-        return a.runtime - b.runtime;
+        const runA = a.runtime ?? Number.MAX_SAFE_INTEGER;
+        const runB = b.runtime ?? Number.MAX_SAFE_INTEGER;
+        return runA - runB;
       }
       return 0;
     });
@@ -185,6 +187,7 @@ export default function SolvedProblemListPage() {
       alert("로그인 후 이용 가능합니다.");
       return;
     }
+    // /problems/:problemId/solutions/:submissionId 이런 라우트라고 가정
     navigate(`${submissionId}`);
   };
 
@@ -251,10 +254,14 @@ export default function SolvedProblemListPage() {
                   currentSolutions.map((s, idx) => (
                     <TableRow key={s.submissionId}>
                       <TableCell>{indexOfFirstItem + idx + 1}</TableCell>
-                      <TableCell>{s.username}</TableCell>
+                      <TableCell>{s.nickname}</TableCell>
                       <TableCell>{s.language}</TableCell>
-                      <TableCell>{s.memory} KB</TableCell>
-                      <TableCell>{s.runtime} ms</TableCell>
+                      <TableCell>
+                        {s.memory != null ? `${s.memory} MB` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {s.runtime != null ? `${s.runtime} ms` : "-"}
+                      </TableCell>
                       <TableCell>
                         {new Date(s.submittedAt).toLocaleString("ko-KR")}
                       </TableCell>
