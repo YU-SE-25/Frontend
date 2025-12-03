@@ -1,6 +1,6 @@
-// src/pages/board/BoardList.tsx
+// src/pages/qna/QnaList.tsx
 import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import styled from "styled-components";
 import {
   ProblemListWrapper as BoardListWrapper,
@@ -22,28 +22,17 @@ import {
   PageTitleContainer,
   AddButton,
 } from "../../theme/ProblemList.Style";
-import BoardDetail from "./QnaDetail";
-import { QNA_DUMMY } from "../../api/dummy/qna_dummy";
-import { useQuery } from "@tanstack/react-query";
-import type { BoardContent } from "./BoardList";
+import QnaDetail from "./QnaDetail";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { fetchqnaList } from "../../api/qna_api";
+import { isOwner } from "../../utils/isOwner";
+import { myRole } from "../../utils/myRole";
+import type { BoardContent } from "../board/BoardList";
 
-export interface BoardTag {
-  id: number;
-  name: string;
-}
-// 댓글(Comment)
-export interface QnaComment {
-  id: number; // 댓글 ID (API 제공 or 클라이언트 생성)
-  author: string; // 작성자
-  contents: string; // 댓글 내용
-  anonymity: boolean; // 익명 여부
-  create_time: string; // ISO 날짜
-}
-
-// 게시글(Post)
-export interface QnaContent extends Omit<BoardContent, "tag" | "comments"> {
+export interface QnaContent extends BoardContent {
   problem_id: number;
-  comments: QnaComment[];
+  problem_title?: string;
+  problem_difficulty?: "EASY" | "MEDIUM" | "HARD";
 }
 
 const PostTitle = styled.span`
@@ -51,25 +40,40 @@ const PostTitle = styled.span`
   color: ${(props) => props.theme.textColor};
 `;
 
-// 기존 함수 선언 → props 형태로 변경됨
 export default function QnaList() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "id">("id");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-  //기존 posts 제거하고 상태로 관리하도록 변경됨
   const [posts, setPosts] = useState<QnaContent[]>([]);
 
-  // URL의 ?no=값을 읽어서 선택된 글 ID로 사용
+  // URL에서 ?no=, ?id= 읽기
   const selectedPostId = searchParams.get("no");
-  const problemId = searchParams.get("id");
-  const problemIdNum = problemId ? Number(problemId) : null;
+  const problemIdParam = searchParams.get("id");
+  const problemIdNum = problemIdParam ? Number(problemIdParam) : null;
+  // 🔥 서버에서 QnA 목록 가져오기 (페이지 기반)
+  const {
+    data: qnaPage,
+    isLoading,
+    isFetching,
+  } = useQuery({
+    queryKey: ["qnaList", currentPage],
+    queryFn: () => fetchqnaList(currentPage), // Discuss와 동일 패턴
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    placeholderData: keepPreviousData,
+  });
+
   useEffect(() => {
-    setPosts(QNA_DUMMY);
-  }, []);
+    setPosts((qnaPage?.content as QnaContent[]) ?? []);
+  }, [currentPage, qnaPage]);
+
+  // 선택된 게시글
   const selectedPost = useMemo(() => {
     if (!selectedPostId) return null;
     const idNum = Number(selectedPostId);
@@ -77,13 +81,35 @@ export default function QnaList() {
     return posts.find((p) => p.post_id === idNum) ?? null;
   }, [selectedPostId, posts]);
 
-  //함수 선언
+  // 검색 버튼 클릭
+  const handleSearch = () => {
+    // QnA는 2자 제한 안 걸고 그냥 검색 허용 (원하면 2자 이상으로 바꿀 수 있음)
+    setCurrentPage(1);
+  };
 
-  const handleViewDetails = (postId: number) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSearch();
+  };
+
+  // 상세 보기
+  const handleViewDetails = (post: QnaContent) => {
+    if (post.is_private) {
+      const canView =
+        isOwner({
+          author: post.author,
+          anonymity: post.anonymity,
+        }) || myRole() === "MANAGER";
+
+      if (!canView) {
+        alert("비공개 질문은 작성자 또는 관리자만 열람할 수 있습니다.");
+        return;
+      }
+    }
+
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        next.set("no", String(postId)); // 무조건 열기만 함 (닫기 없음)
+        next.set("no", String(post.post_id));
         return next;
       },
       { replace: true }
@@ -91,55 +117,32 @@ export default function QnaList() {
     window.scrollTo(0, 0);
   };
 
-  //검색
-  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (value.trim().length > 0) {
-      // 검색이 시작되면 id 필터 제거
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete("id");
-        return next;
-      });
-      setCurrentPage(1); // 검색어 변경 시 페이지 1로 이동
-    }
-  };
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // 폼 새로고침 방지
-    // 글자수 제한 없음
-    setCurrentPage(1);
-    // 검색어 있으면 problemId 필터 제거
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete("id"); // 문제번호 필터 제거
-      return next;
-    });
+  // 글 쓰기
+  const handleWritePost = () => {
+    navigate(`/qna/write`);
   };
 
-  // 게시글 필터링 및 정렬
+  // 게시글 필터링 + 정렬
   const filteredAndSortedPosts = useMemo(() => {
     let result = posts;
+
+    // 문제 번호 필터 (?id=)
     if (problemIdNum !== null && !Number.isNaN(problemIdNum)) {
       result = result.filter((post) => post.problem_id === problemIdNum);
     }
 
-    const keyword = searchTerm.trim();
-
-    // 🔎 검색어가 있으면 제목 + 문제 번호 검색
+    const keyword = searchTerm.trim().toLowerCase();
     if (keyword.length > 0) {
-      const lower = keyword.toLowerCase();
-
       result = result.filter((post) => {
-        const titleMatch = post.post_title.toLowerCase().includes(lower);
-
-        const problemMatch = post.problem_id?.toString().includes(lower);
-
+        const titleMatch = post.post_title.toLowerCase().includes(keyword);
+        const problemMatch = post.problem_id
+          ?.toString()
+          .toLowerCase()
+          .includes(keyword);
         return titleMatch || problemMatch;
       });
     }
 
-    // 🔽 정렬
     result = [...result].sort((a, b) => {
       if (sortType === "latest") {
         return b.create_time.localeCompare(a.create_time);
@@ -153,20 +156,14 @@ export default function QnaList() {
     return result;
   }, [posts, searchTerm, sortType, problemIdNum]);
 
-  const totalItems = filteredAndSortedPosts.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPosts = filteredAndSortedPosts.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-  const handleWritePost = () => {
-    navigate(`/qna/write`);
-  };
+  const totalPages = qnaPage?.totalPages ?? 1;
+  const currentPosts = filteredAndSortedPosts;
 
   const handlePageChange = (pageNumber: number) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) setCurrentPage(pageNumber);
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+      window.scrollTo(0, 0);
+    }
   };
 
   return (
@@ -186,18 +183,32 @@ export default function QnaList() {
           <AddButton onClick={handleWritePost}>질문 쓰기</AddButton>
         </div>
       </PageTitleContainer>
-      {selectedPost && <BoardDetail post={selectedPost} />}
+
+      {selectedPost && (
+        <QnaDetail
+          post={selectedPost}
+          onClose={() =>
+            setSearchParams(
+              (prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete("no");
+                return next;
+              },
+              { replace: true }
+            )
+          }
+        />
+      )}
 
       <ControlBar>
         <SearchContainer>
-          <form onSubmit={handleSearchSubmit}>
-            <SearchInput
-              value={searchTerm}
-              onChange={handleSearchInput}
-              placeholder="제목 검색"
-            />
-            <SearchButton>검색</SearchButton>
-          </form>
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="제목 / 문제 번호 검색"
+            onKeyPress={handleKeyPress}
+          />
+          <SearchButton onClick={handleSearch}>검색</SearchButton>
         </SearchContainer>
 
         <SortSelect
@@ -212,20 +223,25 @@ export default function QnaList() {
       <BoardTable>
         <TableHead>
           <tr>
-            <HeaderCell width="8%">게시글</HeaderCell>
+            <HeaderCell width="8%">번호</HeaderCell>
             <HeaderCell width="12%">문제번호</HeaderCell>
-            <HeaderCell width="50%">제목</HeaderCell>
+            <HeaderCell width="45%">제목</HeaderCell>
+            <HeaderCell width="10%">댓글</HeaderCell>
             <HeaderCell width="10%">작성자</HeaderCell>
             <HeaderCell width="15%">작성일</HeaderCell>
           </tr>
         </TableHead>
 
         <tbody>
-          {currentPosts.length > 0 ? (
+          {isLoading && posts.length === 0 ? (
+            <TableRow>
+              <EmptyCell colSpan={5}>게시글을 불러오는 중입니다…</EmptyCell>
+            </TableRow>
+          ) : currentPosts.length > 0 ? (
             currentPosts.map((post) => (
               <TableRow
                 key={post.post_id}
-                onClick={() => handleViewDetails(post.post_id)}
+                onClick={() => handleViewDetails(post)}
                 style={{ cursor: "pointer" }}
               >
                 <TableCell>{post.post_id}</TableCell>
@@ -237,8 +253,8 @@ export default function QnaList() {
                     <PostTitle>{post.post_title}</PostTitle>
                   )}
                 </TitleCell>
+                <TableCell>{post.comment_count}</TableCell>
                 <TableCell>{post.anonymity ? "익명" : post.author}</TableCell>
-                {/* 조회수 컬럼은 현재 like_count로 대체 */}
                 <TableCell>{post.create_time.slice(0, 10)}</TableCell>
               </TableRow>
             ))
@@ -281,6 +297,12 @@ export default function QnaList() {
           다음 &gt;
         </PageLink>
       </PaginationContainer>
+
+      {isFetching && (
+        <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
+          새 게시글을 불러오는 중…
+        </div>
+      )}
     </BoardListWrapper>
   );
 }

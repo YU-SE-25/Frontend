@@ -107,8 +107,7 @@ export default function Mypage_sidebar({
             - 관리자 페이지
           </NavItem>
         )}
-
-        <NavLink to="/studygroup-main">- 내 스터디그룹</NavLink>
+        {isMyPage && <NavLink to="/studygroup-main">- 내 스터디그룹</NavLink>}
       </NavList>
     </SidebarWrap>
   );

@@ -184,7 +184,7 @@ export default function MyPageLayout() {
   if (isError || !user) return <div>에러가 발생했어요.</div>;
 
   const isPublic = user.isPublic !== false;
-  console.log("user profile:", user);
+  const canViewPrivate = isPublic || isMyPage || loginUser.role === "MANAGER";
 
   return (
     <Page>
@@ -193,7 +193,7 @@ export default function MyPageLayout() {
         <UserInfo>
           <Username>{user.username}</Username>
 
-          {isPublic ? (
+          {canViewPrivate ? (
             <>
               <Bio>{user.bio}</Bio>
               <Chips>
@@ -211,15 +211,13 @@ export default function MyPageLayout() {
               </Chips>
             </>
           ) : (
-            <>
-              <Bio>이 프로필은 비공개입니다.</Bio>
-            </>
+            <Bio>이 프로필은 비공개입니다.</Bio>
           )}
         </UserInfo>
       </Head>
 
       <Body>
-        {isPublic ? (
+        {canViewPrivate ? (
           <>
             <Sidebar isMyPage={isMyPage} role={loginUser.role} />
             <Outlet />

@@ -3,17 +3,11 @@ import styled from "styled-components";
 import ReportModal from "../screens/ReportModal";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../atoms";
+import type { ReportTargetType } from "../api/report_api";
 
 interface Props {
   targetContentId: number;
-  targetContentType:
-    | "post"
-    | "comment"
-    | "discussion"
-    | "qna"
-    | "review"
-    | "submission"
-    | "reviewComment";
+  targetContentType: ReportTargetType;
   onManagerDelete?: () => void; // 매니저용 삭제 콜백
   managerConfirmMessage?: string; // 매니저용 confirm 문구
 }
