@@ -11,7 +11,11 @@ import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 
 // QnA API
-import { createqnaPost, updateqnaPost } from "../../api/qna_api";
+import {
+  addProblemNumber,
+  createqnaPost,
+  updateqnaPost,
+} from "../../api/qna_api";
 
 // 문제 API
 import type { IProblem, SimpleProblem } from "../../api/problem_api";
@@ -511,10 +515,14 @@ export default function QnaWrite() {
       if (isEditMode && editPost) {
         const payloadWithId = { ...basePayload, postId: editPost.id };
         await updateqnaPost(editPost.id, payloadWithId);
+
         alert("질문이 수정되었습니다.");
         navigate(-1);
       } else {
+        const problemId = selectedProblem.problemId;
         const created = await createqnaPost(basePayload);
+        const selectedPostId = created?.postId;
+        await addProblemNumber(selectedPostId, problemId);
         alert("질문이 등록되었습니다.");
 
         if (created && typeof created.postId === "number") {

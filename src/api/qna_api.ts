@@ -117,6 +117,11 @@ export async function createqnaPost(payload: any) {
   return res.data;
 }
 
+export async function addProblemNumber(postId: number, problemId: number) {
+  const res = await api.post("/qna_board/problem/link", { postId, problemId });
+  return res.data;
+}
+
 /** 게시글 신고: POST /api/qna_board/{postId}/reports */
 export async function reportqnaPost(postId: number, payload: any) {
   const res = await api.post(`/qna_board/${postId}/reports`, payload);
