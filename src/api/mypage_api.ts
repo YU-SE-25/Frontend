@@ -53,6 +53,14 @@ export type UserProfile = {
     isReminderEnabled?: boolean;
   };
   achievements?: Achievement[]; //확장 가능성 고려
+  reminders?: Reminder[];
+  isDarkMode?: boolean;
+  isStudyAlarm?: boolean;
+};
+
+export type Reminder = {
+  day: number;
+  times: string[];
 };
 
 export type UserProfileDto = {
@@ -83,43 +91,73 @@ export type UserProfileDto = {
     reminderTimes: string[];
     isReminderEnabled: boolean;
   } | null;
+  isStudyAlarm: boolean;
+  isDarkMode: boolean;
+  reminders: { day: number; times: string[] }[];
 };
 
-// PATCH /api/mypage/me 요청 전용 DTO
+// PATCH /api/mypage 요청 전용 DTO
 export type UpdateMyProfileDto = {
   nickname?: string;
-  preferredLanguage?: string[];
   bio?: string | null;
+  preferredLanguage?: string[];
   isPublic?: boolean;
-  avatarUrl?: string | null;
-  goals?: {
+
+  userGoals?: {
+    studyTimeByLanguage?: Record<string, number>;
     dailyMinimumStudyMinutes?: number;
     weeklyStudyGoalMinutes?: number;
-    isReminderEnabled?: boolean;
   };
+
+  reminders?: {
+    day: number;
+    times: string[];
+  }[];
+
+  isDarkMode?: boolean;
+  isStudyAlarm?: boolean;
+
+  avatarImageFile?: File;
 };
+
 export function mapEditFormToUpdateDto(
   form: EditableProfile
 ): UpdateMyProfileDto {
   return {
     nickname: form.username,
-    preferredLanguage: form.preferred_language,
     bio: form.bio || null,
+    preferredLanguage: form.preferred_language,
     isPublic: !form.hideMyPage,
 
-    avatarUrl: form.avatarUrl,
+    userGoals: {
+      // 🔹 문자열로 관리되던 걸 number로 변환해서 서버로 보냄
+      studyTimeByLanguage:
+        form.studyTimeByLanguage &&
+        Object.keys(form.studyTimeByLanguage).length > 0
+          ? Object.fromEntries(
+              Object.entries(form.studyTimeByLanguage).map(([lang, value]) => [
+                lang,
+                Number(value),
+              ])
+            )
+          : undefined,
 
-    goals: {
       dailyMinimumStudyMinutes:
-        typeof form.dailyMinimumStudyMinutes === "string"
-          ? Number(form.dailyMinimumStudyMinutes)
-          : form.dailyMinimumStudyMinutes,
+        form.dailyMinimumStudyMinutes === ""
+          ? undefined
+          : Number(form.dailyMinimumStudyMinutes),
+
       weeklyStudyGoalMinutes:
-        typeof form.weeklyStudyGoalMinutes === "string"
-          ? Number(form.weeklyStudyGoalMinutes)
-          : form.weeklyStudyGoalMinutes,
-      isReminderEnabled: form.enableStudyReminder,
+        form.weeklyStudyGoalMinutes === ""
+          ? undefined
+          : Number(form.weeklyStudyGoalMinutes),
     },
+    reminders: form.reminders ?? [],
+
+    isDarkMode: form.isDarkMode,
+    isStudyAlarm: form.enableStudyReminder,
+
+    avatarImageFile: form.avatarImageFile ?? undefined,
   };
 }
 
@@ -148,8 +186,8 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
       ? {
           studyTimeByLanguage: dto.goals.studyTimeByLanguage ?? undefined,
           dailyMinimumStudyMinutes:
-            dto.goals.dailyMinimumStudyMinutes || undefined,
-          weeklyStudyGoalMinutes: dto.goals.weeklyStudyGoalMinutes || undefined,
+            dto.goals.dailyMinimumStudyMinutes ?? undefined,
+          weeklyStudyGoalMinutes: dto.goals.weeklyStudyGoalMinutes ?? undefined,
           reminderTimes:
             dto.goals.reminderTimes && dto.goals.reminderTimes.length > 0
               ? dto.goals.reminderTimes
@@ -157,7 +195,11 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
           isReminderEnabled: dto.goals.isReminderEnabled,
         }
       : undefined,
+
     achievements: [],
+    isStudyAlarm: dto.isStudyAlarm,
+    isDarkMode: dto.isDarkMode,
+    reminders: dto.reminders ?? [],
   };
 }
 

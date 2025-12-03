@@ -230,7 +230,7 @@ export default function BoardList() {
   }, [posts, searchTerm, sortType]);
 
   // 이제 페이지 수는 서버에서 온 totalPages를 쓰기
-  const totalPages = mode === "global" ? globalList?.totalPages ?? 1 : 1;
+  const totalPages = globalList?.totalPages ?? 1;
 
   const currentPosts = filteredAndSortedPosts;
 

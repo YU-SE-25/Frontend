@@ -33,6 +33,7 @@ const FieldGroup = styled.div`
   flex-direction: column;
   gap: 8px;
 `;
+
 const InputRow = styled.div`
   display: flex;
   gap: 10px;
@@ -77,7 +78,6 @@ const Input = styled.input`
   margin-top: 10px;
   width: 80%;
   padding: 10px;
-  /* 입력창 경계선 색상은 텍스트 색상 또는 포커스 색상 활용 */
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   border-radius: 4px;
   box-sizing: border-box;
@@ -101,6 +101,7 @@ const TextArea = styled.textarea`
     border-color: ${(props) => props.theme.textColor};
   }
 `;
+
 const AvatarOverlay = styled.div`
   position: absolute;
   inset: 0;
@@ -155,7 +156,7 @@ const LangChip = styled.button<{ $selected?: boolean }>`
   border-radius: 999px;
   border: 1px solid
     ${({ $selected, theme }) =>
-      $selected ? theme.focusColor : "rgba(0,0,0,0.16)"};
+      $selected ? theme.focusColor : "rgba(0, 0, 0, 0.16)"};
   background: ${({ $selected, theme }) =>
     $selected ? theme.focusColor : "transparent"};
   color: ${({ $selected, theme }) =>
@@ -196,6 +197,41 @@ const GoalInputRow = styled.div`
 const GoalUnit = styled.span`
   font-size: 13px;
   color: ${({ theme }) => theme.textColor};
+`;
+
+// 언어별 학습시간 섹션용
+const StudyTimeSection = styled.div`
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background-color: ${({ theme }) => theme.bgCardColor};
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const StudyTimeList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const StudyTimeRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const AddStudyTimeButton = styled.button`
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px dashed ${({ theme }) => theme.focusColor};
+  background: transparent;
+  color: ${({ theme }) => theme.focusColor};
+  font-size: 12px;
+  cursor: pointer;
 `;
 
 // 설정 섹션
@@ -297,23 +333,33 @@ const ErrorText = styled.div`
   padding: 40px 0;
   color: #ef4444;
 `;
+
 const DebugDiv = styled.div`
   height: 100vh;
 `;
 
+export type ReminderForm = {
+  day: number;
+  times: string[];
+};
+
 export type EditableProfile = {
-  avatarUrl: string;
   username: string;
   bio: string;
   preferred_language: string[];
-  extralanguage: string;
-  dailyMinimumStudyMinutes?: number | string;
-  weeklyStudyGoalMinutes?: number | string;
-  enableStudyReminder: boolean;
-  preferDarkMode: boolean;
+
   hideMyPage: boolean;
 
-  studyTimes: { language: string; minutes: number | string }[];
+  dailyMinimumStudyMinutes: string;
+  weeklyStudyGoalMinutes: string;
+
+  studyTimeByLanguage: { language: string; minutes: string }[];
+  enableStudyReminder: boolean;
+  reminders: ReminderForm[];
+  isDarkMode: boolean;
+
+  avatarUrl: string | null;
+  avatarImageFile: File | null;
 };
 
 const ALL_LANGS = ["Python", "Java", "C++", "JavaScript"];
@@ -325,16 +371,44 @@ export default function EditPage() {
   const runToggleTheme = useSetAtom(toggleThemeActionAtom);
   const didInit = useRef(false);
   const queryClient = useQueryClient();
-  const formData = new FormData();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  // ✅ 실제 API 호출용 useQuery
+
+  const [form, setForm] = useState<EditableProfile>({
+    avatarUrl: "",
+    avatarImageFile: null,
+    username: "",
+    bio: "",
+    preferred_language: [],
+    hideMyPage: false,
+    dailyMinimumStudyMinutes: "",
+    weeklyStudyGoalMinutes: "",
+    studyTimeByLanguage: [],
+    enableStudyReminder: false,
+    reminders: [],
+    isDarkMode: isDark,
+  });
+
+  // 추가 언어 입력은 폼 타입 말고 별도 state로 관리
+  const [extraLanguageInput, setExtraLanguageInput] = useState("");
+
+  // 리마인더 UI용 로컬 state
+  const [reminderDayOfWeek, setReminderDayOfWeek] = useState<
+    "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
+  >("MON");
+  const [reminderAmPm, setReminderAmPm] = useState<"AM" | "PM">("AM");
+  const [reminderHour12, setReminderHour12] = useState<number>(9);
+
+  const [showExtraLang, setShowExtraLang] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [valid, setValid] = useState<boolean | null>(null);
+
   const {
     data: user,
     isLoading,
     isError,
   } = useQuery({
     queryKey: ["userProfileEdit", username],
-    enabled: !!username, // username 없으면 요청만 막음 (훅은 항상 호출)
+    enabled: !!username,
     queryFn: async () => {
       if (!username) {
         throw new Error("username is missing");
@@ -344,28 +418,6 @@ export default function EditPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const [form, setForm] = useState<EditableProfile>({
-    avatarUrl: "",
-    username: "",
-    bio: "",
-    preferred_language: [],
-    extralanguage: "",
-
-    dailyMinimumStudyMinutes: "",
-    weeklyStudyGoalMinutes: "",
-
-    enableStudyReminder: false,
-    preferDarkMode: isDark,
-    hideMyPage: false,
-
-    // ✅ 기본 학습 알림 설정값
-    reminderDayOfWeek: "MON",
-    reminderAmPm: "AM",
-    reminderHour12: 9,
-  });
-  const [isChecking, setIsChecking] = useState(false);
-  const [valid, setValid] = useState<boolean | null>(null);
-
   async function checkDuplicate() {
     if (!form.username.trim()) {
       alert("닉네임을 입력하세요.");
@@ -387,28 +439,35 @@ export default function EditPage() {
     setIsChecking(false);
   }
 
-  const [isChecking, setIsChecking] = useState(false);
-  const [valid, setValid] = useState<boolean | null>(null);
-
-  async function checkDuplicate() {
-    if (!form.username.trim()) {
-      alert("닉네임을 입력하세요.");
-      return;
+  // 요일 텍스트 → 숫자
+  function mapDayOfWeek(day: string): number {
+    switch (day) {
+      case "MON":
+        return 1;
+      case "TUE":
+        return 2;
+      case "WED":
+        return 3;
+      case "THU":
+        return 4;
+      case "FRI":
+        return 5;
+      case "SAT":
+        return 6;
+      case "SUN":
+        return 7;
+      default:
+        return 1;
     }
+  }
 
-    setIsChecking(true);
-    try {
-      const res = await AuthAPI.checkNickname(form.username);
-      if (res.data.available) {
-        setValid(true);
-      } else {
-        setValid(false);
-      }
-    } catch (err) {
-      console.error(err);
-      setValid(false);
+  function to24Hour(amPm: "AM" | "PM", hour12: number | string): number {
+    const h = Number(hour12);
+    if (amPm === "AM") {
+      return h === 12 ? 0 : h;
+    } else {
+      return h === 12 ? 12 : h + 12;
     }
-    setIsChecking(false);
   }
 
   useEffect(() => {
@@ -417,25 +476,60 @@ export default function EditPage() {
 
     const allSet = new Set(ALL_LANGS);
     const allPreferred = user.preferred_language ?? [];
-    const baseLangs = allPreferred.filter((l) => allSet.has(l));
-    const extraLangs = allPreferred.filter((l) => !allSet.has(l));
+    const baseLangs = allPreferred.filter((l: string) => allSet.has(l));
+    const extraLangs = allPreferred.filter((l: string) => !allSet.has(l));
+
+    const firstReminder: ReminderForm | undefined =
+      user.reminders && user.reminders.length > 0
+        ? user.reminders[0]
+        : undefined;
+
+    if (firstReminder) {
+      setReminderDayOfWeek("MON"); // TODO: day 역매핑
+      if (firstReminder.times && firstReminder.times[0]) {
+        const [hh] = firstReminder.times[0].split(":");
+        const hourNum = Number(hh);
+        if (hourNum === 0) {
+          setReminderAmPm("AM");
+          setReminderHour12(12);
+        } else if (hourNum < 12) {
+          setReminderAmPm("AM");
+          setReminderHour12(hourNum);
+        } else if (hourNum === 12) {
+          setReminderAmPm("PM");
+          setReminderHour12(12);
+        } else {
+          setReminderAmPm("PM");
+          setReminderHour12(hourNum - 12);
+        }
+      }
+    }
 
     setForm({
       avatarUrl: user.avatarUrl ?? "",
+      avatarImageFile: null,
       username: user.username ?? "",
       bio: user.bio ?? "",
       preferred_language: baseLangs,
-      extralanguage: extraLangs.join(", "),
-      dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
-      weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
-      enableStudyReminder: user.goals?.isReminderEnabled ?? false,
-      preferDarkMode: isDark,
       hideMyPage: user.isPublic === false,
-
-      reminderDayOfWeek: user.goals?.reminderDayOfWeek ?? "MON",
-      reminderAmPm: user.goals?.reminderAmPm ?? "AM",
-      reminderHour12: user.goals?.reminderHour12 ?? 9,
+      dailyMinimumStudyMinutes:
+        user.goals?.dailyMinimumStudyMinutes?.toString() ?? "",
+      weeklyStudyGoalMinutes:
+        user.goals?.weeklyStudyGoalMinutes?.toString() ?? "",
+      studyTimeByLanguage: user.goals?.studyTimeByLanguage
+        ? Object.entries(user.goals.studyTimeByLanguage).map(
+            ([lang, time]) => ({
+              language: lang,
+              minutes: String(time),
+            })
+          )
+        : [],
+      enableStudyReminder: user.isStudyAlarm ?? false,
+      reminders: user.reminders ?? [],
+      isDarkMode: user.isDarkMode ?? isDark,
     });
+
+    setExtraLanguageInput(extraLangs.join(", "));
   }, [user, isDark]);
 
   const toggleLang = (lang: string) => {
@@ -450,7 +544,30 @@ export default function EditPage() {
     });
   };
 
-  const [showExtraLang, setShowExtraLang] = useState(false);
+  const handleStudyTimeRowChange = (
+    index: number,
+    field: "language" | "minutes",
+    value: string
+  ) => {
+    setForm((prev) => {
+      const next = [...prev.studyTimeByLanguage];
+      next[index] = { ...next[index], [field]: value };
+      return { ...prev, studyTimeByLanguage: next };
+    });
+  };
+
+  const handleAddStudyTimeRow = () => {
+    setForm((prev) => {
+      if (prev.studyTimeByLanguage.length >= 3) return prev;
+      return {
+        ...prev,
+        studyTimeByLanguage: [
+          ...prev.studyTimeByLanguage,
+          { language: "", minutes: "" },
+        ],
+      };
+    });
+  };
 
   const handleChange =
     (field: keyof EditableProfile) =>
@@ -460,7 +577,7 @@ export default function EditPage() {
 
   const handleSubmit = async () => {
     try {
-      const extraList = form.extralanguage
+      const extraList = extraLanguageInput
         .split(",")
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
@@ -469,27 +586,56 @@ export default function EditPage() {
         new Set([...form.preferred_language, ...extraList])
       );
 
-      // ✅ AM/PM + 12시간 → 24시간으로 변환
-      const reminderHour24 = to24Hour(form.reminderAmPm, form.reminderHour12);
+      const reminderHour24 = to24Hour(reminderAmPm, reminderHour12);
+      const reminderTimeStr = `${reminderHour24
+        .toString()
+        .padStart(2, "0")}:00`;
 
-      // 서버로 보낼 실제 payload
+      const studyTimeByLanguage = Object.fromEntries(
+        form.studyTimeByLanguage
+          .filter(
+            (row) => row.language.trim() !== "" && row.minutes.trim() !== ""
+          )
+          .map((row) => [row.language, Number(row.minutes)])
+      );
+
       const profilePayload = {
-        ...form,
-        preferred_language: finalPreferred,
-        // ✅ 백엔드가 쓸 24시간 값
-        reminderHour24,
+        nickname: form.username,
+        bio: form.bio || null,
+        preferredLanguage: finalPreferred,
+        isPublic: !form.hideMyPage,
+        userGoals: {
+          studyTimeByLanguage,
+          dailyMinimumStudyMinutes:
+            form.dailyMinimumStudyMinutes === ""
+              ? undefined
+              : Number(form.dailyMinimumStudyMinutes),
+          weeklyStudyGoalMinutes:
+            form.weeklyStudyGoalMinutes === ""
+              ? undefined
+              : Number(form.weeklyStudyGoalMinutes),
+        },
+        reminders: form.enableStudyReminder
+          ? [
+              {
+                day: mapDayOfWeek(reminderDayOfWeek),
+                times: [reminderTimeStr],
+              },
+            ]
+          : [],
+        isDarkMode: form.isDarkMode,
+        isStudyAlarm: form.enableStudyReminder,
       };
 
       if (avatarFile) {
         const fd = new FormData();
-        fd.append("avatar", avatarFile);
+        fd.append("avatarImageFile", avatarFile);
         fd.append(
           "profile",
           new Blob([JSON.stringify(profilePayload)], {
             type: "application/json",
           })
         );
-
         await updateMyProfile(fd);
       } else {
         await updateMyProfile(profilePayload);
@@ -514,13 +660,9 @@ export default function EditPage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // 미리보기용 blob URL
     const url = URL.createObjectURL(file);
 
-    // 화면에 보여줄 URL 업데이트
     setForm((prev) => ({ ...prev, avatarUrl: url }));
-
-    // 서버 전송용 실제 파일도 저장
     setAvatarFile(file);
   };
 
@@ -529,37 +671,61 @@ export default function EditPage() {
 
     const allSet = new Set(ALL_LANGS);
     const allPreferred = user.preferred_language ?? [];
-    const baseLangs = allPreferred.filter((l) => allSet.has(l));
-    const extraLangs = allPreferred.filter((l) => !allSet.has(l));
+    const baseLangs = allPreferred.filter((l: string) => allSet.has(l));
+    const extraLangs = allPreferred.filter((l: string) => !allSet.has(l));
+
+    const firstReminder: ReminderForm | undefined =
+      user.reminders && user.reminders.length > 0
+        ? user.reminders[0]
+        : undefined;
+
+    if (firstReminder) {
+      setReminderDayOfWeek("MON"); // TODO: day 역매핑
+      if (firstReminder.times && firstReminder.times[0]) {
+        const [hh] = firstReminder.times[0].split(":");
+        const hourNum = Number(hh);
+        if (hourNum === 0) {
+          setReminderAmPm("AM");
+          setReminderHour12(12);
+        } else if (hourNum < 12) {
+          setReminderAmPm("AM");
+          setReminderHour12(hourNum);
+        } else if (hourNum === 12) {
+          setReminderAmPm("PM");
+          setReminderHour12(12);
+        } else {
+          setReminderAmPm("PM");
+          setReminderHour12(hourNum - 12);
+        }
+      }
+    }
 
     setForm({
       avatarUrl: user.avatarUrl ?? "",
+      avatarImageFile: null,
       username: user.username ?? "",
       bio: user.bio ?? "",
       preferred_language: baseLangs,
-      extralanguage: extraLangs.join(", "),
-      dailyMinimumStudyMinutes: user.goals?.dailyMinimumStudyMinutes ?? "",
-      weeklyStudyGoalMinutes: user.goals?.weeklyStudyGoalMinutes ?? "",
-      enableStudyReminder: user.goals?.isReminderEnabled ?? false,
-      preferDarkMode: isDark,
       hideMyPage: user.isPublic === false,
-
-      // 🔽 새로 추가된 리마인더 관련 필드들
-      reminderDayOfWeek: user.goals?.reminderDayOfWeek ?? "MON",
-      reminderAmPm: user.goals?.reminderAmPm ?? "AM",
-      reminderHour12: user.goals?.reminderHour12 ?? 9,
+      dailyMinimumStudyMinutes:
+        user.goals?.dailyMinimumStudyMinutes?.toString() ?? "",
+      weeklyStudyGoalMinutes:
+        user.goals?.weeklyStudyGoalMinutes?.toString() ?? "",
+      studyTimeByLanguage: user.goals?.studyTimeByLanguage
+        ? Object.entries(user.goals.studyTimeByLanguage).map(
+            ([lang, time]) => ({
+              language: lang,
+              minutes: String(time),
+            })
+          )
+        : [],
+      enableStudyReminder: user.isStudyAlarm ?? false,
+      reminders: user.reminders ?? [],
+      isDarkMode: user.isDarkMode ?? isDark,
     });
+
+    setExtraLanguageInput(extraLangs.join(", "));
   };
-
-  function to24Hour(amPm: "AM" | "PM", hour12: number | string): number {
-    const h = Number(hour12);
-
-    if (amPm === "AM") {
-      return h === 12 ? 0 : h; // 12AM → 0시
-    } else {
-      return h === 12 ? 12 : h + 12; // 12PM → 12시, 나머진 +12
-    }
-  }
 
   if (!username) {
     return <ErrorText>잘못된 접근입니다. (username 없음)</ErrorText>;
@@ -682,8 +848,8 @@ export default function EditPage() {
               </Hint>
               <Input
                 type="text"
-                value={form.extralanguage}
-                onChange={handleChange("extralanguage")}
+                value={extraLanguageInput}
+                onChange={(e) => setExtraLanguageInput(e.target.value)}
                 placeholder="추가로 선호하는 언어를 입력하세요 (쉼표로 구분 가능)"
                 style={{ marginTop: "8px" }}
               />
@@ -691,7 +857,6 @@ export default function EditPage() {
           )}
         </FieldGroup>
 
-        {/* 학습 목표 */}
         <FieldGroup>
           <Label>학습 목표</Label>
           <Hint>
@@ -728,9 +893,47 @@ export default function EditPage() {
               </GoalInputRow>
             </GoalBox>
           </GoalRow>
+
+          {/* 언어별 학습시간 섹션 */}
+          <StudyTimeSection>
+            <GoalLabel>언어별 학습 시간</GoalLabel>
+            <Hint>주요 언어별로 목표 공부 시간을 설정할 수 있어요.</Hint>
+
+            <StudyTimeList>
+              {form.studyTimeByLanguage.map((row, idx) => (
+                <StudyTimeRow key={idx}>
+                  <Input
+                    type="text"
+                    placeholder="언어 (예: Python)"
+                    value={row.language}
+                    onChange={(e) =>
+                      handleStudyTimeRowChange(idx, "language", e.target.value)
+                    }
+                    style={{ flex: 1 }}
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="예: 60"
+                    value={row.minutes}
+                    onChange={(e) =>
+                      handleStudyTimeRowChange(idx, "minutes", e.target.value)
+                    }
+                    style={{ width: "120px" }}
+                  />
+                  <GoalUnit>분</GoalUnit>
+                </StudyTimeRow>
+              ))}
+            </StudyTimeList>
+
+            {form.studyTimeByLanguage.length < 3 && (
+              <AddStudyTimeButton type="button" onClick={handleAddStudyTimeRow}>
+                + 언어별 학습 시간 추가
+              </AddStudyTimeButton>
+            )}
+          </StudyTimeSection>
         </FieldGroup>
 
-        {/* 설정 섹션 */}
         <FieldGroup>
           <Label>설정</Label>
           <Hint>계정과 마이페이지에 대한 기본 설정입니다.</Hint>
@@ -755,18 +958,25 @@ export default function EditPage() {
                 <ToggleThumb $enable={form.enableStudyReminder} />
               </ToggleButton>
             </SettingItem>
+
             {form.enableStudyReminder && (
               <SettingItem>
                 <SettingTextGroup>
                   <SettingDescription>
                     매주
                     <select
-                      value={form.reminderDayOfWeek}
+                      value={reminderDayOfWeek}
                       onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          reminderDayOfWeek: e.target.value,
-                        }))
+                        setReminderDayOfWeek(
+                          e.target.value as
+                            | "MON"
+                            | "TUE"
+                            | "WED"
+                            | "THU"
+                            | "FRI"
+                            | "SAT"
+                            | "SUN"
+                        )
                       }
                     >
                       <option value="MON">월</option>
@@ -778,24 +988,18 @@ export default function EditPage() {
                       <option value="SUN">일</option>
                     </select>
                     <select
-                      value={form.reminderAmPm}
+                      value={reminderAmPm}
                       onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          reminderAmPm: e.target.value as "AM" | "PM",
-                        }))
+                        setReminderAmPm(e.target.value as "AM" | "PM")
                       }
                     >
                       <option value="AM">오전</option>
                       <option value="PM">오후</option>
                     </select>
                     <select
-                      value={form.reminderHour12}
+                      value={reminderHour12}
                       onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          reminderHour12: e.target.value,
-                        }))
+                        setReminderHour12(Number(e.target.value))
                       }
                     >
                       {[...Array(12)].map((_, i) => (
@@ -817,7 +1021,16 @@ export default function EditPage() {
                   기본 테마를 다크 모드로 사용할지 설정해요.
                 </SettingDescription>
               </SettingTextGroup>
-              <ToggleButton $enable={isDark} onClick={runToggleTheme}>
+              <ToggleButton
+                $enable={isDark}
+                onClick={() => {
+                  runToggleTheme();
+                  setForm((prev) => ({
+                    ...prev,
+                    isDarkMode: !prev.isDarkMode,
+                  }));
+                }}
+              >
                 <ToggleThumb $enable={isDark} />
               </ToggleButton>
             </SettingItem>
