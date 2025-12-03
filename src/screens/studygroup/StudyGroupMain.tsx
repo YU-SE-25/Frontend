@@ -54,9 +54,11 @@ export default function StudyGroupListPage() {
     setMyGroups(mine);
   };
 
-  useEffect(() => {
-    reloadGroups();
-  }, []);
+    const mine = all.filter(
+      (g) => g.myRole === "LEADER" || g.myRole === "MEMBER"
+    );
+    setMyGroups(mine);
+  };
 
   // 검색 필터
   const filteredGroups = useMemo(() => {

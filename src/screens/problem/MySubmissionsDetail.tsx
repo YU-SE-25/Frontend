@@ -2,11 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 
-import {
-  fetchReviewsBySolution,
-  fetchCommentsByReview,
-} from "../../api/solution_api";
-
 import { timeConverter } from "../../utils/timeConverter";
 import { ButtonContainer } from "../../theme/ProblemList.Style";
 import ReviewSection from "./reviews/Review";
@@ -17,6 +12,10 @@ import {
   updateSubmissionShare,
   type SubmissionDetail,
 } from "../../api/mySubmissions_api";
+import {
+  fetchCommentsByReview,
+  fetchReviewsBySubmission,
+} from "../../api/review_api";
 
 // ===================== 스타일 =====================
 
@@ -168,7 +167,7 @@ export default function MySubmissionsDetail() {
         setProblemId(detail.problemId);
 
         // 🔹 2) 리뷰 + 댓글 조회
-        const reviewsRes = await fetchReviewsBySolution(numericSubmissionId);
+        const reviewsRes = await fetchReviewsBySubmission(numericSubmissionId);
 
         let reviewsWithComments: Review[] = [];
 
@@ -316,6 +315,7 @@ export default function MySubmissionsDetail() {
           language={hlLang}
           reviews={reviews}
           onChangeReviews={setReviews}
+          submissionId={Number(solutionId)}
         />
       </Inner>
     </Page>
