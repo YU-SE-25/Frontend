@@ -176,6 +176,10 @@ const GhostButton = styled.button`
   cursor: pointer;
   color: ${({ theme }) => theme.textColor};
 `;
+const MuteSpan = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.muteColor};
+`;
 
 const ErrorText = styled.p`
   margin: 0;
@@ -433,6 +437,9 @@ export default function BoardWrite({
                   />
                   비밀글
                 </CheckboxLabel>
+              )}
+              {isAnonymous && (
+                <MuteSpan>익명 작성 시 수정이 불가합니다.</MuteSpan>
               )}
             </div>
           </FieldRow>

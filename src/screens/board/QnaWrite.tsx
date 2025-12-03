@@ -298,6 +298,10 @@ const ResultList = styled.ul`
   max-height: 260px;
   overflow-y: auto;
 `;
+const MuteSpan = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.muteColor};
+`;
 
 const ResultItem = styled.li<{ $active?: boolean }>`
   padding: 8px 10px;
@@ -691,6 +695,9 @@ export default function QnaWrite() {
                   />
                   비밀글
                 </CheckboxLabel>
+                {isAnonymous && (
+                  <MuteSpan>익명 작성은 수정이 불가합니다.</MuteSpan>
+                )}
               </div>
             </FieldRow>
 
