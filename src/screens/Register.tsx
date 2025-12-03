@@ -151,13 +151,14 @@ export default function Register() {
       alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
-
+    /*
     // 4. 동일 인물 계정 체크
     const dupCheck = await AuthAPI.checkDuplicateAccount(name, phoneNumber);
     if (dupCheck.data.duplicate === true) {
       alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
+      */
 
     let fileUploadResult: PortfolioUploadResponse | null = null;
 
