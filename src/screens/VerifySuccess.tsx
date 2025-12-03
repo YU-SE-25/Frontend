@@ -71,7 +71,6 @@ export default function VerifySuccessPage() {
           userId: storedUserId ? Number(storedUserId) : null,
           email,
         });
-        console.log("환영 이메일 발송 요청까지는 성공");
       } catch (err) {
         console.error("환영 이메일 발송 실패", err);
       } finally {

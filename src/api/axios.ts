@@ -49,7 +49,7 @@ api.interceptors.response.use(
         // refresh 시도
         const refreshResponse = await AuthAPI.refresh(refreshToken);
 
-        // 🔥 refreshToken은 백엔드에서 새로 안 주므로 덮어쓰기 금지
+        // refreshToken은 백엔드에서 새로 안 주므로 덮어쓰기 금지
         // 성공 → accessToken 저장 + 원래 요청 재전송
         store.set(refreshActionAtom, refreshResponse);
         localStorage.setItem("accessToken", refreshResponse.accessToken);
@@ -59,9 +59,19 @@ api.interceptors.response.use(
         ] = `Bearer ${refreshResponse.accessToken}`;
         return api(original);
       } catch (e) {
-        // refresh 실패 → 이때만 강제 로그아웃
-        localStorage.clear();
-        window.location.href = "/login";
+        const path = window.location.pathname;
+        // refresh 실패 → 강제 로그아웃
+        // 회원가입/인증 플로우에서는 refresh 실패해도 로그아웃하지 않음
+        const isRegisterFlow =
+          path.startsWith("/register") ||
+          path === "/register-success" ||
+          path === "/auth/verify-success";
+
+        if (!isRegisterFlow) {
+          localStorage.clear();
+          window.location.href = "/login";
+        }
+
         return;
       }
     }

@@ -8,9 +8,7 @@ import {
 } from "../../api/problem_api";
 
 import { fetchDummyProblemDetail } from "../../api/dummy/problem_dummy_new";
-
 import { IDEAPI } from "../../api/ide_api";
-
 import CodeEditorView from "./CodeEditorView";
 
 import {
@@ -24,6 +22,18 @@ import {
 } from "../../theme/ProblemSolve.Style";
 import { userProfileAtom } from "../../atoms";
 import { useAtom, useAtomValue } from "jotai";
+
+const languageMap: Record<string, string> = {
+  Python: "PYTHON",
+  "C++": "CPP",
+  Java: "JAVA",
+};
+
+const reverseLanguageMap: Record<string, string> = {
+  PYTHON: "Python",
+  CPP: "C++",
+  JAVA: "Java",
+};
 
 export default function ProblemSolvePage() {
   const { problemId } = useParams<{ problemId: string }>();
@@ -112,7 +122,7 @@ export default function ProblemSolvePage() {
 
     const result = await IDEAPI.run({
       code,
-      language,
+      language: languageMap[language],
       input: "",
     });
 
@@ -135,7 +145,7 @@ ${result.compileTimeMs} ms
     await IDEAPI.saveDraft({
       problemId: Number(problemId),
       code,
-      language,
+      language: languageMap[language],
     });
 
     alert("임시 저장 완료!");
@@ -148,7 +158,7 @@ ${result.compileTimeMs} ms
     const saved = await IDEAPI.loadDraft(Number(problemId));
 
     setCode(saved.code);
-    setLanguage(saved.language);
+    setLanguage(reverseLanguageMap[saved.language] ?? "Python");
 
     alert("불러오기 완료!");
   };
@@ -160,7 +170,7 @@ ${result.compileTimeMs} ms
     await IDEAPI.submit({
       problemId: Number(problemId),
       code,
-      language,
+      language: languageMap[language],
     });
 
     // TODO: username 나중에 실제 값으로 치환 예정이라면 여기는 그대로 유지
