@@ -627,19 +627,16 @@ export default function EditPage() {
         isStudyAlarm: form.enableStudyReminder,
       };
 
-      if (avatarFile) {
-        const fd = new FormData();
-        fd.append("avatarImageFile", avatarFile);
-        fd.append(
-          "profile",
-          new Blob([JSON.stringify(profilePayload)], {
-            type: "application/json",
-          })
-        );
-        await updateMyProfile(fd);
-      } else {
-        await updateMyProfile(profilePayload);
-      }
+      const fd = new FormData();
+      fd.append(
+        "data",
+        new Blob([JSON.stringify(profilePayload)], {
+          type: "application/json",
+        })
+      );
+      if (avatarFile) fd.append("avatarImageFile", avatarFile);
+
+      await updateMyProfile(fd);
 
       await queryClient.invalidateQueries({
         queryKey: ["userProfile"],
