@@ -1,11 +1,22 @@
-// src/screens/board/BoardDetail.tsx
+// src/screens/board/QnaDetail.tsx
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import ReportButton from "../../components/ReportButton";
 import { useNavigate } from "react-router-dom";
-import type { QnaComment, QnaContent } from "./QnaList";
+import type { QnaContent } from "./QnaList";
 import EditButton from "../../components/EditButton";
 import { isOwner } from "../../utils/isOwner";
+import {
+  fetchqnaPost,
+  fetchCommentsByPostId,
+  createComment as apiCreateComment,
+  updateComment as apiUpdateComment,
+  deleteComment as apiDeleteComment,
+  deleteqnaPost,
+  likeComment, // ✅ 댓글 좋아요 API
+} from "../../api/qna_api";
+import { useQuery } from "@tanstack/react-query";
+import type { BoardComment } from "./BoardList";
 
 interface QnaDetailProps {
   post: QnaContent;
@@ -13,6 +24,7 @@ interface QnaDetailProps {
 }
 
 const DetailCard = styled.section`
+  position: relative;
   width: 100%;
   max-width: 960px;
   margin: 20px auto 24px;
@@ -41,11 +53,12 @@ const TitleBlock = styled.div`
   gap: 6px;
 `;
 
-const DetailTitle = styled.span`
+const DetailTitle = styled.h2`
   margin: 0;
   font-size: 20px;
   color: ${({ theme }) => theme.textColor};
 `;
+
 const ProblemTitle = styled.span`
   margin-right: 8px;
   font-size: 24px;
@@ -60,9 +73,7 @@ const ProblemTitle = styled.span`
   }
 `;
 
-const MetaRow = styled.div<{
-  isDisabled?: boolean;
-}>`
+const MetaRow = styled.div<{ isDisabled?: boolean }>`
   font-size: 13px;
   color: ${({ theme }) => theme.textColor}60;
 
@@ -74,88 +85,31 @@ const MetaRow = styled.div<{
   span,
   strong {
     transition: none;
-
     color: inherit;
   }
-  //Metarow의 첫번째 자식
+
   & > span:first-child {
     color: ${({ theme }) => theme.textColor};
     cursor: pointer;
 
-    ${(props) =>
-      props.isDisabled &&
+    ${({ isDisabled, theme }) =>
+      isDisabled &&
       `
-    color: ${props.theme.textColor}60; 
-    cursor: not-allowed;
-    pointer-events: none; /* 클릭 이벤트 자체를 막음 */
-  `}
+        color: ${theme.textColor}60;
+        cursor: not-allowed;
+        pointer-events: none;
+      `}
 
-    /* 호버 효과 (비활성화 아닐 때만) */
-  &:not([aria-disabled="true"]):hover {
+    &:not([aria-disabled="true"]):hover {
       text-decoration: underline;
     }
   }
 `;
 
-const VotePanel = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 999px; /* 둥근 직사각형 */
-  border: 1px solid ${({ theme }) => theme.textColor}20;
-  background: ${({ theme }) => theme.bgCardColor};
-`;
-
-const VoteButton = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid
-    ${({ theme }) => theme.textColor ?? "rgba(255,255,255,0.15)"};
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  cursor: pointer;
-  color: ${({ theme }) => theme.textColor};
-
-  &:hover {
-    background: ${({ theme }) => theme.bgColor}60;
-  }
-`;
-
-const VoteCount = styled.span`
-  font-size: 14px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.textColor};
-`;
 const HeaderActions = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-`;
-
-const CloseButton = styled.button`
-  padding: 4px 10px;
-  font-size: 13px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: transparent;
-  color: ${({ theme }) => theme.textColor};
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    background: rgba(148, 163, 184, 0.18);
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.focusColor};
-    outline-offset: 2px;
-  }
 `;
 
 const ContentArea = styled.div`
@@ -172,6 +126,7 @@ const ContentArea = styled.div`
     border-radius: 8px;
   }
 `;
+
 const DetailBody = styled.div`
   display: flex;
   align-items: flex-start;
@@ -220,6 +175,24 @@ const CommentList = styled.ul`
   padding: 0;
 `;
 
+const CommentActionButton = styled.button<{ $danger?: boolean }>`
+  margin-left: 8px;
+  font-size: 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: ${({ theme, $danger }) => ($danger ? "#ff4d4f" : theme.muteColor)};
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.focusColor};
+    outline-offset: 2px;
+  }
+`;
+
 const CommentItem = styled.li`
   padding: 8px 0;
   border-top: 1px solid rgba(148, 163, 184, 0.25);
@@ -230,9 +203,7 @@ const CommentItem = styled.li`
   }
 `;
 
-const CommentMeta = styled.div<{
-  isDisabled?: boolean;
-}>`
+const CommentMeta = styled.div<{ isDisabled?: boolean }>`
   font-size: 12px;
   color: ${({ theme }) => theme.textColor}70;
   margin-bottom: 2px;
@@ -241,16 +212,16 @@ const CommentMeta = styled.div<{
     color: ${({ theme }) => theme.textColor};
     font-weight: 600;
     cursor: pointer;
-    ${(props) =>
-      props.isDisabled &&
-      `
-    color: ${props.theme.textColor}60; 
-    cursor: not-allowed;
-    pointer-events: none; /* 클릭 이벤트 자체를 막음 */
-  `}
 
-    /* 호버 효과 (비활성화 아닐 때만) */
-  &:not([aria-disabled="true"]):hover {
+    ${({ isDisabled, theme }) =>
+      isDisabled &&
+      `
+        color: ${theme.textColor}60;
+        cursor: not-allowed;
+        pointer-events: none;
+      `}
+
+    &:not([aria-disabled="true"]):hover {
       text-decoration: underline;
     }
   }
@@ -291,6 +262,7 @@ const CommentTextarea = styled.textarea`
 const CommentSubmitRow = styled.div`
   display: flex;
   justify-content: flex-end;
+
   & > label > span {
     font-size: 13px;
     color: ${({ theme }) => theme.textColor};
@@ -316,6 +288,18 @@ const CommentButton = styled.button`
     outline-offset: 2px;
   }
 `;
+const ReplyList = styled.ul`
+  list-style: none;
+  margin: 4px 0 0;
+  padding-left: 16px;
+  border-left: 2px solid ${({ theme }) => theme.textColor}33;
+`;
+
+const ReplyItem = styled.li`
+  padding: 6px 0;
+  font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
+`;
 
 const EmptyText = styled.p`
   margin: 4px 0 0;
@@ -324,116 +308,312 @@ const EmptyText = styled.p`
   text-align: left;
 `;
 
+const LoadingOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.15);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  pointer-events: auto;
+  z-index: 10;
+`;
+
 export default function QnaDetail({ post, onClose }: QnaDetailProps) {
   const nav = useNavigate();
-  const [anonymity, setAnonimity] = useState(false);
-  const [localComments, setLocalComments] = useState<QnaComment[]>(
+  const postId = post.post_id;
+
+  // 1) 서버에서 최신 QnA 글 정보 & 댓글 가져오기
+  const { data: postData, isFetching: isPostFetching } = useQuery<QnaContent>({
+    queryKey: ["qnaPostDetail", postId],
+    queryFn: () => fetchqnaPost(postId),
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  const { data: commentsData, isFetching: isCommentsFetching } = useQuery<
+    BoardComment[]
+  >({
+    queryKey: ["qnaPostComments", postId],
+    queryFn: async () => {
+      const res = await fetchCommentsByPostId(postId);
+      return res;
+    },
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  // 2) 화면에 실제로 보여줄 안정된 상태
+  const [stablePost, setStablePost] = useState<QnaContent>(post);
+  const [localComments, setLocalComments] = useState<BoardComment[]>(
     post.comments ?? []
   );
-  const [vote, setVote] = useState(post.like_count); // 투표
-  const [voteState, setVoteState] = useState<"up" | "down" | null>(null);
+
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
+  const [anonymity, setAnonymity] = useState(false);
+
+  const [hasScrolledForPost, setHasScrolledForPost] = useState(false);
+  const [replyParentId, setReplyParentId] = useState<number | null>(null);
+  const isLoadingAll = isPostFetching || isCommentsFetching;
+
+  // 서버 글 데이터 → stablePost로 반영
   useEffect(() => {
-    setLocalComments(post.comments ?? []);
-    window.scrollTo(0, 0);
-  }, [post.post_id]);
+    if (postData) {
+      setStablePost(postData);
+    }
+  }, [postData]);
+
+  // 서버 댓글 데이터 → localComments로 반영
   useEffect(() => {
-    setVote(post.like_count);
-  }, [post.like_count]);
+    if (commentsData) {
+      setLocalComments(commentsData);
+    }
+  }, [commentsData]);
 
-  const displayAuthor = post.anonymity ? "익명" : post.author;
+  // postId 바뀌면 스크롤 플래그 초기화
+  useEffect(() => {
+    setHasScrolledForPost(false);
+  }, [postId]);
 
-  //투표
-  const handleUpvote = () => {
-    setVoteState("up");
-    setVote((v) => (voteState === "down" ? v + 2 : v + 1));
-  };
+  // 로딩이 모두 끝난 순간, 한 번만 스크롤 맨 위로
+  useEffect(() => {
+    if (!hasScrolledForPost && !isPostFetching && !isCommentsFetching) {
+      window.scrollTo(0, 0);
+      setHasScrolledForPost(true);
+    }
+  }, [hasScrolledForPost, isPostFetching, isCommentsFetching, postId]);
 
-  const handleDownvote = () => {
-    setVoteState("down");
-    setVote((v) => (voteState === "up" ? v - 2 : v - 1));
-  };
+  const displayAuthor = stablePost.anonymity ? "익명" : stablePost.author;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = draft.trim();
-    if (!text) return;
-
-    const next: QnaComment = {
-      id: Date.now(),
-      author: "Guest", // TODO: 나중에 실제 로그인 유저 닉네임으로 교체
-      contents: text,
-      anonymity: anonymity,
-      create_time: new Date().toISOString(),
-    };
-
-    setLocalComments((prev) => [...prev, next]);
-    setDraft("");
-  };
   const handleNavigateMypage = (username: string) => () => {
+    if (!username || username === "익명") return;
     nav(`/mypage/${username}`);
   };
+
   const handleNavigateProblem = (problemId: number) => () => {
     nav(`/problem-detail/${problemId}`);
   };
 
+  // QnA 글 수정
+  const handleEditQna = () => {
+    nav(`/qna/write`, {
+      state: {
+        post: {
+          state: "edit",
+          id: stablePost.post_id,
+          title: stablePost.post_title,
+          content: stablePost.contents,
+          isAnonymous: stablePost.anonymity,
+          isPrivate: stablePost.is_private,
+          problemId: stablePost.problem_id,
+        },
+      },
+    });
+  };
+
+  // QnA 글 삭제
+  const handleDeleteQna = async () => {
+    const ok = window.confirm("정말로 게시글을 삭제하시겠습니까?");
+    if (!ok) return;
+
+    try {
+      await deleteqnaPost(stablePost.post_id);
+      alert("삭제되었습니다.");
+      window.location.reload(); // 또는 nav(0);
+    } catch (e) {
+      console.error("QnA 게시글 삭제 실패:", e);
+      alert("게시글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 댓글 수정 시작
+  const handleEditComment = (comment: BoardComment) => {
+    setDraft(comment.content);
+    setAnonymity(comment.anonymity);
+    setEditingCommentId(comment.comment_id);
+    setReplyParentId(comment.parent_id || null);
+  };
+
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId: number) => {
+    const ok = window.confirm("삭제하시겠습니까?");
+    if (!ok) return;
+
+    try {
+      await apiDeleteComment(commentId);
+      setLocalComments((prev) =>
+        prev.filter((c) => c.comment_id !== commentId)
+      );
+
+      if (editingCommentId === commentId) {
+        setEditingCommentId(null);
+        setDraft("");
+      }
+      if (replyParentId === commentId) {
+        setReplyParentId(null);
+      }
+    } catch (e) {
+      console.error("댓글 삭제 실패:", e);
+      alert("댓글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+  // ✅ 댓글 좋아요 버튼 렌더링 헬퍼
+  const renderCommentLikeButton = (c: BoardComment) => {
+    const likeCount = Number(c.like_count ?? 0);
+    const isLiked = !!(c as any).viewer_liked || !!(c as any).viewerLiked;
+
+    const handleClick = async () => {
+      try {
+        // 응답 바디가 뭐든 상관 없이, 일단 토글 요청만 보냄
+        await likeComment(c.comment_id);
+
+        setLocalComments((prev) =>
+          prev.map((item) => {
+            if (item.comment_id !== c.comment_id) return item;
+
+            const prevLiked =
+              !!(item as any).viewer_liked || !!(item as any).viewerLiked;
+            const prevCount = Number(item.like_count ?? 0);
+
+            const nextLiked = !prevLiked;
+            const nextCount = prevCount + (nextLiked ? 1 : -1);
+
+            return {
+              ...item,
+              viewer_liked: nextLiked,
+              like_count: nextCount < 0 ? 0 : nextCount,
+            };
+          })
+        );
+      } catch (e) {
+        console.error("댓글 좋아요 실패:", e);
+      }
+    };
+
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        style={{
+          marginLeft: "8px",
+          padding: "2px 8px",
+          borderRadius: "999px",
+          border: "1px solid rgba(148, 163, 184, 0.3)",
+          background: isLiked ? "#facc15" : "transparent",
+          color: isLiked ? "#000" : "inherit",
+          fontSize: "12px",
+          cursor: "pointer",
+        }}
+      >
+        👍 {likeCount}
+      </button>
+    );
+  };
+
+  // 댓글 작성/수정 제출
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+
+    try {
+      const targetParentId = replyParentId ?? 0;
+      // 수정 모드
+      if (editingCommentId !== null) {
+        const payload = {
+          contents: text,
+          anonymity,
+          is_private: stablePost.is_private ?? false,
+        };
+
+        await apiUpdateComment(editingCommentId, payload);
+
+        setLocalComments((prev) =>
+          prev.map((c) =>
+            c.comment_id === editingCommentId
+              ? { ...c, content: text, anonymity }
+              : c
+          )
+        );
+        setEditingCommentId(null);
+        setDraft("");
+        setReplyParentId(null);
+        return;
+      }
+
+      // 새 댓글 작성
+      const payload = {
+        contents: text,
+        anonymity,
+        is_private: stablePost.is_private ?? false,
+        parent_id: targetParentId,
+      };
+
+      const newComment = await apiCreateComment(stablePost.post_id, payload);
+
+      setLocalComments((prev) => [...prev, newComment]);
+      setDraft("");
+      setReplyParentId(null);
+    } catch (e) {
+      console.error("댓글 저장 실패:", e);
+      alert("댓글 저장 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <DetailCard>
+      {(isPostFetching || isCommentsFetching) && (
+        <LoadingOverlay>
+          <div style={{ color: "white", fontSize: 16 }}>로딩중...</div>
+        </LoadingOverlay>
+      )}
+
       <DetailHeader>
         <TitleBlock>
           <DetailTitle>
-            <ProblemTitle onClick={handleNavigateProblem(post.problem_id)}>
-              #{post.problem_id}번 문제
+            <ProblemTitle
+              onClick={handleNavigateProblem(stablePost.problem_id)}
+            >
+              #{stablePost.problem_id}번 문제
             </ProblemTitle>
-            | {post.post_title}
+            | {stablePost.post_title}
           </DetailTitle>
 
-          <MetaRow isDisabled={post.anonymity}>
+          <MetaRow isDisabled={stablePost.anonymity}>
             <span onClick={handleNavigateMypage(displayAuthor)}>
               <strong>작성자:</strong> {displayAuthor}
             </span>
             <span>
-              <strong>작성일:</strong> {post.create_time.slice(0, 10)}
-            </span>
-            <span>
-              <strong>조회수:</strong> {vote}
+              <strong>작성일:</strong> {stablePost.create_time.slice(0, 10)}
             </span>
           </MetaRow>
         </TitleBlock>
 
         <HeaderActions>
-          {isOwner({ author: post.author, anonymity: post.anonymity }) && (
-            <EditButton
-              to={`/qna/write`}
-              state={{
-                post: {
-                  state: "edit",
-                  id: post.post_id,
-                  title: post.post_title,
-                  content: post.contents,
-                  isAnonymous: post.anonymity,
-                  isPrivate: post.is_private,
-                  problemId: post.problem_id,
-                },
-              }}
-            />
+          {isOwner({
+            author: stablePost.author,
+            anonymity: stablePost.anonymity,
+          }) && (
+            <EditButton onEdit={handleEditQna} onDelete={handleDeleteQna} />
           )}
+
           <ReportButton
-            targetContentId={post.post_id}
-            targetContentType="post"
-            onManagerDelete={undefined}
+            targetContentId={stablePost.post_id}
+            targetContentType="QNA_POST"
+            onManagerDelete={handleDeleteQna}
           />
-          {onClose && <CloseButton onClick={onClose}>닫기</CloseButton>}
         </HeaderActions>
       </DetailHeader>
 
-      {/* 👇 여기부터 새로 감싼 부분 */}
       <DetailBody>
         <DetailMain>
-          <ContentArea>{post.contents}</ContentArea>
+          <ContentArea>{stablePost.contents}</ContentArea>
 
           <StatsRow>
-            <span>👍 {post.like_count}</span>
             <span>💬 {localComments.length}</span>
           </StatsRow>
 
@@ -443,33 +623,151 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
             </CommentsHeader>
 
             {localComments.length === 0 ? (
-              <EmptyText>첫 번째 댓글을 남겨보세요.</EmptyText>
+              <EmptyText>
+                {isLoadingAll
+                  ? "댓글을 불러오는 중입니다…"
+                  : "첫 번째 댓글을 남겨보세요."}
+              </EmptyText>
             ) : (
               <CommentList>
-                {localComments.map((c) => {
-                  const commentAuthor = c.anonymity ? "익명" : c.author;
-                  const date = c.create_time.slice(0, 10);
-                  return (
-                    <CommentItem key={c.id}>
-                      <CommentMeta isDisabled={c.anonymity}>
-                        <strong onClick={handleNavigateMypage(commentAuthor)}>
-                          {commentAuthor}
-                        </strong>{" "}
-                        · {date}
-                        <ReportButton
-                          targetContentId={c.id}
-                          targetContentType="comment"
-                          onManagerDelete={undefined}
-                        />
-                      </CommentMeta>
-                      <CommentContent>{c.contents}</CommentContent>
-                    </CommentItem>
-                  );
-                })}
+                {localComments
+                  .filter((c) => !c.parent_id || c.parent_id === 0) // ✅ 최상위 댓글
+                  .map((c) => {
+                    const commentAuthor = c.anonymity ? "익명" : c.author_name;
+                    const date = c.created_at.slice(0, 10);
+                    const replies = localComments.filter(
+                      (child) => child.parent_id === c.comment_id
+                    );
+
+                    return (
+                      <CommentItem key={c.comment_id}>
+                        {/* ---- 상위 댓글 ---- */}
+                        <CommentMeta isDisabled={c.anonymity}>
+                          <strong onClick={handleNavigateMypage(commentAuthor)}>
+                            {commentAuthor}
+                          </strong>{" "}
+                          · {date}
+                          {renderCommentLikeButton(c)}
+                          <ReportButton
+                            targetContentId={c.comment_id}
+                            targetContentType="QNA_COMMENT"
+                            onManagerDelete={() =>
+                              handleDeleteComment(c.comment_id)
+                            }
+                          />
+                          {isOwner({
+                            author: c.author_name,
+                            anonymity: c.anonymity,
+                          }) && (
+                            <>
+                              <CommentActionButton
+                                type="button"
+                                onClick={() => handleEditComment(c)}
+                              >
+                                수정
+                              </CommentActionButton>
+
+                              <CommentActionButton
+                                type="button"
+                                $danger
+                                onClick={() =>
+                                  handleDeleteComment(c.comment_id)
+                                }
+                              >
+                                삭제
+                              </CommentActionButton>
+                            </>
+                          )}
+                          {/* ✅ 대댓글 모드 진입 버튼 (ㄴ) */}
+                          <CommentActionButton
+                            type="button"
+                            onClick={() => {
+                              setReplyParentId(c.comment_id);
+                              setEditingCommentId(null);
+                              setDraft("");
+                            }}
+                          >
+                            ㄴ 답글
+                          </CommentActionButton>
+                        </CommentMeta>
+
+                        <CommentContent>{c.content}</CommentContent>
+
+                        {/* ---- 대댓글들 ---- */}
+                        {replies.length > 0 && (
+                          <ReplyList>
+                            {replies.map((r) => {
+                              const rAuthor = r.anonymity
+                                ? "익명"
+                                : r.author_name;
+                              const rDate = r.created_at.slice(0, 10);
+
+                              return (
+                                <ReplyItem key={r.comment_id}>
+                                  <CommentMeta isDisabled={r.anonymity}>
+                                    <strong
+                                      onClick={handleNavigateMypage(rAuthor)}
+                                    >
+                                      {rAuthor}
+                                    </strong>{" "}
+                                    · {rDate}
+                                    {renderCommentLikeButton(r)}
+                                    <ReportButton
+                                      targetContentId={c.comment_id}
+                                      targetContentType="QNA_COMMENT"
+                                      onManagerDelete={() =>
+                                        handleDeleteComment(c.comment_id)
+                                      }
+                                    />
+                                    {isOwner({
+                                      author: r.author_name,
+                                      anonymity: r.anonymity,
+                                    }) && (
+                                      <>
+                                        <CommentActionButton
+                                          type="button"
+                                          onClick={() => handleEditComment(r)}
+                                        >
+                                          수정
+                                        </CommentActionButton>
+                                        <CommentActionButton
+                                          type="button"
+                                          $danger
+                                          onClick={() =>
+                                            handleDeleteComment(r.comment_id)
+                                          }
+                                        >
+                                          삭제
+                                        </CommentActionButton>
+                                      </>
+                                    )}
+                                  </CommentMeta>
+                                  <CommentContent>{r.content}</CommentContent>
+                                </ReplyItem>
+                              );
+                            })}
+                          </ReplyList>
+                        )}
+                      </CommentItem>
+                    );
+                  })}
               </CommentList>
             )}
 
             <CommentForm onSubmit={handleSubmit}>
+              {/* 대댓글 안내 문구 */}
+              {replyParentId && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#facc15",
+                    marginBottom: 4,
+                  }}
+                >
+                  ↳ 답글 작성 중입니다.
+                </div>
+              )}
+
               <CommentTextarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -484,22 +782,17 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
                   <input
                     type="checkbox"
                     checked={anonymity}
-                    onChange={(e) => setAnonimity(e.target.checked)}
+                    onChange={(e) => setAnonymity(e.target.checked)}
                   />
                 </label>
 
-                <CommentButton type="submit">댓글 작성</CommentButton>
+                <CommentButton type="submit">
+                  {editingCommentId !== null ? "댓글 수정" : "댓글 작성"}
+                </CommentButton>
               </CommentSubmitRow>
             </CommentForm>
           </CommentsSection>
         </DetailMain>
-
-        {/* 👉 오른쪽 투표 패널 */}
-        <VotePanel>
-          <VoteButton onClick={handleUpvote}>▲</VoteButton>
-          <VoteCount>{vote}</VoteCount>
-          <VoteButton onClick={handleDownvote}>▼</VoteButton>
-        </VotePanel>
       </DetailBody>
     </DetailCard>
   );

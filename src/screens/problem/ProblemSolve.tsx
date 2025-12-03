@@ -22,6 +22,8 @@ import {
   EditorPanelContainer,
   ExampleBox,
 } from "../../theme/ProblemSolve.Style";
+import { userProfileAtom } from "../../atoms";
+import { useAtom, useAtomValue } from "jotai";
 
 export default function ProblemSolvePage() {
   const { problemId } = useParams<{ problemId: string }>();
@@ -29,6 +31,7 @@ export default function ProblemSolvePage() {
 
   const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userProfile] = useAtom(userProfileAtom);
 
   const [language, setLanguage] = useState("Python");
   const [code, setCode] = useState("");
@@ -158,7 +161,12 @@ ${result.compileTimeMs} ms
     });
 
     // TODO: username 나중에 실제 값으로 치환 예정이라면 여기는 그대로 유지
-    navigate("/problems/:username/submitted?id=" + problemId);
+    navigate(
+      "/problems/" +
+        userProfile?.nickname +
+        "/submitted?showResult=true&id=" +
+        problemId
+    );
   };
 
   // -----------------------------

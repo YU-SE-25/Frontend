@@ -17,8 +17,6 @@ import {
   ProblemLink,
   PaginationContainer,
   PageLink,
-  DetailsButton,
-  ButtonContainer,
   PageTitleContainer,
 } from "../../theme/ProblemList.Style";
 import { TOPBAR_HEIGHT } from "../../components/Topbar";

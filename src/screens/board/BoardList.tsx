@@ -72,7 +72,7 @@ export interface BoardContent {
 }
 
 const CATEGORY_LABEL = {
-  daily: "토론 게시판",
+  daily: "일반",
   lecture: "강의",
   promotion: "홍보",
   typo: "오타",
@@ -133,9 +133,8 @@ export default function BoardList() {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ["boardList", mode, currentCategory, currentPage],
+    queryKey: ["boardList", currentCategory, currentPage],
     queryFn: () => fetchDiscussList(currentPage), // 여기서 DiscussPostPage 형태로 받는다고 가정
-    enabled: mode === "global",
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
@@ -231,7 +230,7 @@ export default function BoardList() {
   }, [posts, searchTerm, sortType]);
 
   // 이제 페이지 수는 서버에서 온 totalPages를 쓰기
-  const totalPages = mode === "global" ? globalList?.totalPages ?? 1 : 1;
+  const totalPages = globalList?.totalPages ?? 1;
 
   const currentPosts = filteredAndSortedPosts;
 
@@ -255,7 +254,7 @@ export default function BoardList() {
             alignItems: "center",
           }}
         >
-          <PageTitle>{CATEGORY_LABEL[currentCategory]}</PageTitle>
+          <PageTitle>토론 게시판</PageTitle>
           <AddButton onClick={handleWritePost}>글 쓰기</AddButton>
         </div>
 
