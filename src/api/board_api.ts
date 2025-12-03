@@ -245,6 +245,7 @@ export interface DiscussTagDto {
   id: number;
   name: string;
 }
+
 export interface TagPostSummaryDto {
   postId: number;
   title: string;
@@ -254,8 +255,8 @@ export interface TagPostSummaryDto {
   likeCount: number;
   commentCount: number;
   viewerLiked: boolean;
+  createdAt?: string;
 }
-
 export interface PageResponse<T> {
   content: T[];
   page: number;
@@ -263,6 +264,28 @@ export interface PageResponse<T> {
   totalElements: number;
   totalPages: number;
   last: boolean;
+}
+export type BoardPage = PageResponse<BoardContent>;
+
+function mapTagPostToBoardContent(dto: TagPostSummaryDto): BoardContent {
+  return {
+    post_id: dto.postId,
+    post_title: dto.title,
+    author: dto.authorName,
+    author_id: dto.authorId,
+    updated_time: dto.createdAt ?? "",
+    viewer_liked: dto.viewerLiked,
+    attachment_url: null,
+    message: null,
+    tag: { id: 0, name: "" }, // 필요하면 나중에 채워도 됨
+    anonymity: false,
+    like_count: dto.likeCount,
+    comment_count: dto.commentCount,
+    create_time: dto.createdAt ?? "",
+    is_private: false,
+    contents: dto.contents,
+    comments: [],
+  };
 }
 
 export async function fetchAllDiscussTags(): Promise<DiscussTagDto[]> {
@@ -289,13 +312,15 @@ export async function fetchTagIdsByPost(postId: number): Promise<number[]> {
 
 export async function fetchPostsByTag(
   tagId: number,
-  page: number = 0 // 백엔드 페이지 인덱스 규칙에 맞게 0 or 1로 맞춰서 호출
-): Promise<PageResponse<TagPostSummaryDto>> {
+  page: number
+): Promise<BoardPage> {
   const res = await api.get<PageResponse<TagPostSummaryDto>>(
     `/dis_board/tag/${tagId}/posts`,
-    {
-      params: { page },
-    }
+    { params: { page } }
   );
-  return res.data;
+
+  return {
+    ...res.data,
+    content: res.data.content.map(mapTagPostToBoardContent),
+  };
 }
