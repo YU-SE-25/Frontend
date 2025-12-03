@@ -6,10 +6,7 @@ import {
   mapDetailDtoToProblem,
 } from "../../../api/problem_api";
 import type { IProblem } from "../../../api/problem_api";
-import {
-  fetchReviewsBySolution,
-  fetchCommentsByReview,
-} from "../../../api/solution_api";
+
 import { fetchSubmissionDetail } from "../../../api/mySubmissions_api";
 import ProblemMeta from "../../../components/ProblemMeta";
 import { timeConverter } from "../../../utils/timeConverter";
@@ -17,6 +14,10 @@ import { isOwner } from "../../../utils/isOwner";
 import { ButtonContainer } from "../../../theme/ProblemList.Style";
 import ReviewSection from "./Review";
 import type { Review } from "./Review";
+import {
+  fetchCommentsByReview,
+  fetchReviewsBySubmission,
+} from "../../../api/review_api";
 const Page = styled.div`
   width: 100%;
   min-height: 100vh;
@@ -178,7 +179,8 @@ export default function SolvedProblemShow() {
         setOwnerName(null);
 
         // 🔹 2) 리뷰 + 댓글 조회
-        const reviewsRes = await fetchReviewsBySolution(submissionId);
+        const reviewsRes = await fetchReviewsBySubmission(submissionId);
+        console.log("Fetched reviews:", reviewsRes);
 
         let reviewsWithComments: Review[] = [];
 

@@ -1,7 +1,14 @@
 // src/api/review_api.ts
 import { api } from "./axios"; // axios 인스턴스 경로에 맞게 수정
-
+type ReviewCommentDto = {
+  commentId: number;
+  commenter: string;
+  content: string;
+  createdAt: string;
+};
 export interface Review {
+  comments: ReviewCommentDto[];
+  lineNumber: number;
   reviewId: number;
   reviewer: string;
   content: string;
@@ -34,6 +41,7 @@ export async function fetchReviewsBySubmission(
 export async function createReview(payload: {
   submissionId: number;
   content: string;
+  lineNumber: number;
 }): Promise<{ message: string }> {
   const res = await api.post<{ message: string }>(`/reviews`, payload);
   return res.data;

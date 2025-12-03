@@ -348,7 +348,7 @@ export default function ReviewSection({
     onChangeReviews(
       res.reviews.map((r) => ({
         id: r.reviewId, // 🔥 필수 변환
-        lineNumber: r.lineNumber ?? 0, // 🔥 백엔드에 없으면 기본값 넣기
+        lineNumber: r.lineNumber ?? 0,
         content: r.content,
         author: r.reviewer, // 🔥 필수 변환
         createdAt: r.createdAt,
@@ -427,38 +427,46 @@ export default function ReviewSection({
   // 리뷰 추가
   // ======================
   const handleAddReview = async ({
+    lineNumber,
+    lineCode,
     content,
   }: {
     lineNumber: number;
     lineCode: string;
     content: string;
   }) => {
+    // 🔥 리뷰 생성 (lineNumber 포함)
     await createReview({
       submissionId,
       content,
+      lineNumber,
     });
 
+    // 🔥 최신 리뷰 목록 다시 불러오기
     const res = await fetchReviewsBySubmission(submissionId);
 
+    // 🔥 Review[] 형태로 변환
     onChangeReviews(
       res.reviews.map((r) => ({
-        id: r.reviewId, // 🔥 필수 변환
-        lineNumber: r.lineNumber ?? 0, // 🔥 백엔드에 없으면 기본값 넣기
+        id: r.reviewId, // backend → frontend 매핑
+        lineNumber: r.lineNumber, // 이제 백엔드에 있으므로 그대로 사용
         content: r.content,
-        author: r.reviewer, // 🔥 필수 변환
+        author: r.reviewer,
         createdAt: r.createdAt,
         voteCount: r.voteCount,
-        comments: r.comments.map((c) => ({
-          id: c.commentId, // 🔥 필수 변환
-          author: c.commenter, // 🔥 필수 변환
+
+        comments: r.comments.map((c: any) => ({
+          id: c.commentId,
+          author: c.commenter,
           content: c.content,
           createdAt: c.createdAt,
         })),
       }))
     );
 
+    // 🔥 가장 최근 리뷰 열기
     const newest = res.reviews[0];
-    setExpandedId(newest.reviewId);
+    if (newest) setExpandedId(newest.reviewId);
   };
 
   // ======================

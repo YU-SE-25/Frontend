@@ -60,7 +60,7 @@ const Form = styled.form`
   max-width: 640px;
 `;
 export default function EditAlert() {
-  const [verified, setVerified] = useState(false);
+  const [verified, setVerified] = useState(true); // 여기 화면 DEPRECATED
   if (verified) {
     return <EditPage />;
   }
