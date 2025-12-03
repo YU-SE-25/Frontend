@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import type { QnaComment, QnaContent } from "./QnaList";
 import EditButton from "../../components/EditButton";
 import { isOwner } from "../../utils/isOwner";
+import { deleteqnaPost } from "../../api/qna_api";
 
 interface QnaDetailProps {
   post: QnaContent;
@@ -377,6 +378,36 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
     nav(`/problem-detail/${problemId}`);
   };
 
+  const handleEditQna = () => {
+    nav(`/qna/write`, {
+      state: {
+        post: {
+          state: "edit", // 🔥 QnA Write 페이지가 이걸 보고 edit 모드로 전환
+          id: post.post_id,
+          title: post.post_title,
+          content: post.contents,
+          isAnonymous: post.anonymity,
+          isPrivate: post.is_private,
+          problemId: post.problem_id, // QnA만의 필드
+        },
+      },
+    });
+  };
+
+  const handleDeleteQna = async () => {
+    const ok = window.confirm("정말로 게시글을 삭제하시겠습니까?");
+    if (!ok) return;
+
+    try {
+      await deleteqnaPost(post.post_id); // 🔥 Discussion → QnA 전용 API로 변경
+      alert("삭제되었습니다.");
+      window.location.reload(); // 또는 nav(0)
+    } catch (error) {
+      console.error("QnA 게시글 삭제 실패:", error);
+      alert("게시글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   return (
     <DetailCard>
       <DetailHeader>
@@ -403,24 +434,11 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
 
         <HeaderActions>
           {isOwner({ author: post.author, anonymity: post.anonymity }) && (
-            <EditButton
-              to={`/qna/write`}
-              state={{
-                post: {
-                  state: "edit",
-                  id: post.post_id,
-                  title: post.post_title,
-                  content: post.contents,
-                  isAnonymous: post.anonymity,
-                  isPrivate: post.is_private,
-                  problemId: post.problem_id,
-                },
-              }}
-            />
+            <EditButton onEdit={handleEditQna} onDelete={handleDeleteQna} />
           )}
           <ReportButton
             targetContentId={post.post_id}
-            targetContentType="post"
+            targetContentType="QNA_POST"
             onManagerDelete={undefined}
           />
           {onClose && <CloseButton onClick={onClose}>닫기</CloseButton>}
@@ -458,7 +476,7 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
                         · {date}
                         <ReportButton
                           targetContentId={c.id}
-                          targetContentType="comment"
+                          targetContentType="QNA_COMMENT"
                           onManagerDelete={undefined}
                         />
                       </CommentMeta>
