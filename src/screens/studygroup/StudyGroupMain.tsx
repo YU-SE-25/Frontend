@@ -54,6 +54,12 @@ export default function StudyGroupListPage() {
     setMyGroups(mine);
   };
 
+    const mine = all.filter(
+      (g) => g.myRole === "LEADER" || g.myRole === "MEMBER"
+    );
+    setMyGroups(mine);
+  };
+
   // 검색 필터
   const filteredGroups = useMemo(() => {
     const lowered = searchTerm.toLowerCase();
@@ -166,13 +172,7 @@ export default function StudyGroupListPage() {
                   <h3>{group.groupName}</h3>
                 </CardHeader>
 
-                <GroupLeader>
-                  그룹장:{" "}
-                  {group.leaderName ||
-                    group.leader?.leaderName ||
-                    group.leader?.userName ||
-                    "미정"}
-                </GroupLeader>
+                <GroupLeader>그룹장: {group.leaderName ?? "미정"}</GroupLeader>
 
                 <p>{group.groupDescription}</p>
 

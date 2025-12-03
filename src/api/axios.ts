@@ -28,40 +28,46 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
-    // 로그인 요청 자체가 401이면 그냥 에러
+    // 로그인/리프레시 요청 자체는 제외
     if (original?.url === "/auth/login") return Promise.reject(error);
     if (original?.url === "/auth/refresh") return Promise.reject(error);
 
-    // 401인데 아직 재시도 안 한 경우 → refresh 시도
+    // 401이고, 아직 재시도 안했으면
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
-      // 🔥 refreshTokenAtom이 null일 수 있으니 localStorage에서 fallback으로 읽기
+      // refreshToken 가져오기
       let refreshToken = store.get(refreshTokenAtom);
       if (!refreshToken) {
         refreshToken = localStorage.getItem("refreshToken") || null;
       }
 
-      // refreshToken 자체가 없으면 → 그냥 실패만 전달 (로그아웃 X)
       if (!refreshToken) return Promise.reject(error);
 
       try {
-        // refresh 시도
+        // 새로운 accessToken 발급
         const refreshResponse = await AuthAPI.refresh(refreshToken);
 
-        // refreshToken은 백엔드에서 새로 안 주므로 덮어쓰기 금지
-        // 성공 → accessToken 저장 + 원래 요청 재전송
+        // jotai 업데이트
         store.set(refreshActionAtom, refreshResponse);
         localStorage.setItem("accessToken", refreshResponse.accessToken);
 
-        original.headers[
-          "Authorization"
-        ] = `Bearer ${refreshResponse.accessToken}`;
-        return api(original);
+        // 🔥 핵심: 절대경로 URL → 상대경로로 변환 (프록시 깨짐 방지)
+        const relativeUrl = original.url.replace(/^https?:\/\/[^/]+/, "");
+
+        // 원래 요청 재시도
+        return api({
+          ...original,
+          url: relativeUrl, // 수정된 URL
+          baseURL: "/api",
+          headers: {
+            ...original.headers,
+            Authorization: `Bearer ${refreshResponse.accessToken}`,
+          },
+        });
       } catch (e) {
+        // refresh 실패 → 강제 로그아웃 (단, 회원가입 과정은 제외)
         const path = window.location.pathname;
-        // refresh 실패 → 강제 로그아웃
-        // 회원가입/인증 플로우에서는 refresh 실패해도 로그아웃하지 않음
         const isRegisterFlow =
           path.startsWith("/register") ||
           path === "/register-success" ||
@@ -71,13 +77,10 @@ api.interceptors.response.use(
           localStorage.clear();
           window.location.href = "/login";
         }
-
         return;
       }
     }
 
-    // refresh 시도도 아니고 그냥 일반적인 401 → 아무것도 안 함
-    // (강제 로그아웃 안 함)
     return Promise.reject(error);
   }
 );
