@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import {
+  fetchAdminReportDetail,
   fetchAdminReports,
   fetchBlacklist,
   resolveReport,
+  type AdminReportDetailDto,
 } from "../../../api/manage_api";
 
 /* 타입 정의 */
@@ -213,6 +215,11 @@ export default function ReportManagementScreen() {
     null
   );
 
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [selectedReportDetail, setSelectedReportDetail] =
+    useState<AdminReportDetailDto | null>(null);
+
   const isReportCategory = category === "REPORT";
   const isBlacklistCategory = category === "BLACKLIST";
 
@@ -226,45 +233,82 @@ export default function ReportManagementScreen() {
     [blacklist, selectedBlacklistId]
   );
 
+  async function loadReports() {
+    try {
+      const res = await fetchAdminReports();
+      const mapped: ReportItem[] = res.map((item) => ({
+        id: item.id,
+        title: item.reason,
+        target: item.targetName,
+        reporterNickname: item.reporterName,
+        reporterId: "-", // 백엔드에 따로 아이디가 없으니 일단 표시용
+        createdAt: item.reportedAt,
+        content: item.reason,
+      }));
+      setReportList(mapped);
+    } catch (e) {
+      console.error("신고 목록 조회 실패:", e);
+    }
+  }
+
+  async function loadBlacklist() {
+    try {
+      const res = await fetchBlacklist({ page: 0, size: 50 });
+      const mapped: BlacklistUser[] = res.blacklist.map((item) => ({
+        id: item.blacklistId,
+        userId: item.email ?? item.phone ?? String(item.blacklistId),
+        nickname: item.name,
+        role: "LEARNER",
+        joinedAt: "-",
+        blacklistedAt: item.bannedAt,
+      }));
+      setBlacklist(mapped);
+    } catch (e) {
+      console.error("블랙리스트 조회 실패:", e);
+    }
+  }
+
   useEffect(() => {
-    async function loadReports() {
-      try {
-        const res = await fetchAdminReports();
-        const mapped: ReportItem[] = res.map((item) => ({
-          id: item.id,
-          title: item.reason,
-          target: item.targetName,
-          reporterNickname: item.reporterName,
-          reporterId: "-", // 백엔드에 따로 아이디가 없으니 일단 표시용
-          createdAt: item.reportedAt,
-          content: item.reason,
-        }));
-        setReportList(mapped);
-      } catch (e) {
-        console.error("신고 목록 조회 실패:", e);
-      }
-    }
-
-    async function loadBlacklist() {
-      try {
-        const res = await fetchBlacklist({ page: 0, size: 50 });
-        const mapped: BlacklistUser[] = res.blacklist.map((item) => ({
-          id: item.blacklistId,
-          userId: item.email ?? item.phone ?? String(item.blacklistId),
-          nickname: item.name,
-          role: "LEARNER",
-          joinedAt: "-",
-          blacklistedAt: item.bannedAt,
-        }));
-        setBlacklist(mapped);
-      } catch (e) {
-        console.error("블랙리스트 조회 실패:", e);
-      }
-    }
-
     loadReports();
     loadBlacklist();
   }, []);
+
+  // 선택된 신고가 바뀔 때마다 상세 조회
+  useEffect(() => {
+    if (!selectedReportId || !isReportCategory) {
+      setSelectedReportDetail(null);
+      setDetailError(null);
+      return;
+    }
+
+    let canceled = false;
+
+    async function loadDetail() {
+      setIsDetailLoading(true);
+      setDetailError(null);
+      try {
+        const detail = await fetchAdminReportDetail(selectedReportId!);
+        if (!canceled) {
+          setSelectedReportDetail(detail);
+        }
+      } catch (e) {
+        if (!canceled) {
+          console.error("신고 상세 조회 실패:", e);
+          setDetailError("신고 상세를 불러오지 못했습니다.");
+        }
+      } finally {
+        if (!canceled) {
+          setIsDetailLoading(false);
+        }
+      }
+    }
+
+    loadDetail();
+
+    return () => {
+      canceled = true;
+    };
+  }, [selectedReportId, isReportCategory]);
 
   const filteredReports = useMemo(() => {
     if (!search.trim()) return reportList;
@@ -293,12 +337,16 @@ export default function ReportManagementScreen() {
     setSearch("");
     setSelectedReportId(null);
     setSelectedBlacklistId(null);
+    setSelectedReportDetail(null);
+    setDetailError(null);
   };
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setSelectedReportId(null);
     setSelectedBlacklistId(null);
+    setSelectedReportDetail(null);
+    setDetailError(null);
   };
 
   const handleSelectRow = (id: number) => {
@@ -308,6 +356,8 @@ export default function ReportManagementScreen() {
     } else {
       setSelectedBlacklistId((prev) => (prev === id ? null : id));
       setSelectedReportId(null);
+      setSelectedReportDetail(null);
+      setDetailError(null);
     }
   };
 
@@ -328,8 +378,16 @@ export default function ReportManagementScreen() {
         adminReason,
       });
 
+      // ✅ 1. 현재 목록에서 즉시 제거 (로컬 상태)
       setReportList((prev) => prev.filter((r) => r.id !== selectedReport.id));
+
+      // ✅ 2. 선택 상태 초기화
       setSelectedReportId(null);
+      setSelectedReportDetail(null);
+
+      // ✅ 3. (선택) 서버 기준 재동기화가 필요하면 유지
+      // await loadReports();
+
       alert("신고가 접수되었습니다.");
     } catch (e) {
       console.error("신고 접수 실패:", e);
@@ -361,6 +419,14 @@ export default function ReportManagementScreen() {
   const isReportResolveDisabled = !selectedReport;
   const isInfoDisabled = !selectedBlacklistUser;
   const isUnblacklistDisabled = !selectedBlacklistUser;
+
+  // 상세 내용 텍스트 추출 (DTO에 맞게 수정 가능)
+  const detailText =
+    (selectedReportDetail as any)?.detail ??
+    (selectedReportDetail as any)?.content ??
+    (selectedReportDetail as any)?.reason ??
+    selectedReport?.content ??
+    "";
 
   return (
     <Wrap>
@@ -501,7 +567,14 @@ export default function ReportManagementScreen() {
             {selectedReport.reporterNickname} ({selectedReport.reporterId}) ·
             신고일: {selectedReport.createdAt}
           </DetailMeta>
-          <DetailContent>{selectedReport.content}</DetailContent>
+
+          {isDetailLoading ? (
+            <DetailContent>신고 상세를 불러오는 중입니다...</DetailContent>
+          ) : detailError ? (
+            <DetailContent>{detailError}</DetailContent>
+          ) : (
+            <DetailContent>{detailText}</DetailContent>
+          )}
         </DetailPanel>
       )}
     </Wrap>

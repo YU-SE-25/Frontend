@@ -1,5 +1,6 @@
 // src/api/manage_api.ts
 import { api } from "./axios";
+import type { IProblem } from "./problem_api";
 
 export interface ProblemListItem {
   problemId: number;
@@ -9,6 +10,7 @@ export interface ProblemListItem {
   viewCount: number;
   createdAt: string;
   isSolved: boolean;
+  createdByNickname: string;
 }
 
 export interface SortInfo {
@@ -53,6 +55,9 @@ export interface UpdateUserRoleResponse {
   message: string;
 }
 
+export interface MessageResponseDto {
+  message: string;
+}
 export async function fetchPendingProblemList(params: {
   title?: string;
   difficulty?: string;
@@ -64,6 +69,39 @@ export async function fetchPendingProblemList(params: {
   return res.data;
 }
 
+export async function approveProblem(
+  problemId: number
+): Promise<MessageResponseDto> {
+  const res = await api.put<MessageResponseDto>(
+    `/admin/page/problems/${problemId}/approve`
+  );
+  return res.data;
+}
+
+export async function fetchMyProblems(
+  page = 0,
+  size = 100,
+  sort = "createdAt,desc"
+) {
+  const res = await api.get("/problems/list/me", {
+    params: {
+      page,
+      size,
+      sort,
+    },
+  });
+  return res.data;
+}
+
+// 문제 반려
+export async function rejectProblem(
+  problemId: number
+): Promise<MessageResponseDto> {
+  const res = await api.put<MessageResponseDto>(
+    `/admin/page/problems/${problemId}/reject`
+  );
+  return res.data;
+}
 export async function fetchUserList() {
   const res = await api.get("/admin/users");
   return res.data;

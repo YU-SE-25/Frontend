@@ -240,3 +240,62 @@ export async function likeComment(
   const res = await api.post(`/dis_board/comment/${commentId}/like`);
   return res.data;
 }
+
+export interface DiscussTagDto {
+  id: number;
+  name: string;
+}
+export interface TagPostSummaryDto {
+  postId: number;
+  title: string;
+  contents: string;
+  authorId: number;
+  authorName: string;
+  likeCount: number;
+  commentCount: number;
+  viewerLiked: boolean;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
+export async function fetchAllDiscussTags(): Promise<DiscussTagDto[]> {
+  const res = await api.get<DiscussTagDto[]>("/dis_board/tags");
+  return res.data;
+}
+
+export async function updatePostTags(
+  postId: number,
+  tagIds: number[]
+): Promise<void> {
+  await api.post(`/dis_board/${postId}/tag`, { tagIds });
+}
+
+/**
+ * 3. 특정 게시글의 태그 조회
+ * GET /api/dis_board/tag/list/{postId}
+ * 응답: number[] (tagId 배열)
+ */
+export async function fetchTagIdsByPost(postId: number): Promise<number[]> {
+  const res = await api.get<number[]>(`/dis_board/tag/list/${postId}`);
+  return res.data;
+}
+
+export async function fetchPostsByTag(
+  tagId: number,
+  page: number = 0 // 백엔드 페이지 인덱스 규칙에 맞게 0 or 1로 맞춰서 호출
+): Promise<PageResponse<TagPostSummaryDto>> {
+  const res = await api.get<PageResponse<TagPostSummaryDto>>(
+    `/dis_board/tag/${tagId}/posts`,
+    {
+      params: { page },
+    }
+  );
+  return res.data;
+}

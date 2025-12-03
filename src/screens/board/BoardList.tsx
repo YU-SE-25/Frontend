@@ -26,6 +26,8 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchDiscussList } from "../../api/board_api";
 import { isOwner } from "../../utils/isOwner";
 import { myRole } from "../../utils/myRole";
+import { fetchAllDiscussTags, fetchPostsByTag } from "../../api/board_api";
+
 export interface BoardTag {
   id: number;
   name: string;
@@ -95,7 +97,8 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
   padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid
-    ${({ theme, $active }) => ($active ? theme.focusColor : "rgba(0,0,0,0.12)")};
+    ${({ theme, $active }) =>
+      $active ? theme.focusColor : "rgba(0, 0, 0, 0.12)"};
   background: ${({ theme, $active }) =>
     $active ? theme.focusColor : "transparent"};
   color: ${({ theme, $active }) => ($active ? "white" : theme.textColor)};
@@ -109,7 +112,33 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
   }
 `;
 
-// 기존 함수 선언 → props 형태로 변경됨
+const TagBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+`;
+
+const TagChip = styled.button<{ $active?: boolean }>`
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid
+    ${({ theme, $active }) =>
+      $active ? theme.focusColor : "rgba(0, 0, 0, 0.12)"};
+  background: ${({ theme, $active }) =>
+    $active ? theme.focusColor : "transparent"};
+  color: ${({ theme, $active }) => ($active ? "white" : theme.textColor)};
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease,
+    transform 0.1s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+`;
+
 export default function BoardList() {
   const navigate = useNavigate();
   const { category } = useParams<{ category: string }>();
@@ -125,16 +154,31 @@ export default function BoardList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
   const [currentPage, setCurrentPage] = useState(1);
-
   const [posts, setPosts] = useState<BoardContent[]>([]);
+
+  const tagParamRaw = searchParams.get("tag") ?? "default";
+  const selectedTagId =
+    tagParamRaw === "default" ? null : Number(tagParamRaw) || null;
+
+  const { data: allTags } = useQuery({
+    queryKey: ["boardTags"],
+    queryFn: fetchAllDiscussTags,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const {
     data: globalList,
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ["boardList", currentCategory, currentPage],
-    queryFn: () => fetchDiscussList(currentPage), // 여기서 DiscussPostPage 형태로 받는다고 가정
+    queryKey: ["boardList", currentCategory, selectedTagId, currentPage],
+    queryFn: async () => {
+      if (selectedTagId) {
+        // 백엔드가 0-based면 currentPage - 1로 맞춰서
+        return await fetchPostsByTag(selectedTagId, currentPage);
+      }
+      return await fetchDiscussList(currentPage);
+    },
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
@@ -143,7 +187,7 @@ export default function BoardList() {
   });
 
   useEffect(() => {
-    setPosts(globalList?.content ?? []);
+    setPosts((globalList as any)?.content ?? []);
   }, [currentPage, globalList]);
 
   const selectedPostId = searchParams.get("no");
@@ -168,7 +212,6 @@ export default function BoardList() {
   };
 
   const handleViewDetails = (post: BoardContent) => {
-    // 비공개 글인데, 내가 작성자도 아니고 관리자도 아니면 막기
     if (post.is_private) {
       const canView =
         isOwner({
@@ -203,6 +246,35 @@ export default function BoardList() {
     navigate(`/board/${next}`);
   };
 
+  const handleAllTag = () => {
+    setCurrentPage(1);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tag", "default");
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const handleToggleTag = (tagId: number) => {
+    setCurrentPage(1);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        const current = next.get("tag") ?? "default";
+        if (current === String(tagId)) {
+          next.set("tag", "default");
+        } else {
+          next.set("tag", String(tagId));
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
   const filteredAndSortedPosts = useMemo(() => {
     let result = posts;
 
@@ -229,8 +301,7 @@ export default function BoardList() {
     return result;
   }, [posts, searchTerm, sortType]);
 
-  // 이제 페이지 수는 서버에서 온 totalPages를 쓰기
-  const totalPages = globalList?.totalPages ?? 1;
+  const totalPages = (globalList as any)?.totalPages ?? 1;
 
   const currentPosts = filteredAndSortedPosts;
 
@@ -269,6 +340,21 @@ export default function BoardList() {
             </CategoryTab>
           ))}
         </CategoryTabs>
+
+        <TagBar>
+          <TagChip $active={!selectedTagId} onClick={handleAllTag}>
+            전체
+          </TagChip>
+          {allTags?.map((tag) => (
+            <TagChip
+              key={tag.id}
+              $active={selectedTagId === tag.id}
+              onClick={() => handleToggleTag(tag.id)}
+            >
+              {tag.name}
+            </TagChip>
+          ))}
+        </TagBar>
       </PageTitleContainer>
 
       {selectedPost && (
@@ -300,10 +386,13 @@ export default function BoardList() {
 
         <SortSelect
           value={sortType}
-          onChange={(e) => setSortType(e.target.value as "latest" | "views")}
+          onChange={(e) =>
+            setSortType(e.target.value as "latest" | "views" | "id")
+          }
         >
           <option value="latest">최신순</option>
           <option value="views">추천순</option>
+          {/* 필요하면 id 정렬 옵션 유지 */}
         </SortSelect>
       </ControlBar>
 
@@ -357,7 +446,7 @@ export default function BoardList() {
 
       <PaginationContainer>
         <PageLink
-          onClick={() => handlePageChange(currentPage - 1)}
+          onClick={() => handlePageChange(currentPage)}
           isDisabled={currentPage === 1}
           aria-disabled={currentPage === 1}
         >
