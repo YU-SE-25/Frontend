@@ -1,6 +1,5 @@
 import type { EditableProfile } from "../screens/mypage/EditPage";
 import { api } from "./axios";
-import { getDummyUserProfile } from "./dummy/mypage_dummy";
 export type Submission = {
   id: number;
   submissionId: number;
@@ -202,6 +201,47 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
     reminders: dto.reminders ?? [],
   };
 }
+export function getDummyUserProfile(): UserProfile {
+  return {
+    userId: 0,
+    username: "",
+    avatarUrl: "/images/default-avatar.png",
+    bio: "",
+    joinedAt: "",
+    solvedProblems: [],
+    bookmarkedProblems: [],
+    recentSubmissions: [],
+    preferred_language: [],
+    role: "LEARNER",
+
+    isPublic: false,
+
+    stats: {
+      totalSolved: 0,
+      totalSubmitted: 0,
+      acceptanceRate: 0,
+      streakDays: 0,
+      rank: 0,
+      rating: 0,
+    },
+
+    goals: {
+      studyTimeByLanguage: undefined,
+      dailyMinimumStudyMinutes: undefined,
+      weeklyStudyGoalMinutes: undefined,
+      reminderTimes: undefined,
+      isReminderEnabled: false,
+    },
+
+    achievements: [],
+
+    // 학습 알림 / 다크모드 (서버측 기본값 예상)
+    isStudyAlarm: false,
+    isDarkMode: false,
+
+    reminders: [],
+  };
+}
 
 export async function getUserProfile(nickname: string): Promise<UserProfile> {
   try {
@@ -209,9 +249,31 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
     console.log("user profile fetched:", res.data);
     console.log("mapped data : ", mapUserProfileDto(res.data));
     return mapUserProfileDto(res.data);
-  } catch (err) {
-    console.log("❌ getUserProfile 에러 발생, 더미 프로필로 대체:", err);
-    return getDummyUserProfile("LEARNER");
+  } catch (err: any) {
+    const status = err?.response?.status;
+    console.log("❌ getUserProfile 에러:", err);
+
+    // ✅ 400: 비공개 마이페이지 → 이름/사진만 보이고 나머지는 기본값
+    if (status === 400) {
+      console.log("비공개 마이페이지(400) → 제한된 프로필로 대체");
+
+      const dummy = getDummyUserProfile();
+      return {
+        ...dummy,
+        username: "비공계 계정",
+        isPublic: false,
+      };
+    }
+
+    // ✅ 그 외 에러: 알림 + isPublic false
+    alert("이름에 불러오는데 실패했습니다");
+
+    const dummy = getDummyUserProfile();
+    return {
+      ...dummy,
+      username: "Err",
+      isPublic: false,
+    };
   }
 }
 
@@ -236,7 +298,7 @@ export async function getMyProfile(): Promise<UserProfile> {
 
     // 최종 실패 시 더미 프로필 반환
     console.log("❌ getMyProfile 에러 발생, 더미 프로필로 대체:", err);
-    return getDummyUserProfile("LEARNER");
+    return getDummyUserProfile();
   }
 }
 
