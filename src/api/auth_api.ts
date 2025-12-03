@@ -57,13 +57,14 @@ export const AuthAPI = {
       phone,
     }),
 
+  /*
   // 4. 동일 인물 계정 확인
   checkDuplicateAccount: (name: string, phone: string) =>
     api.post<{ duplicate: boolean; message: string }>(
       "/auth/check/duplicate-account",
       { name, phoneNumber: phone }
     ),
-
+*/
   // 5. 회원가입 요청
   register: (data: RegisterRequest) => api.post("/auth/register", data),
 
