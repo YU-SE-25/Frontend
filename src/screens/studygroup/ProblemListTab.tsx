@@ -150,7 +150,7 @@ export default function ProblemListTab({ role, groupId }: Props) {
                           {/* 문제 상세 이동 */}
                           <ProblemTitleLink
                             onClick={() =>
-                              navigate(`/problems/detail/${p.problemId}`)
+                              navigate(`/problem-detail/${p.problemId}`)
                             }
                           >
                             {p.problemTitle}

@@ -3,80 +3,89 @@ import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 const getInitialIsDark = () => {
-  if (typeof window === "undefined") return false; // SSR 대비용 (선택)
+  if (typeof window === "undefined") return false;
   const saved = localStorage.getItem("theme:isDark");
   if (saved === "true") return true;
   if (saved === "false") return false;
-  return false; // 기본값: 라이트 모드
+  return false;
 };
 
 export const isDarkAtom = atom<boolean>(getInitialIsDark());
-//사용자 프로필 정보
+
+// 사용자 프로필 정보
 export interface UserProfile {
   userId: number;
   nickname: string;
-  role: "MANAGER" | "INSTRUCTOR" | "LEARNER"; // 백앤드코드에 따라 수정했어요!
+  role: "MANAGER" | "INSTRUCTOR" | "LEARNER";
 }
+
+// 로그인 응답
 export interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
-  expiresIn: number; // 만료 시간 (초 단위)
+  refreshToken: string; // 로그인시에만 refreshToken 옴
+  expiresIn: number;
   user: UserProfile;
 }
-//토큰 갱신
+
+// refresh 응답 (refreshToken 없음!!)
 export interface RefreshResponse {
   accessToken: string;
   expiresIn: number;
 }
 
-//테마 토글버튼
+// 테마 토글
 export const toggleThemeActionAtom = atom(null, (get, set) => {
   set(isDarkAtom, (prev) => !prev);
 });
 
+// 저장되는 상태들
 export const accessTokenAtom = atomWithStorage<string | null>(
   "accessToken",
   null
 );
-//만료 시간 (재발급 로직에 사용)
+
 export const accessTokenExpiresInAtom = atom<number | null>(null);
-// Local Storage에 영구 저장 (로그인 유지의 핵심!) 브라우저를 껐다 켜도 유지됨
+
 export const refreshTokenAtom = atomWithStorage<string | null>(
   "refreshToken",
   null
 );
-//사용자의 최소 정보
+
 export const userProfileAtom = atomWithStorage<UserProfile | null>(
   "userProfile",
   null
 );
-//로그인 여부 판단: accessToken이 존재하고 userProfile이 있으면 true
+
+// 로그인 여부
 export const isLoggedInAtom = atom((get) => {
   return !!get(accessTokenAtom) && !!get(userProfileAtom);
 });
 
-//로그인
+// 로그인 액션
 export const loginActionAtom = atom(null, (get, set, data: LoginResponse) => {
   set(accessTokenAtom, data.accessToken);
-  set(refreshTokenAtom, data.refreshToken);
+  set(refreshTokenAtom, data.refreshToken); // 로그인에서는 저장 OK
   set(accessTokenExpiresInAtom, data.expiresIn);
   set(userProfileAtom, data.user);
 });
-//로그아웃
+
+// 로그아웃 액션
 export const logoutActionAtom = atom(null, (get, set) => {
-  // 모든 상태를 null로 초기화합니다.
   set(accessTokenAtom, null);
   set(refreshTokenAtom, null);
   set(accessTokenExpiresInAtom, null);
   set(userProfileAtom, null);
 });
-//토큰 갱신
+
+// refresh 액션 (여기가 핵심!!)
 export const refreshActionAtom = atom(
   null,
   (get, set, data: RefreshResponse) => {
-    // Access Token과 만료 시간만 업데이트합니다.
     set(accessTokenAtom, data.accessToken);
     set(accessTokenExpiresInAtom, data.expiresIn);
+
+    // refreshToken 저장하지 않는다
+    // 왜냐면 백엔드 refresh 응답에는 refreshToken이 없기 때문
   }
 );
 
