@@ -13,6 +13,8 @@ type ProblemMetaProps = {
 };
 
 export default function ProblemMeta({ problem }: ProblemMetaProps) {
+  const formattedDate = problem.createdAt ? problem.createdAt.slice(0, 10) : "";
+
   return (
     <MetaInfoSection>
       <MetaRow>
@@ -30,7 +32,7 @@ export default function ProblemMeta({ problem }: ProblemMetaProps) {
         <MetaValue>{problem.viewCount}</MetaValue>
 
         <MetaLabel>등록일:</MetaLabel>
-        <MetaValue>{problem.createdAt}</MetaValue>
+        <MetaValue>{formattedDate}</MetaValue>
 
         <MetaLabel>작성자:</MetaLabel>
         <MetaValue>

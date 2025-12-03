@@ -15,6 +15,260 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
 
+// 댓글 타입 (프론트에서 일관되게 사용할 형태)
+interface SGComment {
+  commentId: number;
+  author: string;
+  contents: string;
+  likeCount: number;
+  createTime: string;
+  viewerLiked?: boolean;
+}
+
+export default function StudyGroupBoardDetail() {
+  const { groupId, postId } = useParams();
+  const nav = useNavigate();
+
+  const user = useAtomValue(userProfileAtom);
+
+  const [post, setPost] = useState<any | null>(null);
+  const [comments, setComments] = useState<SGComment[]>([]);
+  const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const formatDate = (iso?: string) => {
+    if (!iso) return "-";
+    return iso.slice(0, 10);
+  };
+
+  // 상세 조회
+  useEffect(() => {
+    if (!groupId || !postId) return;
+    (async () => {
+      const detail = await getDiscussionDetail(Number(groupId), Number(postId));
+      setPost(detail);
+      window.scrollTo(0, 0);
+    })();
+  }, [groupId, postId]);
+
+  // 댓글 조회
+  useEffect(() => {
+    if (!groupId || !postId) return;
+    loadComments();
+  }, [groupId, postId]);
+
+  async function loadComments() {
+    const res = await getDiscussionComments(Number(groupId), Number(postId));
+
+    // 1) res가 배열인지 체크
+    const raw = Array.isArray(res) ? res : [];
+
+    const mapped: SGComment[] = raw.map((c: any) => ({
+      commentId: c.comment_id,
+      author: c.author_name, // author_name
+      contents: c.content, // content
+      likeCount: c.like_count ?? 0, // 없으면 0 처리
+      createTime: c.create_time, // create_time
+      viewerLiked: c.viewerLiked ?? false,
+    }));
+
+    setComments(mapped);
+  }
+
+  // 좋아요 (게시글)
+  const handleLike = async () => {
+    const res = await likeDiscussion(Number(groupId), Number(postId));
+    setPost((p: any) => ({
+      ...p,
+      likeCount: res.likeCount,
+      viewerLiked: res.viewerLiked,
+    }));
+  };
+
+  // 글 삭제
+  const handleDeletePost = async () => {
+    const ok = window.confirm("정말 삭제할까요?");
+    if (!ok) return;
+
+    await deleteDiscussion(Number(groupId), Number(postId));
+
+    alert("삭제되었습니다.");
+    nav(`/studygroup/${groupId}`);
+  };
+
+  // 댓글 작성 / 수정
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+
+    // 수정 모드
+    if (editingId !== null) {
+      await updateDiscussionComment(Number(groupId), editingId, {
+        contents: text,
+      });
+      setEditingId(null);
+      setDraft("");
+      await loadComments();
+      return;
+    }
+
+    // 새 댓글 작성
+    await createDiscussionComment(Number(groupId), Number(postId), {
+      contents: text,
+    });
+
+    setDraft("");
+    await loadComments();
+  };
+
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId: number) => {
+    const ok = window.confirm("댓글을 삭제할까요?");
+    if (!ok) return;
+
+    await deleteDiscussionComment(Number(groupId), commentId);
+    await loadComments();
+  };
+
+  // 댓글 좋아요
+  const handleLikeComment = async (commentId: number) => {
+    if (!groupId) return;
+
+    await likeDiscussionComment(Number(groupId), Number(commentId));
+    await loadComments();
+  };
+
+  if (!post) return <p>Loading...</p>;
+
+  return (
+    <DetailWrapper>
+      <DetailCard>
+        <DetailHeader>
+          <TitleBlock>
+            <DetailTitle>{post.title}</DetailTitle>
+
+            <MetaRow>
+              <span>
+                <strong>작성자:</strong> {post.author}
+              </span>
+              <span>
+                <strong>작성일:</strong> {formatDate(post.createTime)}
+              </span>
+            </MetaRow>
+          </TitleBlock>
+
+          <HeaderActions>
+            {user?.userId === post.authorId && (
+              <>
+                <button
+                  onClick={() =>
+                    nav(`/studygroup/${groupId}/discuss/${postId}/edit`, {
+                      state: { post },
+                    })
+                  }
+                >
+                  수정
+                </button>
+
+                <button onClick={handleDeletePost} style={{ color: "#f55" }}>
+                  삭제
+                </button>
+              </>
+            )}
+
+            <CloseButton
+              onClick={() => nav(`/studygroup/${groupId}?tab=discussion`)}
+            >
+              닫기
+            </CloseButton>
+          </HeaderActions>
+        </DetailHeader>
+
+        <DetailBody>
+          <DetailMain>
+            <ContentArea>{post.contents}</ContentArea>
+
+            <StatsRow>
+              <span style={{ cursor: "pointer" }} onClick={handleLike}>
+                ❤️ {post.likeCount}
+              </span>
+              <span>💬 {comments.length}</span>
+            </StatsRow>
+
+            <CommentsSection>
+              <CommentsHeader>
+                <CommentCount>댓글 {comments.length}</CommentCount>
+              </CommentsHeader>
+
+              {comments.length === 0 ? (
+                <EmptyText>첫 댓글을 작성해보세요!</EmptyText>
+              ) : (
+                <CommentList>
+                  {(comments ?? []).map((c) => (
+                    <CommentItem key={c.commentId}>
+                      <CommentMeta>
+                        <strong>{c.author}</strong> ·{" "}
+                        {(c.createTime ?? "").slice(0, 10)}
+                        <CommentActionButton
+                          onClick={() => handleLikeComment(c.commentId)}
+                        >
+                          ❤️ {c.likeCount}
+                        </CommentActionButton>
+                        {user?.nickname === c.author && (
+                          <>
+                            <CommentActionButton
+                              onClick={() => {
+                                setEditingId(c.commentId);
+                                setDraft(c.contents);
+                              }}
+                            >
+                              수정
+                            </CommentActionButton>
+
+                            <CommentActionButton
+                              $danger
+                              onClick={() => handleDeleteComment(c.commentId)}
+                            >
+                              삭제
+                            </CommentActionButton>
+                          </>
+                        )}
+                      </CommentMeta>
+                      <CommentContent>{c.contents}</CommentContent>
+                    </CommentItem>
+                  ))}
+                </CommentList>
+              )}
+
+              {/* 댓글 입력 */}
+              <CommentForm onSubmit={handleSubmitComment}>
+                <CommentTextarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="댓글을 입력하세요"
+                />
+
+                <CommentSubmitRow>
+                  <CommentButton type="submit">
+                    {editingId ? "댓글 수정" : "댓글 작성"}
+                  </CommentButton>
+                </CommentSubmitRow>
+              </CommentForm>
+            </CommentsSection>
+          </DetailMain>
+        </DetailBody>
+      </DetailCard>
+    </DetailWrapper>
+  );
+}
+
+const DetailWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+`;
+
 const DetailCard = styled.section`
   width: 100%;
   max-width: 960px;
@@ -334,245 +588,3 @@ const EmptyText = styled.p`
   color: ${({ theme }) => theme.textColor}70;
   text-align: left;
 `;
-
-// 댓글 타입 (프론트에서 일관되게 사용할 형태)
-interface SGComment {
-  commentId: number;
-  author: string;
-  contents: string;
-  likeCount: number;
-  createTime: string;
-  viewerLiked?: boolean;
-}
-
-export default function StudyGroupBoardDetail() {
-  const { groupId, postId } = useParams();
-  const nav = useNavigate();
-
-  const user = useAtomValue(userProfileAtom);
-
-  const [post, setPost] = useState<any | null>(null);
-  const [comments, setComments] = useState<SGComment[]>([]);
-  const [draft, setDraft] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-
-  const formatDate = (iso?: string) => {
-    if (!iso) return "-";
-    return iso.slice(0, 10);
-  };
-
-  // 상세 조회
-  useEffect(() => {
-    if (!groupId || !postId) return;
-    (async () => {
-      const detail = await getDiscussionDetail(Number(groupId), Number(postId));
-      setPost(detail);
-      window.scrollTo(0, 0);
-    })();
-  }, [groupId, postId]);
-
-  // 댓글 조회
-  useEffect(() => {
-    if (!groupId || !postId) return;
-    loadComments();
-  }, [groupId, postId]);
-
-  async function loadComments() {
-    const res = await getDiscussionComments(Number(groupId), Number(postId));
-
-    // 1) res가 배열인지 체크
-    const raw = Array.isArray(res) ? res : [];
-
-    const mapped: SGComment[] = raw.map((c: any) => ({
-      commentId: c.comment_id,
-      author: c.author_name, // author_name
-      contents: c.content, // content
-      likeCount: c.like_count ?? 0, // 없으면 0 처리
-      createTime: c.create_time, // create_time
-      viewerLiked: c.viewerLiked ?? false,
-    }));
-
-    setComments(mapped);
-  }
-
-  // 좋아요 (게시글)
-  const handleLike = async () => {
-    const res = await likeDiscussion(Number(groupId), Number(postId));
-    setPost((p: any) => ({
-      ...p,
-      likeCount: res.likeCount,
-      viewerLiked: res.viewerLiked,
-    }));
-  };
-
-  // 글 삭제
-  const handleDeletePost = async () => {
-    const ok = window.confirm("정말 삭제할까요?");
-    if (!ok) return;
-
-    await deleteDiscussion(Number(groupId), Number(postId));
-
-    alert("삭제되었습니다.");
-    nav(`/studygroup/${groupId}`);
-  };
-
-  // 댓글 작성 / 수정
-  const handleSubmitComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = draft.trim();
-    if (!text) return;
-
-    // 수정 모드
-    if (editingId !== null) {
-      await updateDiscussionComment(Number(groupId), editingId, {
-        contents: text,
-      });
-      setEditingId(null);
-      setDraft("");
-      await loadComments();
-      return;
-    }
-
-    // 새 댓글 작성
-    await createDiscussionComment(Number(groupId), Number(postId), {
-      contents: text,
-    });
-
-    setDraft("");
-    await loadComments();
-  };
-
-  // 댓글 삭제
-  const handleDeleteComment = async (commentId: number) => {
-    const ok = window.confirm("댓글을 삭제할까요?");
-    if (!ok) return;
-
-    await deleteDiscussionComment(Number(groupId), commentId);
-    await loadComments();
-  };
-
-  // 댓글 좋아요
-  const handleLikeComment = async (commentId: number) => {
-    if (!groupId) return;
-
-    await likeDiscussionComment(Number(groupId), Number(commentId));
-    await loadComments();
-  };
-
-  if (!post) return <p>Loading...</p>;
-
-  return (
-    <DetailCard>
-      <DetailHeader>
-        <TitleBlock>
-          <DetailTitle>{post.title}</DetailTitle>
-
-          <MetaRow>
-            <span>
-              <strong>작성자:</strong> {post.author}
-            </span>
-            <span>
-              <strong>작성일:</strong> {formatDate(post.createTime)}
-            </span>
-          </MetaRow>
-        </TitleBlock>
-
-        <HeaderActions>
-          {user?.userId === post.authorId && (
-            <>
-              <button
-                onClick={() =>
-                  nav(`/studygroup/${groupId}/discuss/${postId}/edit`, {
-                    state: { post },
-                  })
-                }
-              >
-                수정
-              </button>
-
-              <button onClick={handleDeletePost} style={{ color: "#f55" }}>
-                삭제
-              </button>
-            </>
-          )}
-
-          <CloseButton onClick={() => nav(-1)}>닫기</CloseButton>
-        </HeaderActions>
-      </DetailHeader>
-
-      <DetailBody>
-        <DetailMain>
-          <ContentArea>{post.contents}</ContentArea>
-
-          <StatsRow>
-            <span style={{ cursor: "pointer" }} onClick={handleLike}>
-              ❤️ {post.likeCount}
-            </span>
-            <span>💬 {comments.length}</span>
-          </StatsRow>
-
-          <CommentsSection>
-            <CommentsHeader>
-              <CommentCount>댓글 {comments.length}</CommentCount>
-            </CommentsHeader>
-
-            {comments.length === 0 ? (
-              <EmptyText>첫 댓글을 작성해보세요!</EmptyText>
-            ) : (
-              <CommentList>
-                {(comments ?? []).map((c) => (
-                  <CommentItem key={c.commentId}>
-                    <CommentMeta>
-                      <strong>{c.author}</strong> ·{" "}
-                      {(c.createTime ?? "").slice(0, 10)}
-                      <CommentActionButton
-                        onClick={() => handleLikeComment(c.commentId)}
-                      >
-                        ❤️ {c.likeCount}
-                      </CommentActionButton>
-                      {user?.nickname === c.author && (
-                        <>
-                          <CommentActionButton
-                            onClick={() => {
-                              setEditingId(c.commentId);
-                              setDraft(c.contents);
-                            }}
-                          >
-                            수정
-                          </CommentActionButton>
-
-                          <CommentActionButton
-                            $danger
-                            onClick={() => handleDeleteComment(c.commentId)}
-                          >
-                            삭제
-                          </CommentActionButton>
-                        </>
-                      )}
-                    </CommentMeta>
-                    <CommentContent>{c.contents}</CommentContent>
-                  </CommentItem>
-                ))}
-              </CommentList>
-            )}
-
-            {/* 댓글 입력 */}
-            <CommentForm onSubmit={handleSubmitComment}>
-              <CommentTextarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="댓글을 입력하세요"
-              />
-
-              <CommentSubmitRow>
-                <CommentButton type="submit">
-                  {editingId ? "댓글 수정" : "댓글 작성"}
-                </CommentButton>
-              </CommentSubmitRow>
-            </CommentForm>
-          </CommentsSection>
-        </DetailMain>
-      </DetailBody>
-    </DetailCard>
-  );
-}

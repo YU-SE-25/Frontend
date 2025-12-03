@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 import {
   Wrapper,
@@ -13,7 +13,7 @@ import {
   GroupHeader,
   GroupName,
   GroupDescription,
-  GroupLeader,
+  //GroupLeader,
   MemberListContainer,
   MemberItem,
   SmallButton,
@@ -61,6 +61,14 @@ export default function StudyGroupDetailPage() {
   useEffect(() => {
     loadGroupDetail();
   }, [numericId]);
+
+  // 탭 유지
+  const location = useLocation();
+  useEffect(() => {
+    if (location.search.includes("tab=discussion")) {
+      setActiveTab("discussion");
+    }
+  }, [location.search]);
 
   // 탈퇴 처리
   const handleLeaveGroup = async () => {

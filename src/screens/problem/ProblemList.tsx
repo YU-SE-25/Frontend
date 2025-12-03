@@ -35,7 +35,11 @@ import {
 
 import type { UserProblemStatus } from "../../theme/ProblemList.Style";
 import type { IProblem } from "../../api/problem_api";
-import { fetchProblems, fetchAvailableTags } from "../../api/problem_api";
+import {
+  fetchProblems,
+  fetchAvailableTags,
+  TAG_LABEL_MAP,
+} from "../../api/problem_api";
 import {
   fetchDummyProblems,
   ALL_AVAILABLE_TAGS,
@@ -282,7 +286,7 @@ export default function ProblemList() {
               $active={selectedTags.includes(tag)}
               onClick={() => handleToggleTag(tag)}
             >
-              {tag}
+              {TAG_LABEL_MAP[tag] ?? tag}
             </TagChip>
           ))}
         </TagDisplayContainer>
@@ -324,7 +328,9 @@ export default function ProblemList() {
                   <TableCell>
                     <TagDisplayContainer>
                       {problem.tags?.map((tag, idx) => (
-                        <ProblemTagChip key={idx}>{tag}</ProblemTagChip>
+                        <ProblemTagChip key={idx}>
+                          {TAG_LABEL_MAP[tag] ?? tag}
+                        </ProblemTagChip>
                       ))}
                     </TagDisplayContainer>
                   </TableCell>
@@ -344,7 +350,7 @@ export default function ProblemList() {
                           </p>
                           <p>
                             <strong>푼 사람:</strong> {problem.solvedCount} |{" "}
-                            <strong>정답률:</strong> {problem.successRate}%
+                            <strong>정답률:</strong> {problem.successRate}
                           </p>
                         </div>
 

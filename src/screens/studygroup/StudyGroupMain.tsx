@@ -45,13 +45,14 @@ export default function StudyGroupListPage() {
   //초기 데이터 로딩
   const reloadGroups = async () => {
     const all = await fetchStudyGroups();
-    setGroups(all);
-    setMyGroups(all.filter((g) => g.myRole !== "NONE"));
-  };
 
-  useEffect(() => {
-    reloadGroups();
-  }, []);
+    setGroups(all);
+
+    const mine = all.filter(
+      (g) => g.myRole === "LEADER" || g.myRole === "MEMBER"
+    );
+    setMyGroups(mine);
+  };
 
   // 검색 필터
   const filteredGroups = useMemo(() => {
@@ -165,7 +166,14 @@ export default function StudyGroupListPage() {
                   <h3>{group.groupName}</h3>
                 </CardHeader>
 
-                <GroupLeader>그룹장: {group.leaderName}</GroupLeader>
+                <GroupLeader>
+                  그룹장:{" "}
+                  {group.leaderName ||
+                    group.leader?.leaderName ||
+                    group.leader?.userName ||
+                    "미정"}
+                </GroupLeader>
+
                 <p>{group.groupDescription}</p>
 
                 <p>
