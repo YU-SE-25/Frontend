@@ -3,6 +3,19 @@ import styled from "styled-components";
 import CodePreview from "./CodePreview";
 import { timeConverter } from "../../../utils/timeConverter";
 import { isOwner } from "../../../utils/isOwner";
+import {
+  createReview,
+  createReviewComment,
+  deleteReview,
+  deleteReviewComment,
+  fetchCommentsByReview,
+  fetchReviewsBySubmission,
+  toggleReviewVote,
+  updateReview,
+  updateReviewComment,
+} from "../../../api/review_api";
+
+// ===================== styled ======================
 
 const ReviewSectionTitle = styled.h2`
   margin-top: 24px;
@@ -91,20 +104,6 @@ const LikeButton = styled.button<{ $liked?: boolean }>`
   font-size: 11px;
   cursor: pointer;
   color: ${({ theme }) => theme.textColor};
-
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-
-  &:hover {
-    background: ${({ theme, $liked }) =>
-      $liked ? theme.textColor + "11" : theme.textColor + "11"};
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.7;
-  }
 `;
 
 const ReviewPreview = styled.div`
@@ -182,10 +181,6 @@ const CommentSubmitBtn = styled.button`
   color: #000;
   font-size: 13px;
   cursor: pointer;
-
-  &:hover {
-    filter: brightness(0.93);
-  }
 `;
 
 const CommentActionButton = styled.button<{ $danger?: boolean }>`
@@ -193,20 +188,16 @@ const CommentActionButton = styled.button<{ $danger?: boolean }>`
   font-size: 11px;
   border: none;
   background: none;
-  padding: 0;
   cursor: pointer;
   color: ${({ theme, $danger }) => ($danger ? "#ff4d4f" : theme.muteColor)};
-
-  &:hover {
-    text-decoration: underline;
-  }
 `;
 
 const ReviewEmptyText = styled.div`
   font-size: 14px;
   color: ${({ theme }) => theme.textColor}99;
-  margin-top: 4px;
 `;
+
+// ===================== types ======================
 
 type ReviewComment = {
   id: number;
@@ -230,13 +221,17 @@ interface ReviewSectionProps {
   language: string;
   reviews: Review[];
   onChangeReviews: React.Dispatch<React.SetStateAction<Review[]>>;
+  submissionId: number;
 }
+
+// ===================== Component ======================
 
 export default function ReviewSection({
   code,
   language,
   reviews,
   onChangeReviews,
+  submissionId,
 }: ReviewSectionProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>(
@@ -254,83 +249,81 @@ export default function ReviewSection({
     content: string;
   } | null>(null);
 
-  // ✅ 이 세션에서 어떤 리뷰를 좋아요 눌렀는지 기록
   const [likedReviews, setLikedReviews] = useState<Record<number, boolean>>({});
 
   const codeLines = code.split("\n");
   const getLineContent = (lineNumber: number) =>
     codeLines[lineNumber - 1] ?? "";
 
-  const handleToggle = (id: number) => {
+  // ======================
+  // 리뷰 펼치기 + 댓글 로딩
+  // ======================
+  const handleToggle = async (id: number) => {
     setExpandedId((prev) => (prev === id ? null : id));
-  };
 
-  const makePreview = (content: string, max = 40) => {
-    if (content.length <= max) return content;
-    return content.slice(0, max) + "…";
-  };
+    if (expandedId === id) return;
 
-  const handleCommentChange = (reviewId: number, value: string) => {
-    setCommentDrafts((prev) => ({
-      ...prev,
-      [reviewId]: value,
+    const res = await fetchCommentsByReview(id);
+
+    const mapped = res.comments.map((c) => ({
+      id: c.commentId,
+      author: c.commenter,
+      content: c.content,
+      createdAt: c.createdAt,
     }));
+
+    onChangeReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, comments: mapped } : r))
+    );
   };
 
-  const handleCommentSubmit = (e: React.FormEvent, reviewId: number) => {
+  const makePreview = (content: string, max = 40) =>
+    content.length <= max ? content : content.slice(0, max) + "…";
+
+  // ======================
+  // 댓글 입력
+  // ======================
+  const handleCommentChange = (reviewId: number, text: string) => {
+    setCommentDrafts((prev) => ({ ...prev, [reviewId]: text }));
+  };
+
+  // ======================
+  // 댓글 등록 / 수정
+  // ======================
+  const handleCommentSubmit = async (e: React.FormEvent, reviewId: number) => {
     e.preventDefault();
+
     const text = commentDrafts[reviewId]?.trim();
     if (!text) return;
 
     const isEditing = editingTarget && editingTarget.reviewId === reviewId;
 
     if (isEditing && editingTarget) {
-      onChangeReviews((prev) =>
-        prev.map((r) =>
-          r.id === reviewId
-            ? {
-                ...r,
-                comments: r.comments.map((c) =>
-                  c.id === editingTarget.commentId
-                    ? {
-                        ...c,
-                        content: text,
-                        createdAt: new Date().toISOString(),
-                      }
-                    : c
-                ),
-              }
-            : r
-        )
-      );
+      await updateReviewComment(reviewId, editingTarget.commentId, text);
       setEditingTarget(null);
     } else {
-      onChangeReviews((prev) =>
-        prev.map((r) =>
-          r.id === reviewId
-            ? {
-                ...r,
-                comments: [
-                  ...r.comments,
-                  {
-                    id: Date.now(),
-                    author: "현재유저",
-                    content: text,
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
-              }
-            : r
-        )
-      );
+      await createReviewComment(reviewId, text);
     }
 
-    setCommentDrafts((prev) => ({
-      ...prev,
-      [reviewId]: "",
+    const res = await fetchCommentsByReview(reviewId);
+
+    const mapped = res.comments.map((c) => ({
+      id: c.commentId,
+      author: c.commenter,
+      content: c.content,
+      createdAt: c.createdAt,
     }));
+
+    onChangeReviews((prev) =>
+      prev.map((r) => (r.id === reviewId ? { ...r, comments: mapped } : r))
+    );
+
+    setCommentDrafts((prev) => ({ ...prev, [reviewId]: "" }));
   };
 
+  // ======================
+  // 리뷰 수정 모드 진입
+  // ======================
   const handleEditReview = (review: Review) => {
     setEditingReviewId(review.id);
     setEditReviewTarget({
@@ -341,11 +334,33 @@ export default function ReviewSection({
     setExpandedId(review.id);
   };
 
-  const handleDeleteReview = (reviewId: number) => {
+  // ======================
+  // 리뷰 삭제
+  // ======================
+  const handleDeleteReview = async (reviewId: number) => {
     const ok = window.confirm("리뷰를 삭제하시겠습니까?");
     if (!ok) return;
 
-    onChangeReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    await deleteReview(reviewId);
+
+    const res = await fetchReviewsBySubmission(submissionId);
+
+    onChangeReviews(
+      res.reviews.map((r) => ({
+        id: r.reviewId, // 🔥 필수 변환
+        lineNumber: r.lineNumber ?? 0,
+        content: r.content,
+        author: r.reviewer, // 🔥 필수 변환
+        createdAt: r.createdAt,
+        voteCount: r.voteCount,
+        comments: r.comments.map((c) => ({
+          id: c.commentId, // 🔥 필수 변환
+          author: c.commenter, // 🔥 필수 변환
+          content: c.content,
+          createdAt: c.createdAt,
+        })),
+      }))
+    );
 
     if (editingReviewId === reviewId) {
       setEditingReviewId(null);
@@ -355,108 +370,157 @@ export default function ReviewSection({
     alert("삭제되었습니다.");
   };
 
-  const handleEditComment = (reviewId: number, comment: ReviewComment) => {
-    setEditingTarget({ reviewId, commentId: comment.id });
-    setCommentDrafts((prev) => ({
-      ...prev,
-      [reviewId]: comment.content,
-    }));
+  // ======================
+  // 댓글 수정 진입
+  // ======================
+  const handleEditComment = (reviewId: number, c: ReviewComment) => {
+    setEditingTarget({ reviewId, commentId: c.id });
+    setCommentDrafts((prev) => ({ ...prev, [reviewId]: c.content }));
   };
 
-  const handleDeleteComment = (reviewId: number, commentId: number) => {
+  // ======================
+  // 댓글 삭제
+  // ======================
+  const handleDeleteComment = async (reviewId: number, commentId: number) => {
     const ok = window.confirm("삭제하시겠습니까?");
     if (!ok) return;
 
+    await deleteReviewComment(reviewId, commentId);
+
+    const res = await fetchCommentsByReview(reviewId);
+
+    const mapped = res.comments.map((c) => ({
+      id: c.commentId,
+      author: c.commenter,
+      content: c.content,
+      createdAt: c.createdAt,
+    }));
+
     onChangeReviews((prev) =>
-      prev.map((r) =>
-        r.id === reviewId
-          ? {
-              ...r,
-              comments: r.comments.filter((c) => c.id !== commentId),
-            }
-          : r
-      )
+      prev.map((r) => (r.id === reviewId ? { ...r, comments: mapped } : r))
     );
-
-    setEditingTarget((prev) =>
-      prev && prev.reviewId === reviewId && prev.commentId === commentId
-        ? null
-        : prev
-    );
-
-    setCommentDrafts((prev) => {
-      const next = { ...prev };
-      next[reviewId] = "";
-      return next;
-    });
 
     alert("삭제되었습니다.");
   };
 
-  const handleLikeReview = (e: React.MouseEvent, reviewId: number) => {
-    e.stopPropagation(); // 리뷰 열기 토글 막기
+  // ======================
+  // 좋아요
+  // ======================
+  const handleLikeReview = async (e: React.MouseEvent, reviewId: number) => {
+    e.stopPropagation();
 
-    setLikedReviews((prev) => {
-      if (prev[reviewId]) {
-        // 이미 눌렀으면 무시
-        return prev;
-      }
+    const res = await toggleReviewVote(reviewId);
 
-      // 처음 누를 때만 voteCount 증가
-      onChangeReviews((prevReviews) =>
-        prevReviews.map((r) =>
-          r.id === reviewId ? { ...r, voteCount: r.voteCount + 1 } : r
-        )
-      );
+    onChangeReviews((prev) =>
+      prev.map((r) =>
+        r.id === reviewId ? { ...r, voteCount: res.voteCount } : r
+      )
+    );
 
-      return {
-        ...prev,
-        [reviewId]: true,
-      };
-    });
+    setLikedReviews((prev) => ({
+      ...prev,
+      [reviewId]: res.viewerLiked,
+    }));
   };
 
+  // ======================
+  // 리뷰 추가
+  // ======================
+  const handleAddReview = async ({
+    lineNumber,
+    lineCode,
+    content,
+  }: {
+    lineNumber: number;
+    lineCode: string;
+    content: string;
+  }) => {
+    // 🔥 리뷰 생성 (lineNumber 포함)
+    await createReview({
+      submissionId,
+      content,
+      lineNumber,
+    });
+
+    // 🔥 최신 리뷰 목록 다시 불러오기
+    const res = await fetchReviewsBySubmission(submissionId);
+
+    // 🔥 Review[] 형태로 변환
+    onChangeReviews(
+      res.reviews.map((r) => ({
+        id: r.reviewId, // backend → frontend 매핑
+        lineNumber: r.lineNumber, // 이제 백엔드에 있으므로 그대로 사용
+        content: r.content,
+        author: r.reviewer,
+        createdAt: r.createdAt,
+        voteCount: r.voteCount,
+
+        comments: r.comments.map((c: any) => ({
+          id: c.commentId,
+          author: c.commenter,
+          content: c.content,
+          createdAt: c.createdAt,
+        })),
+      }))
+    );
+
+    // 🔥 가장 최근 리뷰 열기
+    const newest = res.reviews[0];
+    if (newest) setExpandedId(newest.reviewId);
+  };
+
+  // ======================
+  // 리뷰 수정
+  // ======================
+  const handleEditReviewSubmit = async ({
+    content,
+  }: {
+    lineNumber: number;
+    lineCode: string;
+    content: string;
+  }) => {
+    if (!editingReviewId) return;
+
+    await updateReview(editingReviewId, content);
+
+    const res = await fetchReviewsBySubmission(submissionId);
+
+    onChangeReviews(
+      res.reviews.map((r) => ({
+        id: r.reviewId, // 🔥 필수 변환
+        lineNumber: r.lineNumber ?? 0, // 🔥 백엔드에 없으면 기본값 넣기
+        content: r.content,
+        author: r.reviewer, // 🔥 필수 변환
+        createdAt: r.createdAt,
+        voteCount: r.voteCount,
+        comments: r.comments.map((c) => ({
+          id: c.commentId, // 🔥 필수 변환
+          author: c.commenter, // 🔥 필수 변환
+          content: c.content,
+          createdAt: c.createdAt,
+        })),
+      }))
+    );
+
+    setEditingReviewId(null);
+    setEditReviewTarget(null);
+  };
+
+  // ======================
+  // JSX
+  // ======================
   return (
     <>
       <CodePreview
         code={code}
         language={language}
         editReviewTarget={editReviewTarget}
-        onEditReview={({ lineNumber, lineCode, content }) => {
-          if (editingReviewId == null) return;
-          onChangeReviews((prev) =>
-            prev.map((r) =>
-              r.id === editingReviewId
-                ? {
-                    ...r,
-                    lineNumber,
-                    content,
-                    createdAt: new Date().toISOString(),
-                  }
-                : r
-            )
-          );
-          setEditingReviewId(null);
-          setEditReviewTarget(null);
-        }}
-        onAddReview={({ lineNumber, lineCode, content }) => {
-          const newReview: Review = {
-            id: Date.now(),
-            lineNumber,
-            content,
-            author: "현재유저",
-            createdAt: new Date().toISOString(),
-            voteCount: 0,
-            comments: [],
-          };
-          onChangeReviews((prev) => [...prev, newReview]);
-          setExpandedId(newReview.id);
-        }}
+        onEditReview={handleEditReviewSubmit}
+        onAddReview={handleAddReview}
       />
 
       <ReviewSectionTitle>
-        코드 리뷰
-        <ReviewCount>({reviews.length})</ReviewCount>
+        코드 리뷰 <ReviewCount>({reviews.length})</ReviewCount>
       </ReviewSectionTitle>
 
       {reviews.length === 0 ? (
@@ -479,6 +543,7 @@ export default function ReviewSection({
                 <ReviewTopRow>
                   <LineTag>{review.lineNumber}번째 줄</LineTag>
                   <LineCodeText>{lineCode}</LineCodeText>
+
                   <ReviewMeta>
                     <LikeButton
                       type="button"
@@ -538,6 +603,7 @@ export default function ReviewSection({
                                   >
                                     수정
                                   </CommentActionButton>
+
                                   <CommentActionButton
                                     type="button"
                                     $danger
@@ -550,6 +616,7 @@ export default function ReviewSection({
                                 </>
                               )}
                             </CommentMeta>
+
                             <CommentContent>{c.content}</CommentContent>
                           </CommentItem>
                         ))}
