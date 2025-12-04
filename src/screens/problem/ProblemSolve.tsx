@@ -41,6 +41,7 @@ export default function ProblemSolvePage() {
   const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProfile] = useAtom(userProfileAtom);
+  const [runInput, setRunInput] = useState("");
 
   // language / code 초기값
   const [language, setLanguage] = useState(
@@ -108,7 +109,7 @@ export default function ProblemSolvePage() {
     const result = await IDEAPI.run({
       code,
       language: languageMap[language],
-      input: "",
+      input: runInput, // 사용자 Input 적용!
     });
 
     return `
@@ -170,8 +171,6 @@ ${result.compileTimeMs} ms
     );
   };
 
-  // ----------------------------- 렌더 ------------------------------
-
   if (loading) {
     return <ProblemSolveWrapper>로딩 중...</ProblemSolveWrapper>;
   }
@@ -197,6 +196,24 @@ ${result.compileTimeMs} ms
             <ExampleBox>{problemData.inputOutputExample}</ExampleBox>
           </div>
         )}
+
+        <div style={{ marginTop: "25px" }}>
+          <h3>실행 입력값</h3>
+          <textarea
+            value={runInput}
+            onChange={(e) => setRunInput(e.target.value)}
+            placeholder="여기에 실행 input을 입력하세요"
+            style={{
+              width: "100%",
+              height: "80px",
+              marginTop: "8px",
+              borderRadius: "6px",
+              padding: "8px",
+              border: "1px solid #ccc",
+              resize: "vertical",
+            }}
+          />
+        </div>
       </ProblemInfoContainer>
 
       <EditorPanelContainer>
