@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import styled from "styled-components";
 import CodeEditorView from "../screens/problem/CodeEditorView";
 import { api } from "../api/axios";
 // dummy 문제 가져오는 함수
-import { getDummyProblemDetail } from "../api/dummy/problem_dummy";
 
 import { IDEAPI } from "../api/ide_api";
 
