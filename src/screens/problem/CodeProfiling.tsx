@@ -1,7 +1,26 @@
-export default function CodeProfiling() {
+interface ComplexityAnalysis {
+  timeComplexity: string;
+  timeReason: string;
+  spaceComplexity: string;
+  spaceReason: string;
+}
+
+interface CodeProfilingProps {
+  data: ComplexityAnalysis | null;
+}
+
+export default function CodeProfiling({ data }: CodeProfilingProps) {
+  if (!data) return <p>복잡도 분석 중...</p>;
+
   return (
     <div>
-      <p>🔥 히트맵 / 라인별 시간 자리</p>
+      <h3>시간 복잡도</h3>
+      <p>{data.timeComplexity}</p>
+      <p>{data.timeReason}</p>
+
+      <h3>공간 복잡도</h3>
+      <p>{data.spaceComplexity}</p>
+      <p>{data.spaceReason}</p>
     </div>
   );
 }
