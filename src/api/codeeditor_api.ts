@@ -1,6 +1,7 @@
 // 타입 그대로 사용 (단비 제공본)
 export * from "./dummy/codeeditor_dummy";
 
+import { api } from "./axios";
 // 지금은 dummy API 사용
 import {
   dummyRunCode,
@@ -15,7 +16,6 @@ export const runCode = dummyRunCode;
 export const saveDraft = dummySaveDraft;
 export const loadDraft = dummyLoadDraft;
 export const submitCode = dummySubmitCode;
-export const getSubmissionStatus = dummyGetSubmissionStatus;
 
 // 코드 실행 API 응답 타입: /api/code/run
 export interface ICodeRunResult {
@@ -104,9 +104,10 @@ export async function submitCode(req) {
 }
 
 // 제출 상태 조회
+
+
+*/
 export async function getSubmissionStatus(submissionId: number) {
   const res = await api.get(`/api/submissions/${submissionId}/status`);
   return res.data;
 }
-
-*/
