@@ -6,6 +6,7 @@ import { getUserProfile, updateMyProfile } from "../../api/mypage_api";
 import { useAtom, useSetAtom } from "jotai";
 import { isDarkAtom, toggleThemeActionAtom } from "../../atoms";
 import { AuthAPI } from "../../api/auth_api";
+import { withdrawAccount } from "../../api/mypage_api";
 
 const Wrapper = styled.div`
   flex: 1;
@@ -373,6 +374,11 @@ export default function EditPage() {
   const queryClient = useQueryClient();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
+  //탈퇴용
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawPassword, setWithdrawPassword] = useState("");
+  const [withdrawError, setWithdrawError] = useState("");
+
   const [form, setForm] = useState<EditableProfile>({
     avatarUrl: "",
     avatarImageFile: null,
@@ -736,6 +742,29 @@ export default function EditPage() {
     return <ErrorText>프로필 정보를 불러오는 데 실패했어요.</ErrorText>;
   }
 
+  //탈퇴 요청
+  const handleWithdraw = async () => {
+    if (!withdrawPassword.trim()) {
+      setWithdrawError("비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      await withdrawAccount(withdrawPassword);
+
+      alert("회원 탈퇴가 완료되었습니다.");
+
+      // 토큰 제거
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
+      // 메인으로 보내기
+      window.location.href = "/";
+    } catch (err) {
+      setWithdrawError("비밀번호가 올바르지 않습니다.");
+    }
+  };
+
   return (
     <Wrapper>
       <Title>프로필 수정</Title>
@@ -1062,7 +1091,90 @@ export default function EditPage() {
             변경사항 초기화
           </GhostButton>
         </ButtonRow>
+        <button onClick={() => setShowWithdrawModal(true)}>회원 탈퇴</button>
       </Form>
+      {showWithdrawModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "24px",
+              borderRadius: "12px",
+              width: "360px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            <h3>정말 탈퇴하시겠어요?</h3>
+            <p style={{ fontSize: "14px", opacity: 0.8 }}>
+              탈퇴를 위해 비밀번호를 입력해주세요.
+            </p>
+
+            <input
+              type="password"
+              placeholder="비밀번호 입력"
+              value={withdrawPassword}
+              onChange={(e) => setWithdrawPassword(e.target.value)}
+              style={{
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+              }}
+            />
+
+            {withdrawError && (
+              <div style={{ color: "red", fontSize: "13px" }}>
+                {withdrawError}
+              </div>
+            )}
+
+            <button
+              onClick={handleWithdraw}
+              style={{
+                padding: "10px",
+                borderRadius: "8px",
+                background: "#e63946",
+                color: "white",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              탈퇴하기
+            </button>
+
+            <button
+              onClick={() => {
+                setShowWithdrawModal(false);
+                setWithdrawPassword("");
+                setWithdrawError("");
+              }}
+              style={{
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid #aaa",
+                cursor: "pointer",
+              }}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
       <DebugDiv />
     </Wrapper>
   );
