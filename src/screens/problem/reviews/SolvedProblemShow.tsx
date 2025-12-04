@@ -1,16 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
-import {
-  fetchProblemDetail,
-  mapDetailDtoToProblem,
-} from "../../../api/problem_api";
+import { fetchProblemDetail } from "../../../api/problem_api";
 import type { IProblem } from "../../../api/problem_api";
 
 import { fetchSubmissionDetail } from "../../../api/mySubmissions_api";
 import ProblemMeta from "../../../components/ProblemMeta";
 import { timeConverter } from "../../../utils/timeConverter";
-import { isOwner } from "../../../utils/isOwner";
 import { ButtonContainer } from "../../../theme/ProblemList.Style";
 import ReviewSection from "./Review";
 import type { Review } from "./Review";

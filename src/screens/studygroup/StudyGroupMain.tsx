@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateStudyGroup from "./StudyGroupCreate";
 
@@ -47,12 +47,6 @@ export default function StudyGroupListPage() {
     const all = await fetchStudyGroups();
 
     setGroups(all);
-
-    const mine = all.filter(
-      (g) => g.myRole === "LEADER" || g.myRole === "MEMBER"
-    );
-    setMyGroups(mine);
-  };
 
     const mine = all.filter(
       (g) => g.myRole === "LEADER" || g.myRole === "MEMBER"

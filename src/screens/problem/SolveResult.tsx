@@ -3,9 +3,7 @@ import styled, { css, keyframes } from "styled-components";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getSubmissionStatus } from "../../api/codeeditor_api";
 import {
-  fetchMySubmissions,
   fetchSubmissionDetail,
-  type Submission,
   type SubmissionDetail,
 } from "../../api/mySubmissions_api";
 
@@ -323,12 +321,6 @@ export default function SolveResult({
   const [gradingData, setGradingData] = useState<GradingResponse | null>(null);
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const options = {
-    page: 0,
-    size: 1,
-    sort: "submittedAt,DESC",
-    submissionId: submissionId ?? undefined,
-  };
 
   useEffect(() => {
     if (!submissionId) return;

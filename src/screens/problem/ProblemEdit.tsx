@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from "react";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   RegisterWrapper,
@@ -21,17 +20,17 @@ import {
 } from "../../theme/ProblemAdd.Style";
 
 // ▶ 실제 API 사용
-//import { getProblemDetail  } from "../api/problemdetail_api";
+import { fetchProblemDetail } from "../../api/problem_api";
 // ▶ 더미 사용하려면 위 import 대신 이 두 줄로 바꿔서 사용
-import { getDummyProblemDetail as getProblemDetail } from "../../api/dummy/problem_dummy";
 
 //태그 api에서 fetch
 import { fetchAvailableTags, type IProblem } from "../../api/problem_api";
 //태그 더미 사용
-import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
+
 import NotFound from "../NotFound";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
+import { ALL_AVAILABLE_TAGS } from "./ProblemAdd";
 const USE_DUMMY = true;
 
 //임시용 폼 데이터 타입 정의 (추후 api 맞춰서 연동할겁니다)
@@ -80,7 +79,7 @@ export default function ProblemEdit() {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await getProblemDetail(problemId);
+        const data = await fetchProblemDetail(problemId);
         setProblemData(data);
       } catch (e) {
         console.error("문제 정보 로드 실패", e);

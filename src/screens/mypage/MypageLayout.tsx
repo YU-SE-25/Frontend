@@ -6,7 +6,6 @@
 import { Outlet, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
-import { getDummyUserProfile } from "../../api/dummy/mypage_dummy"; //더미 API 사용
 import { getMyProfile, getUserProfile } from "../../api/mypage_api";
 import {
   SiPython,
@@ -17,7 +16,6 @@ import {
 import Sidebar from "../../components/mypage_sidebar";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
-const USE_DUMMY = false; //더미 데이터 사용 여부!
 
 //css styles
 const Page = styled.div`
@@ -155,25 +153,17 @@ export default function MyPageLayout() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: USE_DUMMY
-      ? ["dummyUserProfile"]
-      : isMyPage
-      ? ["myProfile"]
-      : ["userProfile", username],
+    queryKey: isMyPage ? ["myProfile"] : ["userProfile", username],
 
     enabled: !!username,
 
     queryFn: async () => {
-      if (USE_DUMMY) {
-        return getDummyUserProfile();
-      }
-
       if (isMyPage) {
-        // ⭐ 내 페이지일 때는 /mypage/me 같은 API 호출
+        // ⭐ 내 페이지 → /mypage/me
         return await getMyProfile();
       }
 
-      // ⭐ 다른 사용자 페이지일 때는 /mypage/{username}
+      // ⭐ 다른 사람 페이지 → /mypage/:username
       return await getUserProfile(username);
     },
 

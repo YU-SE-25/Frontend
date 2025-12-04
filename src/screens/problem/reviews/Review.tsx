@@ -428,7 +428,6 @@ export default function ReviewSection({
   // ======================
   const handleAddReview = async ({
     lineNumber,
-    lineCode,
     content,
   }: {
     lineNumber: number;
