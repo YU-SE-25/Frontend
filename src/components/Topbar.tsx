@@ -366,13 +366,34 @@ export default function Topbar() {
           </MenuItem>
 
           <MenuItem>
-            <MenuLink to="/studygroup-main">스터디 그룹</MenuLink>
+            <MenuLink
+              to={isLoggedIn ? "/studygroup-main" : "/login"}
+              onClick={(e) => {
+                if (!isLoggedIn) {
+                  e.preventDefault();
+                  alert("로그인이 필요한 기능입니다.");
+                  navigate("/login");
+                }
+              }}
+            >
+              스터디 그룹
+            </MenuLink>
           </MenuItem>
-          {isLoggedIn && (
-            <MenuItem>
-              <MenuLink to="/scratch">IDE</MenuLink>
-            </MenuItem>
-          )}
+
+          <MenuItem>
+            <MenuLink
+              to={isLoggedIn ? "/scratch" : "/login"}
+              onClick={(e) => {
+                if (!isLoggedIn) {
+                  e.preventDefault();
+                  alert("로그인이 필요한 기능입니다.");
+                  navigate("/login");
+                }
+              }}
+            >
+              IDE
+            </MenuLink>
+          </MenuItem>
         </Menu>
 
         <RightSection>

@@ -8,11 +8,9 @@ interface LoginPayload {
 }
 
 export async function postLogin(data: LoginPayload): Promise<LoginResponse> {
-  const response = await api.post<LoginResponse>("auth/login", data);
-  const loginData = response.data;
+  const response = await api.post<LoginResponse>("/auth/login", data);
 
-  localStorage.setItem("accessToken", loginData.accessToken);
-  localStorage.setItem("refreshToken", loginData.refreshToken);
+  const loginData: LoginResponse = response.data;
 
   return loginData;
 }
