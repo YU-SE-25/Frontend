@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import type { BoardCategory, BoardComment, BoardContent } from "./BoardList";
 import EditButton from "../../components/EditButton";
 import { isOwner } from "../../utils/isOwner";
+import { PollView } from "../../components/poll";
 import {
   fetchDiscussPost,
   fetchCommentsByPostId,
@@ -619,6 +620,7 @@ export default function BoardDetail({ post }: BoardDetailProps) {
 
       <DetailBody>
         <DetailMain>
+          <PollView postId={stablePost.post_id} isDiscuss={true} />
           <ContentArea>{stablePost.contents}</ContentArea>
 
           <StatsRow>
