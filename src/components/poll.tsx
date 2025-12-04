@@ -21,6 +21,7 @@ const PollBox = styled.div`
 const PollTitle = styled.div`
   font-weight: 600;
   margin-bottom: 4px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const PollQuestion = styled.div`
@@ -39,6 +40,8 @@ const PollOptionRow = styled.button<{ $selected: boolean }>`
   justify-content: space-between;
   align-items: center;
   padding: 6px 10px;
+  color: ${({ theme }) => theme.textColor};
+
   border-radius: 6px;
   border: 1px solid
     ${({ theme, $selected }) =>
@@ -66,6 +69,7 @@ const Row = styled.div`
 const Label = styled.label`
   font-size: 13px;
   font-weight: 500;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const Input = styled.input`
@@ -74,6 +78,7 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.textColor ?? "#ddd"};
   background: ${({ theme }) => theme.bgColor};
   font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const TextArea = styled.textarea`
@@ -84,6 +89,7 @@ const TextArea = styled.textarea`
   font-size: 13px;
   resize: vertical;
   min-height: 60px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const ButtonRow = styled.div`
