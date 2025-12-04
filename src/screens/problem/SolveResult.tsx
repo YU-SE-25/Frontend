@@ -5,21 +5,73 @@ import { getSubmissionStatus } from "../../api/codeeditor_api";
 import {
   fetchSubmissionDetail,
   type SubmissionDetail,
+  type SubmissionStatus,
 } from "../../api/mySubmissions_api";
 
-interface GradingResponse {
-  status: string;
-  currentTestCase?: number;
-  totalTestCases?: number;
-  passedTestCases?: number;
-  failedTestCase?: number;
-  runtime?: number;
-  memory?: number;
-}
 type SolveResultProps = {
   onLookMyCode?: (submissionId: number) => void;
   onNavEditor?: (problemId: number, submissionId: number) => void;
 };
+
+type Tone = "neutral" | "success" | "error";
+
+const STATUS_LABEL: Record<SubmissionStatus, string> = {
+  PENDING: "Waiting",
+  GRADING: "Running",
+  CA: "Accepted",
+  WA: "Wrong Answer",
+  CE: "Compile Error",
+  RE: "Runtime Error",
+  TLE: "Time Limit",
+  MLE: "Memory Limit",
+  DRAFT: "Draft",
+};
+
+const STATUS_MAIN: Record<SubmissionStatus, string> = {
+  PENDING: "채점 대기중입니다",
+  GRADING: "채점중 ...",
+  CA: "정답입니다!",
+  WA: "오답입니다.",
+  CE: "컴파일 에러가 발생했습니다.",
+  RE: "실행 중 오류가 발생했습니다.",
+  TLE: "시간 초과입니다.",
+  MLE: "메모리 초과입니다.",
+  DRAFT: "임시 저장된 코드입니다.",
+};
+
+function getStatusSubText(status: SubmissionStatus): string {
+  switch (status) {
+    case "DRAFT":
+      return "임시 저장된 코드입니다.";
+    case "PENDING":
+      return "채점 서버와 연결을 준비하는 중입니다.";
+    case "GRADING":
+      return "테스트케이스를 순차적으로 채점하는 중입니다.";
+    case "CA":
+      return "해낼 줄 알았다구요!";
+    case "WA":
+      return "정답과 다른 출력이 발생했습니다. 실패한 테스트케이스를 확인해 보세요.";
+    case "CE":
+      return "컴파일 로그를 확인하고 문법 오류나 빌드 에러를 수정해 주세요.";
+    case "RE":
+      return "실행 중 예외가 발생했습니다. 인덱스 범위, 0으로 나누기 등을 점검해 보세요.";
+    case "TLE":
+      return "시간 제한을 초과했습니다. 알고리즘의 시간 복잡도를 줄여 보세요.";
+    case "MLE":
+      return "메모리 제한을 초과했습니다. 불필요한 메모리 사용을 줄여 보세요.";
+    default:
+      return "";
+  }
+}
+
+function getTone(status: SubmissionStatus): Tone {
+  if (status === "CA") return "success";
+  if (status === "PENDING" || status === "GRADING" || status === "DRAFT") {
+    return "neutral";
+  }
+  return "error";
+}
+
 const ResultCard = styled.div`
   width: 100%;
   max-width: 960px;
@@ -113,7 +165,7 @@ const StatusSection = styled.div`
         position: absolute;
         inset: 0;
         border-radius: 18px;
-        padding: 4px; /* 테두리 두께 */
+        padding: 4px;
         background: linear-gradient(135deg, #eaf1fd, #f0faf7);
         -webkit-mask: linear-gradient(#fff 0 0) content-box,
           linear-gradient(#fff 0 0);
@@ -136,7 +188,7 @@ const StatusLabelRow = styled.div`
   gap: 8px;
 `;
 
-const StatusLabel = styled.span<{ tone: "neutral" | "success" | "error" }>`
+const StatusLabel = styled.span<{ tone: Tone }>`
   font-size: 11px;
   padding: 3px 11px;
   border-radius: 999px;
@@ -318,9 +370,9 @@ export default function SolveResult({
     ? Number(storedId)
     : null;
 
-  const [gradingData, setGradingData] = useState<GradingResponse | null>(null);
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [liveStatus, setLiveStatus] = useState<SubmissionStatus | null>(null);
 
   useEffect(() => {
     if (!submissionId) return;
@@ -349,13 +401,10 @@ export default function SolveResult({
   useEffect(() => {
     if (!submissionId) return;
 
-    // 이미 최종 상태(정답/오답/에러 등)이면 폴링 안 돌림
-    const isFinalStatus =
-      submission?.status &&
-      submission.status !== "PENDING" &&
-      submission.status !== "GRADING";
-
-    if (isFinalStatus) return;
+    const baseStatus = submission?.status;
+    if (baseStatus && baseStatus !== "PENDING" && baseStatus !== "GRADING") {
+      return;
+    }
 
     let alive = true;
 
@@ -363,9 +412,9 @@ export default function SolveResult({
       if (!alive) return;
 
       const status = await getSubmissionStatus(submissionId);
-      setGradingData(status);
+      setLiveStatus(status);
 
-      if (status.status !== "GRADING" && status.status !== "PENDING") {
+      if (status !== "GRADING" && status !== "PENDING") {
         clearInterval(interval);
       }
     }, 700);
@@ -376,48 +425,13 @@ export default function SolveResult({
     };
   }, [submissionId, submission?.status]);
 
-  const status = gradingData?.status ?? submission?.status ?? "PENDING";
+  const status: SubmissionStatus =
+    liveStatus ?? submission?.status ?? "PENDING";
 
-  const totalCases = gradingData?.totalTestCases ?? 0;
-  const currentCases =
-    status === "GRADING"
-      ? gradingData?.currentTestCase ?? 0
-      : gradingData?.passedTestCases ?? 0;
+  const tone = getTone(status);
 
   const progressPercent =
-    totalCases > 0 ? Math.round((currentCases / totalCases) * 100) : 0;
-
-  let tone: "neutral" | "success" | "error" = "neutral";
-  if (status === "CA") tone = "success";
-  if (status !== "PENDING" && status !== "GRADING" && status !== "CA")
-    tone = "error";
-
-  const statusMainText =
-    status === "PENDING"
-      ? "채점 대기중입니다"
-      : status === "GRADING"
-      ? "채점중 ..."
-      : status === "CA"
-      ? "정답입니다!"
-      : "오답입니다.";
-
-  const statusLabelText =
-    status === "PENDING"
-      ? "Waiting"
-      : status === "GRADING"
-      ? "Running"
-      : status === "CA"
-      ? "Accepted"
-      : "Wrong Answer";
-
-  const statusSubText =
-    status === "PENDING"
-      ? "채점 서버와 연결을 준비하는 중입니다."
-      : status === "GRADING"
-      ? `진행 상황: ${currentCases} / ${totalCases} 테스트`
-      : status === "CA"
-      ? "해낼 줄 알았다구요!"
-      : `실패한 테스트케이스: ${gradingData?.failedTestCase ?? "-"} 번`;
+    status === "PENDING" ? 15 : status === "GRADING" ? 60 : 100;
 
   const problemId = submission?.problemId;
   const problemTitle = submission?.problemTitle ?? "";
@@ -463,16 +477,16 @@ export default function SolveResult({
       <StatusSection>
         <StatusTextBlock>
           <StatusLabelRow>
-            <StatusLabel tone={tone}>{statusLabelText}</StatusLabel>
+            <StatusLabel tone={tone}>{STATUS_LABEL[status]}</StatusLabel>
           </StatusLabelRow>
-          <StatusMain>{statusMainText}</StatusMain>
-          <StatusSub>{statusSubText}</StatusSub>
+          <StatusMain>{STATUS_MAIN[status]}</StatusMain>
+          <StatusSub>{getStatusSubText(status)}</StatusSub>
         </StatusTextBlock>
 
         <ProgressWrapper>
           <ProgressBar>
             <ProgressInner
-              percent={status === "PENDING" ? 15 : progressPercent || 8}
+              percent={status === "DRAFT" ? 0 : progressPercent || 8}
             />
           </ProgressBar>
           <ProgressLabel>
@@ -480,12 +494,12 @@ export default function SolveResult({
               {status === "PENDING"
                 ? "채점을 준비하고 있어요…"
                 : status === "GRADING"
-                ? `현재 ${currentCases} / ${totalCases} 테스트 진행중`
+                ? "테스트를 순차적으로 실행하는 중입니다"
                 : status === "CA"
                 ? "모든 테스트를 통과했습니다"
-                : `통과한 테스트: ${gradingData?.passedTestCases ?? 0} / ${
-                    gradingData?.totalTestCases ?? 0
-                  }`}
+                : status === "DRAFT"
+                ? "아직 제출되지 않은 코드입니다"
+                : "실패한 테스트케이스를 확인해 보세요"}
             </span>
             <span>
               <GlowNumber>
@@ -495,7 +509,9 @@ export default function SolveResult({
                   ? `${progressPercent}%`
                   : status === "CA"
                   ? "100%"
-                  : `${progressPercent || 0}%`}
+                  : status === "DRAFT"
+                  ? "0%"
+                  : "100%"}
               </GlowNumber>
             </span>
           </ProgressLabel>
@@ -506,47 +522,40 @@ export default function SolveResult({
         <StatCard>
           <StatLabel>통과한 테스트</StatLabel>
           <StatValue>
-            {gradingData?.passedTestCases ?? 0}
-            {gradingData?.totalTestCases
-              ? ` / ${gradingData.totalTestCases}`
-              : status === "PENDING" || status === "GRADING"
-              ? " (집계 중)"
-              : ""}
+            {status === "PENDING" || status === "GRADING"
+              ? "집계 중"
+              : status === "CA"
+              ? "모든 테스트 통과"
+              : "-"}
           </StatValue>
         </StatCard>
         <StatCard>
           <StatLabel>실패한 테스트</StatLabel>
           <StatValue>
-            {status === "CA"
-              ? "0"
-              : gradingData?.failedTestCase
-              ? `#${gradingData.failedTestCase}번`
-              : status === "PENDING" || status === "GRADING"
+            {status === "PENDING" || status === "GRADING" || status === "DRAFT"
               ? "집계 중"
-              : "-"}
+              : status === "CA"
+              ? "0"
+              : "있음"}
           </StatValue>
         </StatCard>
         <StatCard>
           <StatLabel>실행 시간</StatLabel>
           <StatValue>
-            {gradingData?.runtime != null
-              ? `${gradingData.runtime} ms`
+            {submission?.runtime != null
+              ? `${submission.runtime} ms`
               : status === "PENDING" || status === "GRADING"
               ? "측정 중"
-              : submission?.runtime != null
-              ? `${submission.runtime} ms`
               : "-"}
           </StatValue>
         </StatCard>
         <StatCard>
           <StatLabel>메모리 사용량</StatLabel>
           <StatValue>
-            {gradingData?.memory != null
-              ? `${gradingData.memory} KB`
+            {submission?.memory != null
+              ? `${submission.memory} KB`
               : status === "PENDING" || status === "GRADING"
               ? "측정 중"
-              : submission?.memory != null
-              ? `${submission.memory} KB`
               : "-"}
           </StatValue>
         </StatCard>
@@ -563,6 +572,8 @@ export default function SolveResult({
               ? "채점중"
               : status === "CA"
               ? "맞았습니다!"
+              : status === "DRAFT"
+              ? "임시 저장"
               : "틀렸습니다"}
           </StatValue>
         </StatCard>
@@ -576,9 +587,12 @@ export default function SolveResult({
             "테스트케이스 수가 많을수록 시간이 조금 더 걸릴 수 있어요."}
           {status === "CA" &&
             "이제 다른 난이도의 문제를 풀어보거나, 다른 언어로 다시 도전해 볼 수 있어요."}
+          {status === "DRAFT" &&
+            "임시 저장된 코드라 채점 기록은 남지 않습니다."}
           {status !== "PENDING" &&
             status !== "GRADING" &&
             status !== "CA" &&
+            status !== "DRAFT" &&
             "실패한 테스트케이스의 입출력을 확인하고 코드를 수정해 보세요."}
           {submissionError && ` (${submissionError})`}
         </HintText>

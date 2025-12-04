@@ -21,6 +21,10 @@ import {
 import type { IProblem, SimpleProblem } from "../../api/problem_api";
 import { fetchProblemDetail, fetchSimpleProblems } from "../../api/problem_api";
 
+// 투표 API/컴포넌트
+import { createPoll, type CreatePollRequest } from "../../api/poll_api";
+import { PollEditor } from "../../components/poll";
+
 // ----------------- styled-components -----------------
 const Page = styled.div`
   width: 100%;
@@ -464,6 +468,9 @@ export default function QnaWrite() {
     isEditMode ? !!editPost?.isPrivate : false
   );
 
+  const [showPollEditor, setShowPollEditor] = useState(false);
+  const [pollDraft, setPollDraft] = useState<CreatePollRequest | null>(null);
+
   const isValid =
     !!selectedProblem && title.trim().length > 0 && content.trim().length > 0;
 
@@ -526,6 +533,15 @@ export default function QnaWrite() {
         const problemId = selectedProblem.problemId;
         const created = await createqnaPost(basePayload);
         const selectedPostId = created?.postId;
+
+        if (selectedPostId && pollDraft) {
+          try {
+            await createPoll(selectedPostId, pollDraft, false);
+          } catch (err) {
+            console.error("QnA 투표 생성 실패:", err);
+          }
+        }
+
         await addProblemNumber(selectedPostId, problemId);
         alert("질문이 등록되었습니다.");
 
@@ -668,6 +684,48 @@ export default function QnaWrite() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="내용을 입력해 주세요."
               />
+            </FieldRow>
+
+            <FieldRow>
+              <Label>투표</Label>
+              <div style={{ width: "100%" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <GhostButton
+                    type="button"
+                    onClick={() => setShowPollEditor((prev) => !prev)}
+                  >
+                    {showPollEditor ? "투표 닫기" : "투표 생성"}
+                  </GhostButton>
+                  {!isEditMode && pollDraft && (
+                    <MuteSpan>
+                      질문 등록 시 이 설정으로 함께 투표가 생성됩니다.
+                    </MuteSpan>
+                  )}
+                </div>
+
+                {showPollEditor && !isEditMode && (
+                  <PollEditor
+                    isDiscuss={false}
+                    mode="deferred"
+                    onChangeDraft={setPollDraft}
+                  />
+                )}
+
+                {showPollEditor && isEditMode && editPost && (
+                  <PollEditor
+                    isDiscuss={false}
+                    mode="immediate"
+                    postId={editPost.id}
+                  />
+                )}
+              </div>
             </FieldRow>
 
             <FieldRow>

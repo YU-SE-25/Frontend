@@ -6,6 +6,8 @@ import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 import { createDiscussPost, updateDiscussPost } from "../../api/board_api";
 import { updatePostTags } from "../../api/board_api";
+import { createPoll, type CreatePollRequest } from "../../api/poll_api";
+import { PollEditor } from "../../components/poll";
 
 export type BoardCategory = "daily" | "lecture" | "promotion" | "typo";
 
@@ -248,6 +250,10 @@ export default function BoardWrite({
   const [isAnonymous, setIsAnonymous] = useState(initialIsAnonymous);
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
 
+  // 🔹 투표 관련 상태 (작성 화면에서 미리 입력 → 글 저장 시 함께 전송)
+  const [showPollEditor, setShowPollEditor] = useState(false);
+  const [pollDraft, setPollDraft] = useState<CreatePollRequest | null>(null);
+
   const isValid =
     title.trim().length > 0 &&
     content.trim().length > 0 &&
@@ -259,7 +265,8 @@ export default function BoardWrite({
     content !== initialContent ||
     isAnonymous !== initialIsAnonymous ||
     isPrivate !== initialIsPrivate ||
-    selectedCategory !== initialCategory;
+    selectedCategory !== initialCategory ||
+    pollDraft !== null;
 
   useEffect(() => {
     if (!user) {
@@ -363,6 +370,9 @@ export default function BoardWrite({
         await updateDiscussPost(editPost.id, payload);
         // 태그 재설정
         await updatePostTags(editPost.id, [tagId]);
+
+        // (선택) 수정 모드에서도 투표를 새로 만들고 싶다면 여기서 처리 가능
+
         navigate(-1);
       } else {
         // 🔥 새 글 작성
@@ -374,11 +384,21 @@ export default function BoardWrite({
 
         if (!newPostId) {
           console.warn(
-            "새 게시글 ID를 찾을 수 없어 태그를 설정하지 못했습니다.",
+            "새 게시글 ID를 찾을 수 없어 태그/투표를 설정하지 못했습니다.",
             res
           );
         } else {
+          // 태그 설정
           await updatePostTags(newPostId, [tagId]);
+
+          // ✅ 투표 초안이 있으면, 여기서 postId를 써서 함께 생성
+          if (pollDraft) {
+            try {
+              await createPoll(newPostId, pollDraft, true); // true = discuss
+            } catch (err) {
+              console.error("투표 생성 실패:", err);
+            }
+          }
         }
 
         navigate("/board/" + selectedCategory);
@@ -468,6 +488,54 @@ export default function BoardWrite({
             placeholder="내용을 입력해 주세요."
           />
         </FieldRow>
+
+        {/* 🔹 투표 생성 섹션 */}
+        {!isStudy && (
+          <FieldRow>
+            <Label>투표</Label>
+            <div style={{ width: "100%" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-start",
+                  marginBottom: "8px",
+                  gap: "8px",
+                  alignItems: "center",
+                }}
+              >
+                <GhostButton
+                  type="button"
+                  onClick={() => setShowPollEditor((prev) => !prev)}
+                >
+                  {showPollEditor ? "투표 닫기" : "투표 생성"}
+                </GhostButton>
+                {pollDraft && (
+                  <MuteSpan>
+                    글 등록 시 이 설정으로 함께 투표가 생성됩니다.
+                  </MuteSpan>
+                )}
+              </div>
+
+              {/* ✏ 새 글 작성 모드: postId가 없으므로, PollEditor에서 draft만 위로 올림 */}
+              {showPollEditor && !isEditMode && (
+                <PollEditor
+                  isDiscuss={true}
+                  mode="deferred"
+                  onChangeDraft={setPollDraft}
+                />
+              )}
+
+              {/* ✏ 수정 모드: 이미 postId가 있으므로, 바로 API로 생성하고 싶으면 immediate 모드 사용 */}
+              {showPollEditor && isEditMode && editPost && (
+                <PollEditor
+                  isDiscuss={true}
+                  mode="immediate"
+                  postId={editPost.id}
+                />
+              )}
+            </div>
+          </FieldRow>
+        )}
 
         {error && <ErrorText>{error}</ErrorText>}
 

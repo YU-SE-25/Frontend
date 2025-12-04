@@ -1,3 +1,4 @@
+import type { SubmissionStatus } from "./mySubmissions_api";
 // 타입 그대로 사용 (단비 제공본)
 export * from "./dummy/codeeditor_dummy";
 
@@ -46,14 +47,6 @@ export interface ICodeSubmitResult {
 }
 
 // 제출 상태 및 결과 조회 API 응답 타입: /api/submissions/{submissionId}/status
-export type SubmissionStatus =
-  | "GRADING"
-  | "CA"
-  | "WA"
-  | "TLE"
-  | "MLE"
-  | "RE"
-  | string;
 
 export interface ISubmissionStatusResult {
   status: SubmissionStatus;
@@ -106,7 +99,9 @@ export async function submitCode(req) {
 
 
 */
-export async function getSubmissionStatus(submissionId: number) {
+export async function getSubmissionStatus(
+  submissionId: number
+): Promise<SubmissionStatus> {
   const res = await api.get(`/api/submissions/${submissionId}/status`);
   return res.data;
 }
