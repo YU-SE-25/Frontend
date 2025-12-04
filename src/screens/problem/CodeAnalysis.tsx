@@ -77,6 +77,7 @@ export default function CodeAnalysis() {
   const handleMouseUp = () => (dragging.current = false);
 
   const handleMouseMove = (e) => {
+  const handleMouseMove = (e) => {
     if (!dragging.current) return;
     const newWidth = window.innerWidth - e.clientX;
     if (newWidth > 240 && newWidth < 700) setPanelWidth(newWidth);
@@ -194,13 +195,6 @@ export default function CodeAnalysis() {
 
       <RightPanel width={panelWidth}>
         <Tabs>
-          <TabButton
-            active={activeTab === "performance"}
-            onClick={() => setActiveTab("performance")}
-          >
-            Code Performance
-          </TabButton>
-
           <TabButton
             active={activeTab === "profiling"}
             onClick={() => setActiveTab("profiling")}
