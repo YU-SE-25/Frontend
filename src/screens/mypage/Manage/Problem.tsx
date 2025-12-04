@@ -2,32 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { userProfileAtom } from "../../../atoms";
 import { useAtomValue } from "jotai";
-import { fetchPendingProblemList } from "../../../api/manage_api";
+import {
+  approveProblem,
+  fetchMyProblems,
+  fetchPendingProblemList,
+} from "../../../api/manage_api";
+import type { ProblemListItem as ProblemItem } from "../../../api/manage_api";
+import { fetchProblemDetail, type IProblem } from "../../../api/problem_api";
+import { useQuery } from "@tanstack/react-query";
 /* -----------------------------------------------------
    타입
 ----------------------------------------------------- */
 
 type Difficulty = "EASY" | "MEDIUM" | "HARD";
-
-interface ProblemItem {
-  problemId: number;
-  title: string;
-  tags: string[];
-  difficulty: Difficulty;
-  viewCount: number;
-  createdAt: string;
-  isSolved: boolean;
-  author?: string;
-}
-
-interface ProblemListResponse {
-  content: ProblemItem[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-  empty: boolean;
-}
 
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   EASY: "쉬움",
@@ -148,7 +135,11 @@ export default function ProblemManagementScreen() {
   );
   const [selectedMyId, setSelectedMyId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const difficultyLabelMap: Record<Difficulty, string> = {
+    EASY: "쉬움",
+    MEDIUM: "보통",
+    HARD: "어려움",
+  };
   const userProfile = useAtomValue(userProfileAtom) ?? {
     nickname: "guest",
     role: "GUEST",
@@ -173,7 +164,7 @@ export default function ProblemManagementScreen() {
     if (!search.trim()) return problems;
     const q = search.toLowerCase();
     return problems.filter((p) => {
-      const author = p.author ?? "";
+      const author = p.createdByNickname ?? "";
       return (
         p.title.toLowerCase().includes(q) ||
         author.toLowerCase().includes(q) ||
@@ -182,10 +173,12 @@ export default function ProblemManagementScreen() {
     });
   }, [problems, search]);
 
-  const filteredMine = useMemo(
-    () => filtered.filter((p) => p.author && p.author === userProfile.nickname),
-    [filtered, userProfile.nickname]
-  );
+  const { data: myProblemsPage } = useQuery({
+    queryKey: ["myProblems"],
+    queryFn: () => fetchMyProblems(0, 100), // page, size는 네가 쓰는 값으로
+  });
+
+  const filteredMine: IProblem[] = myProblemsPage?.content ?? [];
 
   const selectedPending = useMemo(
     () => problems.find((p) => p.problemId === selectedPendingId) ?? null,
@@ -198,6 +191,12 @@ export default function ProblemManagementScreen() {
   );
 
   const selectedProblem = selectedPending ?? selectedMine;
+
+  const { data: selectedProblemDetail } = useQuery({
+    queryKey: ["problemDetail", selectedProblem?.problemId],
+    queryFn: () => fetchProblemDetail(selectedProblem!.problemId),
+    enabled: !!selectedProblem?.problemId,
+  });
   const hasSelection = !!selectedProblem;
   const canManageSelected = !!selectedPending && userProfile.role === "MANAGER";
 
@@ -220,7 +219,7 @@ export default function ProblemManagementScreen() {
   const handleViewDetail = async () => {
     if (!selectedProblem) return;
 
-    const text = JSON.stringify(selectedProblem, null, 2);
+    const text = JSON.stringify(selectedProblemDetail, null, 2);
 
     try {
       await navigator.clipboard.writeText(text);
@@ -238,21 +237,26 @@ export default function ProblemManagementScreen() {
     );
   };
 
-  const handleRegisterProblem = () => {
-    if (!selectedPending || userProfile.role !== "MANAGER") return;
-    if (
-      !window.confirm(
-        `"${selectedPending.title}" 문제를 등록(승인)하고 목록에서 제거할까요?`
-      )
-    )
-      return;
+  const handleRegisterProblem = async () => {
+    if (!selectedProblem) return;
 
-    setProblems((prev) =>
-      prev.filter((p) => p.problemId !== selectedPending.problemId)
-    );
-    setSelectedPendingId(null);
+    if (!window.confirm("이 문제를 승인하시겠습니까?")) return;
+
+    try {
+      const res = await approveProblem(selectedProblem.problemId);
+
+      alert(res.message); // "문제가 승인되었습니다."
+
+      // UI에서 제거 (승인 목록에서 빠지도록)
+      setProblems((prev) =>
+        prev.filter((p) => p.problemId !== selectedProblem.problemId)
+      );
+      setSelectedPendingId(null);
+    } catch (e) {
+      console.error("문제 승인 실패:", e);
+      alert("문제 승인 중 오류가 발생했습니다.");
+    }
   };
-
   const handleDeleteProblem = () => {
     if (!selectedPending || userProfile.role !== "MANAGER") return;
     if (
@@ -291,7 +295,9 @@ export default function ProblemManagementScreen() {
           </ActionButton>
           <ActionButton
             onClick={handleDownloadTestcase}
-            disabled={!hasSelection}
+            // disabled={!hasSelection}
+            disabled={true}
+            title="다운 오류"
           >
             테스트 케이스 다운로드
           </ActionButton>
@@ -354,7 +360,7 @@ export default function ProblemManagementScreen() {
                   >
                     <Td>{p.title}</Td>
                     <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
-                    <Td>{p.author ?? "-"}</Td>
+                    <Td>{p.createdByNickname ?? "-"}</Td>
                     <Td>{p.createdAt.split("T")[0]}</Td>
                   </Tr>
                 ))}
@@ -371,7 +377,6 @@ export default function ProblemManagementScreen() {
             <tr>
               <Th>문제 제목</Th>
               <Th>난이도</Th>
-              <Th>작성자</Th>
               <Th>작성일</Th>
             </tr>
           </Thead>
@@ -392,8 +397,7 @@ export default function ProblemManagementScreen() {
                 onClick={() => handleSelectMine(p.problemId)}
               >
                 <Td>{p.title}</Td>
-                <Td>{DIFFICULTY_LABEL[p.difficulty]}</Td>
-                <Td>{p.author ?? "-"}</Td>
+                <Td>{difficultyLabelMap[p.difficulty as Difficulty]}</Td>
                 <Td>{p.createdAt.split("T")[0]}</Td>
               </Tr>
             ))}

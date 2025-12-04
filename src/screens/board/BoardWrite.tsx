@@ -4,15 +4,27 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
-import { createDiscussPost, updateDiscussPost } from "../../api/board_api"; // ✅ 추가
+import { createDiscussPost, updateDiscussPost } from "../../api/board_api";
+import { updatePostTags } from "../../api/board_api";
 
 export type BoardCategory = "daily" | "lecture" | "promotion" | "typo";
 
+// 셀렉트에서 쓸 값: ""(placeholder) + 기존 카테고리
+type CategorySelectValue = "" | BoardCategory;
+
 const CATEGORY_LABEL: Record<BoardCategory, string> = {
-  daily: "토론 게시판",
+  daily: "일반",
   lecture: "강의",
   promotion: "홍보",
   typo: "오타",
+};
+
+// 카테고리 → 태그 ID 매핑 (distag 테이블 id에 맞게 수정)
+const TAG_ID_BY_CATEGORY: Record<BoardCategory, number> = {
+  daily: 1,
+  lecture: 2,
+  promotion: 3,
+  typo: 4,
 };
 
 const Page = styled.div`
@@ -164,6 +176,10 @@ const GhostButton = styled.button`
   cursor: pointer;
   color: ${({ theme }) => theme.textColor};
 `;
+const MuteSpan = styled.span`
+  font-size: 12px;
+  color: ${({ theme }) => theme.muteColor};
+`;
 
 const ErrorText = styled.p`
   margin: 0;
@@ -208,21 +224,23 @@ export default function BoardWrite({
   const editPost = (location.state as LocationState | null)?.post;
   const isEditMode = !!editPost;
 
-  const initialCategory: BoardCategory =
+  // 🔹 기본 선택값: 수정 모드면 그 카테고리, 아니면 라우트 카테고리, 그 외엔 ""(placeholder)
+  const initialCategory: CategorySelectValue =
     editPost?.category ??
     (routeCategory === "daily" ||
     routeCategory === "lecture" ||
     routeCategory === "promotion" ||
     routeCategory === "typo"
       ? (routeCategory as BoardCategory)
-      : "daily");
+      : "");
 
   const initialTitle = editPost?.title ?? "";
   const initialContent = editPost?.content ?? "";
   const initialIsAnonymous = editPost?.isAnonymous ?? false;
   const initialIsPrivate = editPost?.isPrivate ?? false;
 
-  const [category, setCategory] = useState<BoardCategory>(initialCategory);
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategorySelectValue>(initialCategory);
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -230,14 +248,18 @@ export default function BoardWrite({
   const [isAnonymous, setIsAnonymous] = useState(initialIsAnonymous);
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
 
-  const isValid = title.trim().length > 0 && content.trim().length > 0;
+  const isValid =
+    title.trim().length > 0 &&
+    content.trim().length > 0 &&
+    // 태그(카테고리) 선택해야만 유효
+    selectedCategory !== "";
 
   const isDirty =
     title !== initialTitle ||
     content !== initialContent ||
     isAnonymous !== initialIsAnonymous ||
     isPrivate !== initialIsPrivate ||
-    category !== initialCategory;
+    selectedCategory !== initialCategory;
 
   useEffect(() => {
     if (!user) {
@@ -245,9 +267,10 @@ export default function BoardWrite({
     }
   }, [user, navigate]);
 
+  // 스터디 모드일 때 기본값 고정
   useEffect(() => {
     if (isStudy) {
-      setCategory("daily");
+      setSelectedCategory("daily");
       setIsPrivate(false);
     }
   }, [isStudy]);
@@ -277,8 +300,12 @@ export default function BoardWrite({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isValid) {
+    if (!title.trim() || !content.trim()) {
       setError("제목과 내용을 모두 입력해 주세요.");
+      return;
+    }
+    if (selectedCategory === "") {
+      setError("태그(카테고리)를 선택해 주세요.");
       return;
     }
 
@@ -328,16 +355,33 @@ export default function BoardWrite({
         attachmentUrl: null,
       };
 
-      if (isEditMode && editPost) {
-        await updateDiscussPost(editPost.id, payload);
-      } else {
-        await createDiscussPost(payload);
-      }
+      // 선택된 카테고리 → 태그 ID
+      const tagId = TAG_ID_BY_CATEGORY[selectedCategory as BoardCategory];
 
       if (isEditMode && editPost) {
+        // 🔥 수정
+        await updateDiscussPost(editPost.id, payload);
+        // 태그 재설정
+        await updatePostTags(editPost.id, [tagId]);
         navigate(-1);
       } else {
-        navigate("/board/" + category);
+        // 🔥 새 글 작성
+        const res: any = await createDiscussPost(payload);
+
+        // 백엔드 응답에서 postId 가져오기 (postId 또는 post_id 둘 다 대응)
+        const newPostId: number | undefined =
+          res?.postId ?? res?.post_id ?? res?.id;
+
+        if (!newPostId) {
+          console.warn(
+            "새 게시글 ID를 찾을 수 없어 태그를 설정하지 못했습니다.",
+            res
+          );
+        } else {
+          await updatePostTags(newPostId, [tagId]);
+        }
+
+        navigate("/board/" + selectedCategory);
       }
     } catch (e) {
       console.error("게시글 저장 오류:", e);
@@ -354,13 +398,20 @@ export default function BoardWrite({
 
         {!isStudy && (
           <FieldRow>
-            <Label>카테고리</Label>
+            <Label>
+              태그(카테고리)
+              <RequiredDot>*</RequiredDot>
+            </Label>
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               <Select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as BoardCategory)}
-                disabled={isEditMode}
+                value={selectedCategory}
+                onChange={(e) =>
+                  setSelectedCategory(e.target.value as CategorySelectValue)
+                }
+                disabled={isEditMode} // 수정 시 카테고리 변경 막을 거면 유지
               >
+                {/* 🔹 placeholder 옵션 */}
+                <option value="">-- 태그를 선택하세요 --</option>
                 {(Object.keys(CATEGORY_LABEL) as BoardCategory[]).map((key) => (
                   <option key={key} value={key}>
                     {CATEGORY_LABEL[key]}
@@ -386,6 +437,9 @@ export default function BoardWrite({
                   />
                   비밀글
                 </CheckboxLabel>
+              )}
+              {isAnonymous && (
+                <MuteSpan>익명 작성 시 수정이 불가합니다.</MuteSpan>
               )}
             </div>
           </FieldRow>

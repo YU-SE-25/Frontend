@@ -26,6 +26,8 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { fetchDiscussList } from "../../api/board_api";
 import { isOwner } from "../../utils/isOwner";
 import { myRole } from "../../utils/myRole";
+import { fetchPostsByTag } from "../../api/board_api";
+
 export interface BoardTag {
   id: number;
   name: string;
@@ -80,6 +82,15 @@ const CATEGORY_LABEL = {
 
 export type BoardCategory = keyof typeof CATEGORY_LABEL;
 
+type ExtendedCategory = BoardCategory | "default";
+
+const TAG_ID_BY_CATEGORY: Record<BoardCategory, number> = {
+  daily: 1,
+  lecture: 2,
+  promotion: 3,
+  typo: 4,
+};
+
 const CategoryTabs = styled.div`
   display: flex;
   gap: 8px;
@@ -95,7 +106,8 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
   padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid
-    ${({ theme, $active }) => ($active ? theme.focusColor : "rgba(0,0,0,0.12)")};
+    ${({ theme, $active }) =>
+      $active ? theme.focusColor : "rgba(0, 0, 0, 0.12)"};
   background: ${({ theme, $active }) =>
     $active ? theme.focusColor : "transparent"};
   color: ${({ theme, $active }) => ($active ? "white" : theme.textColor)};
@@ -109,23 +121,28 @@ const CategoryTab = styled.button<{ $active?: boolean }>`
   }
 `;
 
-// 기존 함수 선언 → props 형태로 변경됨
 export default function BoardList() {
   const navigate = useNavigate();
   const { category } = useParams<{ category: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const isBoardCategory = (value: string | undefined): value is BoardCategory =>
-    !!value && value in CATEGORY_LABEL;
+  const isBoardCategory = (
+    value: string | undefined
+  ): value is ExtendedCategory =>
+    !!value && (value in CATEGORY_LABEL || value === "default");
 
-  const currentCategory: BoardCategory = isBoardCategory(category)
+  const currentCategory: ExtendedCategory = isBoardCategory(category)
     ? category
-    : "daily";
+    : "default";
+
+  const selectedTagId =
+    currentCategory === "default"
+      ? null
+      : TAG_ID_BY_CATEGORY[currentCategory as BoardCategory];
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState<"latest" | "views" | "id">("latest");
   const [currentPage, setCurrentPage] = useState(1);
-
   const [posts, setPosts] = useState<BoardContent[]>([]);
 
   const {
@@ -133,8 +150,13 @@ export default function BoardList() {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ["boardList", currentCategory, currentPage],
-    queryFn: () => fetchDiscussList(currentPage), // 여기서 DiscussPostPage 형태로 받는다고 가정
+    queryKey: ["boardList", currentCategory, selectedTagId, currentPage],
+    queryFn: () => {
+      if (selectedTagId) {
+        return fetchPostsByTag(selectedTagId, currentPage);
+      }
+      return fetchDiscussList(currentPage);
+    },
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
@@ -168,7 +190,6 @@ export default function BoardList() {
   };
 
   const handleViewDetails = (post: BoardContent) => {
-    // 비공개 글인데, 내가 작성자도 아니고 관리자도 아니면 막기
     if (post.is_private) {
       const canView =
         isOwner({
@@ -194,13 +215,22 @@ export default function BoardList() {
   };
 
   const handleWritePost = () => {
-    navigate(`/board/${currentCategory}/write`);
+    navigate(
+      `/board/${
+        currentCategory === "default" ? "daily" : currentCategory
+      }/write`
+    );
   };
 
   const handleChangeCategory = (next: BoardCategory) => {
     setSearchTerm("");
     setCurrentPage(1);
-    navigate(`/board/${next}`);
+
+    if (currentCategory === next) {
+      navigate(`/board/default`);
+    } else {
+      navigate(`/board/${next}`);
+    }
   };
 
   const filteredAndSortedPosts = useMemo(() => {
@@ -229,7 +259,6 @@ export default function BoardList() {
     return result;
   }, [posts, searchTerm, sortType]);
 
-  // 이제 페이지 수는 서버에서 온 totalPages를 쓰기
   const totalPages = globalList?.totalPages ?? 1;
 
   const currentPosts = filteredAndSortedPosts;
@@ -295,12 +324,13 @@ export default function BoardList() {
             placeholder="제목 검색 (2자 이상)"
             onKeyPress={handleKeyPress}
           />
-          <SearchButton onClick={handleSearch}>검색</SearchButton>
         </SearchContainer>
 
         <SortSelect
           value={sortType}
-          onChange={(e) => setSortType(e.target.value as "latest" | "views")}
+          onChange={(e) =>
+            setSortType(e.target.value as "latest" | "views" | "id")
+          }
         >
           <option value="latest">최신순</option>
           <option value="views">추천순</option>

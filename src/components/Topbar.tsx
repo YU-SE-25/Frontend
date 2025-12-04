@@ -342,10 +342,10 @@ export default function Topbar() {
               </li> */}
               <li>
                 <BoardDropdownItem
-                  to="/board/daily"
+                  to="/board/default"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleSelectBoard("/board/daily");
+                    handleSelectBoard("/board/default");
                   }}
                 >
                   토론게시판
@@ -397,11 +397,11 @@ export default function Topbar() {
         </Menu>
 
         <RightSection>
-          <ThemeToggleContainer onClick={runToggleTheme}>
+          {/* <ThemeToggleContainer onClick={runToggleTheme}>
             <ToggleSwitch $isDark={isDark}>
               <ToggleHandle $isDark={isDark} />
             </ToggleSwitch>
-          </ThemeToggleContainer>
+          </ThemeToggleContainer> */}
 
           <Auth>
             {isLoggedIn ? (
