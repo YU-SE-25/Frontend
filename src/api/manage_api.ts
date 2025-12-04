@@ -72,7 +72,7 @@ export async function approveProblem(
   problemId: number
 ): Promise<MessageResponseDto> {
   const res = await api.put<MessageResponseDto>(
-    `/admin/page/problems/${problemId}/approve`
+    `/problems/${problemId}/approve`
   );
   return res.data;
 }
