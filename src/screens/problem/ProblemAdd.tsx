@@ -25,7 +25,27 @@ import {
   registerProblem,
   TAG_LABEL_MAP,
 } from "../../api/problem_api";
-import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
+export const ALL_AVAILABLE_TAGS = [
+  "구현",
+  "기초",
+  "이진 탐색",
+  "탐색",
+  "문자열",
+  "투 포인터",
+  "중심 확장",
+  "스택",
+  "시뮬레이션",
+  "자료구조",
+  "다이나믹 프로그래밍",
+  "카데인",
+  "배열",
+  "그리디",
+  "정렬",
+  "우선순위 큐",
+  "그래프",
+  "BFS",
+  "DFS",
+];
 
 const USE_DUMMY = true;
 
