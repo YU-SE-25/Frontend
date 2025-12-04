@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  useLocation,
+  useOutletContext,
+} from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
 
@@ -123,21 +128,26 @@ interface EditPostState {
   postId: number;
   title: string;
   contents: string;
-  //anonymous: boolean;
 }
 
 export default function StudyGroupBoardWrite() {
   const navigate = useNavigate();
   const user = useAtomValue(userProfileAtom);
-  const { groupId, postId } = useParams();
-  const location = useLocation();
 
+  // groupId는 OutletContext에서 받는다!
+  const { groupId } = useOutletContext<{ groupId: number; role: string }>();
+
+  // postId는 edit일 때만 params에서 들어옴
+  const { postId } = useParams();
+
+  const location = useLocation();
   const editPost = (location.state as { post?: EditPostState })?.post;
   const isEdit = !!editPost;
 
   const [title, setTitle] = useState(editPost?.title ?? "");
   const [contents, setContents] = useState(editPost?.contents ?? "");
   const [error, setError] = useState<string | null>(null);
+
   const isValid = title.trim() !== "" && contents.trim() !== "";
 
   useEffect(() => {
@@ -155,7 +165,7 @@ export default function StudyGroupBoardWrite() {
     const payload = {
       title: title.trim(),
       contents: contents.trim(),
-      privatePost: false, // 스터디그룹은 비밀글 없음
+      privatePost: false,
     };
 
     try {
@@ -170,7 +180,7 @@ export default function StudyGroupBoardWrite() {
       alert("오류가 발생했습니다!");
     }
 
-    navigate(`/studygroup/${groupId}?tab=discussion`);
+    navigate("..", { relative: "path" });
   };
 
   return (
@@ -178,7 +188,6 @@ export default function StudyGroupBoardWrite() {
       <Wrapper as="form" onSubmit={handleSubmit}>
         <Title>{isEdit ? "게시글 수정" : "게시글 작성"}</Title>
 
-        {/* 제목 */}
         <FieldRow>
           <Label>
             제목<RequiredDot>*</RequiredDot>
@@ -190,7 +199,6 @@ export default function StudyGroupBoardWrite() {
           />
         </FieldRow>
 
-        {/* 내용 */}
         <FieldRow>
           <Label>
             내용<RequiredDot>*</RequiredDot>

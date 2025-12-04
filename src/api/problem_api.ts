@@ -171,12 +171,41 @@ export const TAG_LABEL_MAP: Record<string, string> = {
   TREE: "트리",
 };
 
+export const TAG_REVERSE_MAP: Record<string, string> = {
+  구현: "IMPLEMENTATION",
+  기초: "BASIC",
+  "이진 탐색": "BINARY_SEARCH",
+  탐색: "SEARCH",
+  문자열: "STRING",
+  "투 포인터": "TWO_POINTER",
+  "중심 확장": "CENTER_EXPANSION",
+  스택: "STACK",
+  시뮬레이션: "SIMULATION",
+  자료구조: "DATA_STRUCTURE",
+  "다이나믹 프로그래밍": "DP",
+  카데인: "KADANE",
+  배열: "ARRAY",
+  그리디: "GREEDY",
+  정렬: "SORTING",
+  "우선순위 큐": "PRIORITY_QUEUE",
+  그래프: "GRAPH",
+  BFS: "BFS",
+  DFS: "DFS",
+};
+
 // 태그 목록
 export async function fetchAvailableTags(): Promise<string[]> {
   try {
     const res = await api.get("/problems/tags");
     console.log("TAG RAW:", res.data);
-    return res.data;
+
+    // 타입 가드: 배열인지 확인
+    if (!Array.isArray(res.data)) return [];
+
+    // 모든 요소가 string인지도 확인
+    const valid = res.data.filter((t: any) => typeof t === "string");
+
+    return valid;
   } catch (err) {
     console.error(err);
     return [];
@@ -217,22 +246,51 @@ export async function fetchProblemDetail(problemId: number): Promise<IProblem> {
   }
 }
 
-// 문제 등록 (이제 JSON 바디로 보낸다고 가정)
-export async function registerProblem(
-  payload: ProblemRegisterPayload
-): Promise<number> {
-  try {
-    const res = await api.post<{
-      message: string;
-      problemId: number;
-      timestamp: string;
-    }>("/problems/register", payload);
+export interface ProblemEditDetail {
+  problemId: number;
+  title: string;
+  description: string;
+  inputOutputExample: string;
+  difficulty: "EASY" | "MEDIUM" | "HARD";
+  timeLimit: number;
+  memoryLimit: number;
+  status: string;
+  tags: string[];
+  hint?: string;
+  source?: string;
+  testcaseFile?: string;
+}
 
-    return res.data.problemId;
-  } catch (err) {
-    console.error("문제 등록 실패 → 더미 ProblemId 99999 반환");
-    return 99999;
-  }
+interface ProblemCreateResponse {
+  message: string;
+  problemId: number;
+  timestamp: string;
+}
+
+// 문제 상세 조회 (수정용)
+export async function fetchProblemDetailForEdit(
+  problemId: number
+): Promise<ProblemEditDetail> {
+  const res = await api.get<ProblemEditDetail>(`/problems/${problemId}`);
+  return res.data;
+}
+
+// PUT 수정
+export async function updateProblem(problemId: number, formData: FormData) {
+  const res = await api.put<ProblemCreateResponse>(
+    `/problems/${problemId}`,
+    formData
+  );
+  return res.data.problemId;
+}
+
+// POST 등록
+export async function registerProblem(formData: FormData) {
+  const res = await api.post<ProblemCreateResponse>(
+    "/problems/register",
+    formData
+  );
+  return res.data.problemId;
 }
 
 //스터디 그룹용 문제 목록 띄우기

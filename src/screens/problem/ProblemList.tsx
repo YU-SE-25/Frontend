@@ -16,11 +16,9 @@ import {
   TableCell,
   EmptyCell,
   TitleCell,
-  //ProblemLink,
   SummaryRow,
   SummaryBox,
   TitleContainer,
-  //StatusIndicator,
   ActionInSummaryButton,
   PaginationContainer,
   PageLink,
@@ -31,15 +29,18 @@ import {
   TagDisplayContainer,
   TagChip,
   ProblemTagChip,
+  StatusChip,
 } from "../../theme/ProblemList.Style";
 
 import type { UserProblemStatus } from "../../theme/ProblemList.Style";
 import type { IProblem } from "../../api/problem_api";
+
 import {
   fetchProblems,
   fetchAvailableTags,
   TAG_LABEL_MAP,
 } from "../../api/problem_api";
+
 import {
   fetchDummyProblems,
   ALL_AVAILABLE_TAGS,
@@ -50,16 +51,24 @@ import { userProfileAtom } from "../../atoms";
 
 export default function ProblemList() {
   const navigate = useNavigate();
+
+  // ⭐ userProfileAtom 가져오기
   const user = useAtomValue(userProfileAtom);
+
+  // ⭐ 로그인 여부 계산
   const isLoggedIn = !!user;
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  // ⭐ 중요한 디버그 로그 (여기에 찍힘!)
+  console.log("🔍 USER FROM ATOM:", user);
+  console.log("🔍 IS LOGGED IN:", isLoggedIn);
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortType, setSortType] = useState("latest");
   const [expandedProblemId, setExpandedProblemId] = useState<number | null>(
     null
   );
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -71,19 +80,17 @@ export default function ProblemList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 처음 태그 파라미터
   const initialTags = searchParams.get("tag") ? [searchParams.get("tag")!] : [];
 
-  // 전체 태그 목록
   const [availableTags, setAvailableTags] = useState<string[]>([]);
-  // 선택된 태그 목록
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
 
-  // 1) 사용 가능한 태그 불러오기
+  // ⭐ 태그 로딩
   useEffect(() => {
     const loadAvailableTags = async () => {
       try {
-        const tags = await fetchAvailableTags(); // 백엔드
+        const tags = await fetchAvailableTags();
+        console.log("🔍 TAG API RESULT:", tags);
         setAvailableTags(Array.isArray(tags) ? tags : []);
       } catch {
         console.warn("태그 API 실패 → 더미 태그 사용");
@@ -93,7 +100,7 @@ export default function ProblemList() {
     loadAvailableTags();
   }, []);
 
-  // 2) 문제 목록 불러오기 (백엔드 → 실패 시 더미 fallback)
+  // ⭐ 문제 목록 로딩
   useEffect(() => {
     let mounted = true;
 
@@ -102,9 +109,11 @@ export default function ProblemList() {
       setError(null);
 
       try {
-        //백엔드 먼저 시도
         const real = await fetchProblems();
-        if (mounted) setProblems(real);
+        if (mounted) {
+          console.log("🔍 PROBLEMS FROM API:", real);
+          setProblems(real);
+        }
       } catch (e) {
         console.warn("API 실패 → 더미 fallback");
 
@@ -115,12 +124,12 @@ export default function ProblemList() {
             isLoggedIn,
             tags: selectedTags,
           });
+
           if (mounted) {
             const mapped = dummy.map((d: any) => ({
               ...d,
-              successRate: d.successRate + "%", // number → string
+              successRate: d.successRate + "%",
             }));
-
             setProblems(mapped);
           }
         } catch (err) {
@@ -132,21 +141,24 @@ export default function ProblemList() {
     };
 
     load();
+
     return () => {
       mounted = false;
     };
   }, [sortType, searchTerm, selectedTags, isLoggedIn]);
 
-  //태그 클릭 핸들러
+  // 🔥 태그 클릭하면 선택/해제
   const handleToggleTag = (tag: string) => {
     setSelectedTags((prev) => {
       let newTags;
+
       if (prev.includes(tag)) {
         newTags = prev.filter((t) => t !== tag);
       } else {
         newTags = [...prev, tag];
       }
 
+      // URL 파라미터 싱크
       if (newTags.length > 0) {
         setSearchParams({ tag: newTags[0] });
       } else {
@@ -171,29 +183,22 @@ export default function ProblemList() {
     setCurrentPage(1);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") handleSearch();
-  };
-
-  // 요약 토글
+  // ⭐ 요약 토글
   const handleToggleSummary = (problemId: number) => {
     setExpandedProblemId((curr) => (curr === problemId ? null : problemId));
   };
 
-  // 바로 코드 작성
+  // ⭐ 바로 코드 작성
   const handleDirectSolve = (problemId: number) => {
     if (!isLoggedIn) return alert("로그인 후 이용 가능합니다.");
     navigate(`/problems/${problemId}/solve`);
   };
 
-  // 상세보기
   const handleViewDetails = (problemId: number) => {
     navigate(`/problem-detail/${problemId}`);
   };
 
-  // ==========================================
-  // ⭐ 기록 필터링
-  // ==========================================
+  // ⭐ 기록 필터 로직
   const filteredProblems = problems.filter((problem) => {
     if (filter === "off") return true;
 
@@ -209,7 +214,7 @@ export default function ProblemList() {
     return true;
   });
 
-  // 페이지네이션
+  // ⭐ 페이지네이션
   const totalItems = filteredProblems.length;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -237,16 +242,17 @@ export default function ProblemList() {
       </PageTitleContainer>
 
       <ControlBar>
+        {/* 검색 영역 */}
         <SearchContainer>
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="문제 ID 또는 제목 검색 (2자 이상)"
-            onKeyPress={handleKeyPress}
           />
           <SearchButton onClick={handleSearch}>검색</SearchButton>
         </SearchContainer>
 
+        {/* 정렬 */}
         <SortSelect
           value={sortType}
           onChange={(e) => setSortType(e.target.value)}
@@ -269,13 +275,14 @@ export default function ProblemList() {
             style={{ marginRight: "10px" }}
           >
             <option value="off">기록 필터</option>
-            <option value="tried">시도 문제</option>
+            <option value="tried">전체 시도 문제</option>
             <option value="SOLVED">맞은 문제</option>
-            <option value="ATTEMPTED">틀린 문제</option>
+            <option value="ATTEMPTED">시도 문제</option>
           </SortSelect>
         )}
       </ControlBar>
 
+      {/* 태그 목록 */}
       {availableTags.length > 0 && (
         <TagDisplayContainer
           style={{ maxWidth: "1200px", margin: "10px auto" }}
@@ -292,9 +299,11 @@ export default function ProblemList() {
         </TagDisplayContainer>
       )}
 
+      {/* 로딩 & 에러 */}
       {loading && <p>문제 목록을 불러오는 중...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
+      {/* 문제 테이블 */}
       <ProblemTable>
         <TableHead>
           <tr>
@@ -304,6 +313,7 @@ export default function ProblemList() {
             <HeaderCell width="10%">난이도</HeaderCell>
             <HeaderCell width="13%">조회수</HeaderCell>
             <HeaderCell width="14%">등록일</HeaderCell>
+            {isLoggedIn && <HeaderCell width="10%">기록</HeaderCell>}
           </tr>
         </TableHead>
 
@@ -325,32 +335,43 @@ export default function ProblemList() {
                     </TitleContainer>
                   </TitleCell>
 
-                  <TableCell>
-                    <TagDisplayContainer>
-                      {problem.tags?.map((tag, idx) => (
-                        <ProblemTagChip key={idx}>
-                          {TAG_LABEL_MAP[tag] ?? tag}
-                        </ProblemTagChip>
-                      ))}
-                    </TagDisplayContainer>
-                  </TableCell>
+                  {isLoggedIn && (
+                    <TableCell>
+                      {problem.userStatus !== "NONE" && (
+                        <StatusChip $status={problem.userStatus}>
+                          {problem.userStatus === "SOLVED" ? "맞음" : "시도"}
+                        </StatusChip>
+                      )}
+                    </TableCell>
+                  )}
 
                   <TableCell>{problem.difficulty}</TableCell>
                   <TableCell>{problem.viewCount}</TableCell>
                   <TableCell>{problem.createdAt}</TableCell>
+                  {isLoggedIn && (
+                    <TableCell>
+                      <ProblemTagChip $status={problem.userStatus}>
+                        {problem.userStatus === "SOLVED"
+                          ? "맞음"
+                          : problem.userStatus === "ATTEMPTED"
+                          ? "시도"
+                          : " "}
+                      </ProblemTagChip>
+                    </TableCell>
+                  )}
                 </TableRow>
 
                 {expandedProblemId === problem.problemId && (
                   <SummaryRow>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={isLoggedIn ? 8 : 7}>
                       <SummaryBox>
                         <div>
                           <p>
                             <strong>요약:</strong> {problem.summary}
                           </p>
                           <p>
-                            <strong>푼 사람:</strong> {problem.solvedCount} |{" "}
-                            <strong>정답률:</strong> {problem.successRate}
+                            <strong>푼 사람:</strong> {problem.solvedCount} |
+                            <strong> 정답률:</strong> {problem.successRate}
                           </p>
                         </div>
 
@@ -385,6 +406,7 @@ export default function ProblemList() {
         </tbody>
       </ProblemTable>
 
+      {/* 페이지네이션 */}
       <PaginationContainer>
         <PageLink
           onClick={() => handlePageChange(currentPage - 1)}
@@ -393,13 +415,13 @@ export default function ProblemList() {
           &lt; 이전
         </PageLink>
 
-        {Array.from({ length: totalPages }, (_, index) => (
+        {Array.from({ length: totalPages }, (_, idx) => (
           <PageLink
-            key={index}
-            onClick={() => handlePageChange(index + 1)}
-            isActive={currentPage === index + 1}
+            key={idx}
+            onClick={() => handlePageChange(idx + 1)}
+            isActive={currentPage === idx + 1}
           >
-            {index + 1}
+            {idx + 1}
           </PageLink>
         ))}
 

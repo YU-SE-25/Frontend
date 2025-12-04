@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import {
+  useParams,
+  useNavigate,
+  useLocation,
+  Outlet,
+  useOutlet,
+} from "react-router-dom";
 
 import {
   Wrapper,
@@ -35,6 +41,7 @@ export default function StudyGroupDetailPage() {
   const navigate = useNavigate();
   const { groupId } = useParams();
   const numericId = Number(groupId);
+  const outlet = useOutlet();
 
   // 그룹 상세 데이터
   const [group, setGroup] = useState<StudyGroupDetail | null>(null);
@@ -142,39 +149,17 @@ export default function StudyGroupDetailPage() {
         {/* 오른쪽 콘텐츠 영역 */}
         <MainContentContainer>
           <TabNav>
-            <TabButton
-              isActive={activeTab === "problem"}
-              onClick={() => setActiveTab("problem")}
-            >
-              문제 목록
-            </TabButton>
-
-            <TabButton
-              isActive={activeTab === "discussion"}
-              onClick={() => setActiveTab("discussion")}
-            >
+            <TabButton onClick={() => navigate("problem")}>문제 목록</TabButton>
+            <TabButton onClick={() => navigate("discussion")}>
               토론 게시판
             </TabButton>
-
-            <TabButton
-              isActive={activeTab === "activity"}
-              onClick={() => setActiveTab("activity")}
-            >
+            <TabButton onClick={() => navigate("activity")}>
               활동 기록
             </TabButton>
           </TabNav>
 
           <TabContent>
-            {activeTab === "problem" && (
-              <ProblemListTab role={role} groupId={group.groupId} />
-            )}
-
-            {activeTab === "discussion" && (
-              <StudyGroupBoardList groupId={group.groupId} />
-            )}
-            {activeTab === "activity" && (
-              <ActivityTab groupId={group.groupId} />
-            )}
+            <Outlet context={{ groupId: group.groupId, role }} />
           </TabContent>
         </MainContentContainer>
       </PageLayout>

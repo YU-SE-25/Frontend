@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 import {
   RegisterWrapper,
@@ -10,9 +10,7 @@ import {
   Label,
   StyledInput,
   StyledTextArea,
-  //ExampleGrid,
   MainButton,
-  //ActionButton,
   ErrorMessage,
   StyledSelect,
   TagDisplayContainer,
@@ -23,9 +21,13 @@ import {
 import {
   fetchAvailableTags,
   registerProblem,
+  updateProblem,
+  fetchProblemDetailForEdit,
   TAG_LABEL_MAP,
 } from "../../api/problem_api";
+
 import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
+import { TAG_REVERSE_MAP } from "../../api/problem_api";
 
 const USE_DUMMY = true;
 
@@ -37,6 +39,12 @@ const DIFFICULTY_OPTIONS = [
 
 export default function ProblemAdd() {
   const navigate = useNavigate();
+  const { problemId } = useParams();
+
+  const isEdit = !!problemId;
+
+  // 파일 input은 ref로 관리해야 값이 사라지지 않음
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -51,20 +59,46 @@ export default function ProblemAdd() {
   });
 
   const [tags, setTags] = useState<string[]>([]);
-  const [testCases, setTestCases] = useState<FileList | null>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [errorMessage, setError] = useState("");
 
+  /** 태그 목록 불러오기 */
   useEffect(() => {
     const load = async () => {
       const fetched = USE_DUMMY
         ? ALL_AVAILABLE_TAGS
         : await fetchAvailableTags();
+      console.log("TAGS RAW >>> ", availableTags);
       setAvailableTags(fetched);
     };
     load();
   }, []);
 
+  /** 수정 모드 → 기존 내용 로드 */
+  useEffect(() => {
+    if (!isEdit) return;
+
+    (async () => {
+      const data = await fetchProblemDetailForEdit(Number(problemId));
+      if (!data) return;
+
+      setForm({
+        title: data.title,
+        description: data.description,
+        inputOutputExample: data.inputOutputExample,
+        difficulty: data.difficulty,
+        timeLimit: String(data.timeLimit),
+        memoryLimit: String(data.memoryLimit),
+        hint: data.hint ?? "",
+        source: data.source ?? "",
+        visibility: "PUBLIC",
+      });
+
+      setTags(data.tags ?? []);
+    })();
+  }, [isEdit, problemId]);
+
+  /** 필수값 체크 */
   const isValid = useMemo(() => {
     return (
       form.title.trim() &&
@@ -75,6 +109,7 @@ export default function ProblemAdd() {
     );
   }, [form]);
 
+  /** 제출 */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -84,27 +119,49 @@ export default function ProblemAdd() {
       return;
     }
 
-    const payload = {
-      title: form.title,
-      description: form.description,
-      inputOutputExample: form.inputOutputExample,
-      difficulty: form.difficulty as "EASY" | "MEDIUM" | "HARD",
-      timeLimit: Number(form.timeLimit),
-      memoryLimit: Number(form.memoryLimit),
-      visibility: form.visibility as "PUBLIC" | "PRIVATE",
-      tags,
-      hint: form.hint,
-      source: form.source,
-      testcases: testCases ? Array.from(testCases) : undefined,
-    };
+    // 새로 등록인데 파일 없으면 막기
+    if (!isEdit && !fileRef.current?.files?.[0]) {
+      setError("테스트케이스 파일은 필수입니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", form.title);
+    formData.append("description", form.description);
+    formData.append("inputOutputExample", form.inputOutputExample);
+    formData.append("difficulty", form.difficulty);
+    formData.append("timeLimit", form.timeLimit);
+    formData.append("memoryLimit", form.memoryLimit);
+
+    // 태그
+    tags.forEach((t) => {
+      const eng = TAG_REVERSE_MAP[t] ?? t; // 한글 -> 영어 변환
+      formData.append("tags", eng);
+    });
+
+    formData.append("hint", form.hint);
+    formData.append("source", form.source);
+
+    // 파일이 있으면 넣기
+    const selectedFile = fileRef.current?.files?.[0];
+    if (selectedFile) {
+      formData.append("testcasefile", selectedFile);
+    }
 
     try {
-      await registerProblem(payload);
-      alert("문제 등록이 완료되었습니다.");
-      navigate("/problem-list");
-    } catch (e) {
-      console.error(e);
-      alert("등록 실패!");
+      let id: number;
+      if (isEdit) {
+        id = await updateProblem(Number(problemId), formData);
+        alert("문제가 수정되었습니다!");
+      } else {
+        id = await registerProblem(formData);
+        alert("문제가 등록되었습니다!");
+      }
+
+      navigate(`/problems/${id}`);
+    } catch (err) {
+      console.error(err);
+      setError("요청 중 오류가 발생했습니다.");
     }
   };
 
@@ -112,7 +169,7 @@ export default function ProblemAdd() {
     <RegisterWrapper>
       <MainContent>
         <TitleRow>
-          <h1>문제 등록</h1>
+          <h1>{isEdit ? "문제 수정" : "문제 등록"}</h1>
         </TitleRow>
 
         <form onSubmit={handleSubmit}>
@@ -144,12 +201,17 @@ export default function ProblemAdd() {
             <Label>태그</Label>
 
             <StyledSelect
-              onChange={(e) => setTags([...tags, e.target.value])}
+              onChange={(e) => {
+                if (!tags.includes(e.target.value)) {
+                  setTags([...tags, e.target.value]);
+                }
+              }}
               value=""
             >
               <option value="" disabled>
                 태그 선택
               </option>
+
               {availableTags
                 .filter((t) => !tags.includes(t))
                 .map((t) => (
@@ -162,7 +224,7 @@ export default function ProblemAdd() {
             <TagDisplayContainer>
               {tags.map((t) => (
                 <TagChip key={t}>
-                  {t}
+                  {TAG_LABEL_MAP[t] ?? t}
                   <RemoveTagButton
                     onClick={() => setTags(tags.filter((x) => x !== t))}
                   >
@@ -198,8 +260,9 @@ export default function ProblemAdd() {
           <SectionTitle>제한</SectionTitle>
 
           <InputGroup>
-            <Label>시간 제한 (초)</Label>
+            <Label>시간 제한 (ms)</Label>
             <StyledInput
+              type="number"
               value={form.timeLimit}
               onChange={(e) => setForm({ ...form, timeLimit: e.target.value })}
             />
@@ -208,6 +271,7 @@ export default function ProblemAdd() {
           <InputGroup>
             <Label>메모리 제한 (MB)</Label>
             <StyledInput
+              type="number"
               value={form.memoryLimit}
               onChange={(e) =>
                 setForm({ ...form, memoryLimit: e.target.value })
@@ -216,12 +280,8 @@ export default function ProblemAdd() {
           </InputGroup>
 
           <InputGroup>
-            <Label>테스트케이스 파일</Label>
-            <StyledInput
-              type="file"
-              multiple
-              onChange={(e) => setTestCases(e.target.files)}
-            />
+            <Label>테스트케이스 파일 {isEdit ? "(선택)" : "(필수)"}</Label>
+            <StyledInput type="file" ref={fileRef} />
           </InputGroup>
 
           <SectionTitle>추가</SectionTitle>
@@ -245,7 +305,7 @@ export default function ProblemAdd() {
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
 
           <MainButton type="submit" disabled={!isValid}>
-            등록
+            {isEdit ? "수정하기" : "등록하기"}
           </MainButton>
         </form>
       </MainContent>

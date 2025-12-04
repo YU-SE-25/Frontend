@@ -2,10 +2,7 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import type { ActivityLog } from "../../api/studygroup_api";
 import { fetchActivityLogs } from "../../api/studygroup_api";
-
-interface Props {
-  groupId: number;
-}
+import { useOutletContext } from "react-router-dom";
 
 // 스타일
 const ActivityContainer = styled.div`
@@ -41,7 +38,8 @@ const LogDate = styled.div`
   color: ${({ theme }) => theme.textColor};
 `;
 
-export default function ActivityTab({ groupId }: Props) {
+export default function ActivityTab() {
+  const { groupId } = useOutletContext<{ groupId: number }>();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
 
   useEffect(() => {
