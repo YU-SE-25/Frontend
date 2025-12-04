@@ -17,6 +17,7 @@ import {
 } from "../../api/qna_api";
 import { useQuery } from "@tanstack/react-query";
 import type { BoardComment } from "./BoardList";
+import { PollView } from "../../components/poll"; // ✅ 추가
 
 interface QnaDetailProps {
   post: QnaContent;
@@ -322,7 +323,7 @@ const LoadingOverlay = styled.div`
   z-index: 10;
 `;
 
-export default function QnaDetail({ post, onClose }: QnaDetailProps) {
+export default function QnaDetail({ post }: QnaDetailProps) {
   const nav = useNavigate();
   const postId = post.post_id;
 
@@ -611,6 +612,9 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
 
       <DetailBody>
         <DetailMain>
+          {/* ✅ QnA도 투표가 있으면 여기 표시 (없으면 PollView가 null 반환) */}
+          <PollView postId={stablePost.post_id} isDiscuss={false} />
+
           <ContentArea>{stablePost.contents}</ContentArea>
 
           <StatsRow>
@@ -631,7 +635,7 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
             ) : (
               <CommentList>
                 {localComments
-                  .filter((c) => !c.parent_id || c.parent_id === 0) // ✅ 최상위 댓글
+                  .filter((c) => !c.parent_id || c.parent_id === 0)
                   .map((c) => {
                     const commentAuthor = c.anonymity ? "익명" : c.author_name;
                     const date = c.created_at.slice(0, 10);
@@ -641,7 +645,6 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
 
                     return (
                       <CommentItem key={c.comment_id}>
-                        {/* ---- 상위 댓글 ---- */}
                         <CommentMeta isDisabled={c.anonymity}>
                           <strong onClick={handleNavigateMypage(commentAuthor)}>
                             {commentAuthor}
@@ -678,7 +681,6 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
                               </CommentActionButton>
                             </>
                           )}
-                          {/* ✅ 대댓글 모드 진입 버튼 (ㄴ) */}
                           <CommentActionButton
                             type="button"
                             onClick={() => {
@@ -693,7 +695,6 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
 
                         <CommentContent>{c.content}</CommentContent>
 
-                        {/* ---- 대댓글들 ---- */}
                         {replies.length > 0 && (
                           <ReplyList>
                             {replies.map((r) => {
@@ -755,7 +756,6 @@ export default function QnaDetail({ post, onClose }: QnaDetailProps) {
             )}
 
             <CommentForm onSubmit={handleSubmit}>
-              {/* 대댓글 안내 문구 */}
               {replyParentId && (
                 <div
                   style={{

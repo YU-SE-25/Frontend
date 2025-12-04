@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import type { BoardCategory, BoardComment, BoardContent } from "./BoardList";
 import EditButton from "../../components/EditButton";
 import { isOwner } from "../../utils/isOwner";
+import { PollView } from "../../components/poll";
 import {
   fetchDiscussPost,
   fetchCommentsByPostId,
@@ -131,25 +132,25 @@ const HeaderActions = styled.div`
   gap: 8px;
 `;
 
-const CloseButton = styled.button`
-  padding: 4px 10px;
-  font-size: 13px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: transparent;
-  color: ${({ theme }) => theme.textColor};
-  cursor: pointer;
-  white-space: nowrap;
+// const CloseButton = styled.button`
+//   padding: 4px 10px;
+//   font-size: 13px;
+//   border-radius: 999px;
+//   border: 1px solid rgba(148, 163, 184, 0.6);
+//   background: transparent;
+//   color: ${({ theme }) => theme.textColor};
+//   cursor: pointer;
+//   white-space: nowrap;
 
-  &:hover {
-    background: rgba(148, 163, 184, 0.18);
-  }
+//   &:hover {
+//     background: rgba(148, 163, 184, 0.18);
+//   }
 
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.focusColor};
-    outline-offset: 2px;
-  }
-`;
+//   &:focus-visible {
+//     outline: 2px solid ${({ theme }) => theme.focusColor};
+//     outline-offset: 2px;
+//   }
+// `;
 
 const ContentArea = styled.div`
   font-size: 15px;
@@ -353,7 +354,7 @@ const LoadingOverlay = styled.div`
   z-index: 10; /* 내용보다 위 */
 `;
 
-export default function BoardDetail({ post, onClose }: BoardDetailProps) {
+export default function BoardDetail({ post }: BoardDetailProps) {
   const nav = useNavigate();
   const postId = post.post_id;
 
@@ -619,6 +620,7 @@ export default function BoardDetail({ post, onClose }: BoardDetailProps) {
 
       <DetailBody>
         <DetailMain>
+          <PollView postId={stablePost.post_id} isDiscuss={true} />
           <ContentArea>{stablePost.contents}</ContentArea>
 
           <StatsRow>

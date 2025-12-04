@@ -32,30 +32,6 @@ interface BlacklistUser {
   blacklistedAt: string;
 }
 
-/* 더미 데이터 */
-const DUMMY_REPORTS: ReportItem[] = [
-  {
-    id: 1,
-    target: "두 수의 합 (문제 ID: P-1001)",
-    title: "문제 설명과 입출력이 다릅니다.",
-    reporterId: "user01",
-    reporterNickname: "버그헌터",
-    createdAt: "2025-11-20",
-    content:
-      "문제 설명에서 예제 입출력과 실제 테스트케이스가 다르게 동작합니다. 설명을 수정하거나 테스트케이스를 맞춰야 할 것 같습니다.",
-  },
-  {
-    id: 2,
-    target: "자유게시판 글 (게시글 ID: B-45)",
-    title: "욕설 및 비방 신고",
-    reporterId: "user02",
-    reporterNickname: "불편한진실",
-    createdAt: "2025-11-19",
-    content:
-      "특정 유저를 지칭하며 욕설과 비방이 포함되어 있습니다. 운영 정책 위반으로 보입니다.",
-  },
-];
-
 /* -----------------------------------------------------
    styled-components (유저 관리 화면과 톤 맞춤)
 ----------------------------------------------------- */

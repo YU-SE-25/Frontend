@@ -3,13 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import styled, { keyframes, css } from "styled-components";
 import axios from "axios";
 import { useAtom, useSetAtom } from "jotai";
-import {
-  isDarkAtom,
-  toggleThemeActionAtom,
-  isLoggedInAtom,
-  logoutActionAtom,
-  userProfileAtom,
-} from "../atoms";
+import { isLoggedInAtom, logoutActionAtom, userProfileAtom } from "../atoms";
 
 export const TOPBAR_HEIGHT = 50;
 
@@ -221,46 +215,6 @@ const AuthLink = styled(Link)`
 
 // **********************************************
 
-// 라이트/다크 모드 변경 버튼
-const ThemeToggleContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-left: 20px;
-  cursor: pointer;
-  span {
-    font-size: 14px;
-    margin-right: 8px;
-    color: ${(props) => props.theme.textColor};
-    white-space: nowrap;
-  }
-`;
-
-// 실제 스위치 영역 (막대)
-const ToggleSwitch = styled.div<{ $isDark: boolean }>`
-  width: 44px;
-  height: 24px;
-  background-color: ${(props) =>
-    props.$isDark ? props.theme.focusColor : props.theme.authHoverBgColor};
-  border-radius: 12px;
-  position: relative;
-  transition: background-color 0.3s;
-`;
-
-// 스위치 핸들 (동그란 부분)
-const ToggleHandle = styled.div<{ $isDark: boolean }>`
-  width: 18px;
-  height: 18px;
-  background-color: ${(props) => props.theme.bgColor};
-  border-radius: 50%;
-  position: absolute;
-  top: 3px;
-  left: ${(props) => (props.$isDark ? "23px" : "3px")};
-  transition: left 0.3s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-`;
-
-// **********************************************
-
 export default function Topbar() {
   const navigate = useNavigate();
 
@@ -268,10 +222,6 @@ export default function Topbar() {
   const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [userProfile] = useAtom(userProfileAtom);
   const runLogoutAction = useSetAtom(logoutActionAtom);
-
-  // 테마 상태
-  const [isDark] = useAtom(isDarkAtom);
-  const runToggleTheme = useSetAtom(toggleThemeActionAtom);
 
   // (미사용이긴 하지만 혹시 쓸 수도 있으니 그대로 둠)
   const userName = userProfile?.nickname || "guest";

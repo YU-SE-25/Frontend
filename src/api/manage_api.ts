@@ -1,6 +1,5 @@
 // src/api/manage_api.ts
 import { api } from "./axios";
-import type { IProblem } from "./problem_api";
 
 export interface ProblemListItem {
   problemId: number;

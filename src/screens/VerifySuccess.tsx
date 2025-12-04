@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import styled from "styled-components";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { api } from "../api/axios";
-import { AuthAPI } from "../api/auth_api";
 
 const SuccessWrapper = styled.div`
   height: 100%;

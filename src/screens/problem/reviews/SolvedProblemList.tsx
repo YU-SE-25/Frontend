@@ -32,10 +32,7 @@ import { userProfileAtom } from "../../../atoms";
 
 import ProblemMeta from "../../../components/ProblemMeta";
 import type { IProblem } from "../../../api/problem_api";
-import {
-  fetchProblemDetail,
-  mapDetailDtoToProblem,
-} from "../../../api/problem_api";
+import { fetchProblemDetail } from "../../../api/problem_api";
 
 import {
   fetchSharedSolutionsByProblem,

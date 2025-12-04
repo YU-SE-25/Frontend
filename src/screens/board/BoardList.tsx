@@ -7,7 +7,6 @@ import {
   ControlBar,
   SearchContainer,
   SearchInput,
-  SearchButton,
   SortSelect,
   ProblemTable as BoardTable,
   TableHead,

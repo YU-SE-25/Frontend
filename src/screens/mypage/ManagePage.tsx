@@ -2,15 +2,12 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
-import { getDummyUserProfile } from "../../api/dummy/mypage_dummy";
 import { getUserProfile } from "../../api/mypage_api";
 import UserManagementScreen from "./Manage/User";
 import ReportManageScreen from "./Manage/Report";
 import ProblemManagementScreen from "./Manage/Problem";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
-
-const USE_DUMMY = true;
 
 const Wrapper = styled.div`
   flex: 1;
@@ -111,11 +108,10 @@ export default function ManagePage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: USE_DUMMY ? ["dummyUserProfile"] : ["userProfile", username],
-    queryFn: async () =>
-      USE_DUMMY ? getDummyUserProfile() : await getUserProfile(username ?? ""),
+    queryKey: ["userProfile", username],
+    queryFn: async () => await getUserProfile(username ?? ""),
     staleTime: 5 * 60 * 1000,
-    enabled: !!username || USE_DUMMY,
+    enabled: !!username,
   });
 
   const [navigateState, setNavigateState] = useState<number>(0);
