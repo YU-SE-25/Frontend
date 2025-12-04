@@ -157,16 +157,11 @@ export async function votePoll(
   pollId: number,
   optionIds: number[]
 ) {
-  const res = await api.post(
-    `/studygroup/discuss/${groupId}/poll/${pollId}/vote`,
-    {
-      optionIds,
-    }
-  );
+  const res = await api.post(`/studygroup/${groupId}/poll/${pollId}/vote`, {
+    optionIds,
+  });
   return res.data;
 }
-
-// 댓글 api
 
 // 댓글 타입
 export interface DiscussionCommentItem {

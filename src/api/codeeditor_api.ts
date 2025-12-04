@@ -1,21 +1,5 @@
 import type { SubmissionStatus } from "./mySubmissions_api";
-// 타입 그대로 사용 (단비 제공본)
-export * from "./dummy/codeeditor_dummy";
-
 import { api } from "./axios";
-// 지금은 dummy API 사용
-import {
-  dummyRunCode,
-  dummySaveDraft,
-  dummyLoadDraft,
-  dummySubmitCode,
-} from "./dummy/codeeditor_dummy";
-
-// 실제 API와 동일한 인터페이스 제공
-export const runCode = dummyRunCode;
-export const saveDraft = dummySaveDraft;
-export const loadDraft = dummyLoadDraft;
-export const submitCode = dummySubmitCode;
 
 // 코드 실행 API 응답 타입: /api/code/run
 export interface ICodeRunResult {
@@ -47,58 +31,62 @@ export interface ICodeSubmitResult {
 }
 
 // 제출 상태 및 결과 조회 API 응답 타입: /api/submissions/{submissionId}/status
-
 export interface ISubmissionStatusResult {
   status: SubmissionStatus;
   currentTestCase?: number;
   totalTestCases: number;
-  // 채점 완료 시 추가되는 필드
-  runtime?: number; // ms 단위
+
+  // 채점 완료 시 추가
+  runtime?: number;
   memory?: number;
   passedTestCases?: number;
   failedTestCase?: number;
 }
 
-// 실제 백엔드 연동용 axios 버전
-/*
+/* --------------------------
+    실제 백엔드 연동 API
+--------------------------- */
 
-import axios from "axios";
-
-
-const api = axios.create({
-  baseURL: "", 
-});
-
-// 실행
-export async function runCode(code: string, language: string) {
-  const res = await api.post("/api/code/run", { code, language });
+// 1) 코드 실행
+export async function runCode(req: {
+  code: string;
+  language: string;
+  input: string;
+}): Promise<ICodeRunResult> {
+  const res = await api.post<ICodeRunResult>("/code/run", req);
   return res.data;
 }
 
-// 임시 저장
-export async function saveDraft(req) {
-  const res = await api.post("/api/submissions/draft", req);
+// 2) 임시 저장
+export async function saveDraft(
+  req: ICodeDraftRequest
+): Promise<{ message: string; draftSubmissionId: number }> {
+  const res = await api.patch<{ message: string; draftSubmissionId: number }>(
+    "/submissions/draft",
+    req
+  );
   return res.data;
 }
 
-// 임시 저장 불러오기
-export async function loadDraft(problemId: number) {
-  const res = await api.get("/api/submissions/draft", {
-    params: { problemId },
-  });
+// 3) 임시 저장 불러오기
+export async function loadDraft(
+  problemId: number
+): Promise<ICodeDraftLoadResult> {
+  const res = await api.get<ICodeDraftLoadResult>(
+    `/submissions/draft?problemId=${problemId}`
+  );
   return res.data;
 }
 
-// 제출
-export async function submitCode(req) {
-  const res = await api.post("/api/submissions", req);
+// 4) 제출하기
+export async function submitCode(
+  req: ICodeSubmitRequest
+): Promise<ICodeSubmitResult> {
+  const res = await api.post<ICodeSubmitResult>("/submissions", req);
   return res.data;
 }
 
-// 제출 상태 조회
-
-
-*/
+// 5) 제출 상태 조회 (채점 상태 폴링)
 export async function getSubmissionStatus(
   submissionId: number
 ): Promise<SubmissionStatus> {

@@ -24,12 +24,8 @@ import {
   updateProblem,
   fetchProblemDetailForEdit,
   TAG_LABEL_MAP,
+  TAG_REVERSE_MAP,
 } from "../../api/problem_api";
-
-import { ALL_AVAILABLE_TAGS } from "../../api/dummy/problem_dummy";
-import { TAG_REVERSE_MAP } from "../../api/problem_api";
-
-const USE_DUMMY = true;
 
 const DIFFICULTY_OPTIONS = [
   { ko: "하", value: "EASY" },
@@ -40,10 +36,8 @@ const DIFFICULTY_OPTIONS = [
 export default function ProblemAdd() {
   const navigate = useNavigate();
   const { problemId } = useParams();
-
   const isEdit = !!problemId;
 
-  // 파일 input은 ref로 관리해야 값이 사라지지 않음
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
@@ -62,13 +56,10 @@ export default function ProblemAdd() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [errorMessage, setError] = useState("");
 
-  /** 태그 목록 불러오기 */
+  /** 태그 목록 불러오기 (더미 제거) */
   useEffect(() => {
     const load = async () => {
-      const fetched = USE_DUMMY
-        ? ALL_AVAILABLE_TAGS
-        : await fetchAvailableTags();
-      console.log("TAGS RAW >>> ", availableTags);
+      const fetched = await fetchAvailableTags();
       setAvailableTags(fetched);
     };
     load();
@@ -119,7 +110,6 @@ export default function ProblemAdd() {
       return;
     }
 
-    // 새로 등록인데 파일 없으면 막기
     if (!isEdit && !fileRef.current?.files?.[0]) {
       setError("테스트케이스 파일은 필수입니다.");
       return;
@@ -133,16 +123,14 @@ export default function ProblemAdd() {
     formData.append("timeLimit", form.timeLimit);
     formData.append("memoryLimit", form.memoryLimit);
 
-    // 태그
     tags.forEach((t) => {
-      const eng = TAG_REVERSE_MAP[t] ?? t; // 한글 -> 영어 변환
+      const eng = TAG_REVERSE_MAP[t] ?? t;
       formData.append("tags", eng);
     });
 
     formData.append("hint", form.hint);
     formData.append("source", form.source);
 
-    // 파일이 있으면 넣기
     const selectedFile = fileRef.current?.files?.[0];
     if (selectedFile) {
       formData.append("testcasefile", selectedFile);

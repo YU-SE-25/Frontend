@@ -20,12 +20,6 @@ import {
 } from "../theme/Home.Style";
 
 import {
-  dummyProblemRanking,
-  dummyReputationRanking,
-  dummyReviewRanking,
-} from "../api/dummy/home_dummy";
-
-import {
   getProblemRanking,
   getReputationRanking,
   getReviewRanking,
@@ -70,6 +64,31 @@ export default function HomePage() {
   const [activeRankingTab, setActiveRankingTab] = useState(
     RANKING_TABS.PROBLEM_VIEWS
   );
+
+  // ✨ 더미 삭제 → 빈 배열로 초기화
+  const [problemRanking, setProblemRanking] = useState<ProblemItem[]>([]);
+  const [reputationRanking, setReputationRanking] = useState<ReputationItem[]>(
+    []
+  );
+  const [reviewRanking, setReviewRanking] = useState<ReviewItem[]>([]);
+
+  useEffect(() => {
+    // 문제 조회수 랭킹
+    getProblemRanking()
+      .then((res) => setProblemRanking(res))
+      .catch(() => setProblemRanking([]));
+
+    // 평판 랭킹
+    getReputationRanking()
+      .then((res) => setReputationRanking(res))
+      .catch(() => setReputationRanking([]));
+
+    // 코드 리뷰 랭킹
+    getReviewRanking()
+      .then((res) => setReviewRanking(res))
+      .catch(() => setReviewRanking([]));
+  }, []);
+
   const codeAnalysisFeatures = [
     {
       icon: "🧩",
@@ -92,6 +111,7 @@ export default function HomePage() {
       desc: "코드 내 잠재적 취약점을 분석하고 관련 보안 개념을 학습 자료로 제공합니다.",
     },
   ];
+
   const userDashboardFeatures = [
     {
       icon: "🏆",
@@ -115,58 +135,6 @@ export default function HomePage() {
     },
   ];
 
-  // 랭킹 데이터 상태 (지금은 더미 사용)
-  const [problemRanking, setProblemRanking] =
-    useState<ProblemItem[]>(dummyProblemRanking);
-  const [reputationRanking, setReputationRanking] = useState<ReputationItem[]>(
-    dummyReputationRanking
-  );
-  const [reviewRanking, setReviewRanking] =
-    useState<ReviewItem[]>(dummyReviewRanking);
-
-  // 백엔드 연동용
-  useEffect(() => {
-    // 문제 조회수 랭킹
-    getProblemRanking()
-      .then((res) => {
-        if (res.length === 0) {
-          setProblemRanking([]); //데이터 없음 → 빈배열 → "순위가 없습니다" 렌더링
-        } else {
-          setProblemRanking(res); //정상 데이터
-        }
-      })
-      .catch(() => {
-        setProblemRanking(dummyProblemRanking); // 실패 → 더미 사용
-      });
-
-    // 평판 랭킹
-    getReputationRanking()
-      .then((res) => {
-        if (res.length === 0) {
-          setReputationRanking([]); // ③
-        } else {
-          setReputationRanking(res); // ②
-        }
-      })
-      .catch(() => {
-        setReputationRanking(dummyReputationRanking); // ④
-      });
-
-    // 코드 리뷰 랭킹
-    getReviewRanking()
-      .then((res) => {
-        if (res.length === 0) {
-          setReviewRanking([]); // ③
-        } else {
-          setReviewRanking(res); // ②
-        }
-      })
-      .catch(() => {
-        setReviewRanking(dummyReviewRanking); // ④
-      });
-  }, []);
-
-  //순위 데이터 렌더링용 변환
   const renderRankingData = () => {
     switch (activeRankingTab) {
       case RANKING_TABS.PROBLEM_VIEWS:
@@ -187,7 +155,7 @@ export default function HomePage() {
             rank: item.rank,
             title: `User ${item.userId}`,
             value1: item.delta,
-            value2: item.delta ?? 0,
+            value2: item.delta,
           })),
         };
 
@@ -279,22 +247,13 @@ export default function HomePage() {
             <thead>
               <tr>
                 {currentRankingData.headers.map((header, index) => (
-                  <th
-                    key={index}
-                    style={{
-                      width: index === 1 ? "40%" : "15%",
-                      textAlign: index === 0 ? "left" : "center",
-                    }}
-                  >
-                    {header}
-                  </th>
+                  <th key={index}>{header}</th>
                 ))}
               </tr>
             </thead>
 
             <tbody>
               {currentRankingData.data.length === 0 ? (
-                // 데이터 없을 때 표시
                 <tr>
                   <td
                     colSpan={currentRankingData.headers.length}
@@ -304,23 +263,12 @@ export default function HomePage() {
                   </td>
                 </tr>
               ) : (
-                // 데이터 있을 때 표시
                 currentRankingData.data.map((item, index) => (
                   <tr key={index}>
-                    <td style={{ textAlign: "left" }}>{item.rank}</td>
-
-                    <td
-                      style={{
-                        width: "40%",
-                        textAlign: "left",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {item.title}
-                    </td>
-
-                    <td style={{ textAlign: "center" }}>{item.value1}</td>
-                    <td style={{ textAlign: "center" }}>{item.value2}</td>
+                    <td>{item.rank}</td>
+                    <td>{item.title}</td>
+                    <td>{item.value1}</td>
+                    <td>{item.value2}</td>
                   </tr>
                 ))
               )}

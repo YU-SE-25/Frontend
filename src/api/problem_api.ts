@@ -1,10 +1,6 @@
 import { api } from "./axios";
 
-import {
-  DUMMY_PROBLEM_LIST,
-  fetchDummyProblemDetail,
-} from "../api/dummy/problem_dummy_new";
-
+// 리스트 DTO
 export interface ProblemListItemDto {
   problemId: number;
   title: string;
@@ -19,7 +15,7 @@ export interface ProblemListItemDto {
   correctRate: number;
 }
 
-// (상세는 스펙 안 줬으니 기존 그대로 두되, 필요하면 나중에 또 맞추자!)
+// 상세 DTO
 export interface ProblemDetailDto {
   problemId: number;
   createdByNickname: string;
@@ -45,7 +41,7 @@ export interface ProblemDetailDto {
   allowedLanguages: string[];
 }
 
-// 백엔드 POST /api/problems/register 요청 DTO에 맞춤
+// 문제 등록용 DTO
 export interface ProblemRegisterPayload {
   title: string;
   description: string;
@@ -54,19 +50,16 @@ export interface ProblemRegisterPayload {
   timeLimit: number;
   memoryLimit: number;
 
-  // visibility → status 로 변경
-  // ex) "PENDING" 하나만 쓸 수도 있고, 나중에 enum 늘어나면 여기에 추가
   status: "PENDING" | "APPROVED" | "REJECTED";
 
   tags: string[];
   hint: string;
   source: string;
 
-  // testcases(File[]) → testcaseFile(string) 로 변경
   testcaseFile: string;
 }
 
-// UI에서 쓰는 통합 타입(조금 느슨하게 둬도 됨)
+// UI에서 사용하는 통합 타입
 export interface IProblem {
   problemId: number;
   title: string;
@@ -79,7 +72,7 @@ export interface IProblem {
   summary?: string;
   solvedCount?: number;
   successRate?: string;
-  // UI 쪽은 "NONE" 계속 써도 되고, DTO에서 "NOT_SOLVED" → "NONE" 변환
+
   userStatus?: "SOLVED" | "ATTEMPTED" | "NONE";
 
   description?: string;
@@ -94,7 +87,7 @@ export interface IProblem {
   allowedLanguages?: string[];
 }
 
-// 리스트용 DTO → UI용 IProblem 매핑
+// 리스트 DTO → UI 변환
 export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
   return {
     problemId: dto.problemId,
@@ -105,7 +98,6 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
     createdAt: dto.createdAt.slice(0, 10),
 
     summary: dto.summary,
-
     solvedCount: dto.solverCount,
 
     successRate: Math.round(dto.correctRate * 100) + "%",
@@ -114,7 +106,7 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
   };
 }
 
-// 상세 DTO → IProblem 매핑 (여긴 기존 로직 유지)
+// 상세 DTO → UI 변환
 export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
   return {
     problemId: dto.problemId,
@@ -142,12 +134,13 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
   };
 }
 
-//스터디 그룹 문제 목록 생성 시 사용되는 타입
+// 스터디 그룹 문제 목록 생성 시 사용되는 타입
 export interface SimpleProblem {
   problemId: number;
   problemTitle: string;
 }
 
+// 태그 label map
 export const TAG_LABEL_MAP: Record<string, string> = {
   IMPLEMENTATION: "구현",
   SORTING: "정렬",
@@ -193,58 +186,52 @@ export const TAG_REVERSE_MAP: Record<string, string> = {
   DFS: "DFS",
 };
 
-// 태그 목록
+// 태그 목록 조회
 export async function fetchAvailableTags(): Promise<string[]> {
   try {
     const res = await api.get("/problems/tags");
-    console.log("TAG RAW:", res.data);
 
-    // 타입 가드: 배열인지 확인
     if (!Array.isArray(res.data)) return [];
 
-    // 모든 요소가 string인지도 확인
-    const valid = res.data.filter((t: any) => typeof t === "string");
-
-    return valid;
+    return res.data.filter((t: any) => typeof t === "string");
   } catch (err) {
     console.error(err);
     return [];
   }
 }
 
-// 문제 목록 조회 (엔드포인트 /problems/list 로 맞춤)
+// 문제 목록 조회
 export async function fetchProblems(): Promise<IProblem[]> {
-  try {
-    const res = await api.get<{
-      content: ProblemListItemDto[];
-    }>("/problems/list");
+  const res = await api.get<{ content: ProblemListItemDto[] }>(
+    "/problems/list"
+  );
 
-    if (!res.data?.content) throw new Error("empty");
+  if (!res.data?.content) throw new Error("empty");
 
-    return res.data.content.map(mapListDtoToProblem);
-  } catch (err) {
-    console.error("문제 목록 API 실패 → 더미 목록 사용!");
-
-    // 더미 목록을 mapListDtoToProblem 구조로 변환
-    return DUMMY_PROBLEM_LIST.map(mapListDtoToProblem);
-  }
+  return res.data.content.map(mapListDtoToProblem);
 }
 
-// 문제 상세 조회
+// 문제 상세 조회 (풀이 화면용)
 export async function fetchProblemDetail(problemId: number): Promise<IProblem> {
-  try {
-    const res = await api.get<ProblemDetailDto>(
-      `/problems/detail/${problemId}`
-    );
-
-    return mapDetailDtoToProblem(res.data);
-  } catch (err) {
-    console.error("문제 상세 조회 실패 → 더미 상세로 fallback!");
-
-    const dummy = await fetchDummyProblemDetail(problemId);
-    return dummy;
-  }
+  const res = await api.get<ProblemDetailDto>(`/problems/detail/${problemId}`);
+  return mapDetailDtoToProblem(res.data);
 }
+
+// 스터디 그룹용 Simple 문제 목록
+export async function fetchSimpleProblems(): Promise<SimpleProblem[]> {
+  const res = await api.get<{
+    content: { problemId: number; title: string }[];
+  }>("/problems/list");
+
+  return res.data.content.map((p) => ({
+    problemId: p.problemId,
+    problemTitle: p.title,
+  }));
+}
+
+/* -----------------------------
+   문제 수정/등록용 API들
+------------------------------ */
 
 export interface ProblemEditDetail {
   problemId: number;
@@ -267,7 +254,7 @@ interface ProblemCreateResponse {
   timestamp: string;
 }
 
-// 문제 상세 조회 (수정용)
+// 문제 상세 조회 (수정 페이지용)
 export async function fetchProblemDetailForEdit(
   problemId: number
 ): Promise<ProblemEditDetail> {
@@ -275,8 +262,11 @@ export async function fetchProblemDetailForEdit(
   return res.data;
 }
 
-// PUT 수정
-export async function updateProblem(problemId: number, formData: FormData) {
+// 문제 수정
+export async function updateProblem(
+  problemId: number,
+  formData: FormData
+): Promise<number> {
   const res = await api.put<ProblemCreateResponse>(
     `/problems/${problemId}`,
     formData
@@ -284,39 +274,11 @@ export async function updateProblem(problemId: number, formData: FormData) {
   return res.data.problemId;
 }
 
-// POST 등록
-export async function registerProblem(formData: FormData) {
+// 문제 등록
+export async function registerProblem(formData: FormData): Promise<number> {
   const res = await api.post<ProblemCreateResponse>(
     "/problems/register",
     formData
   );
   return res.data.problemId;
-}
-
-//스터디 그룹용 문제 목록 띄우기
-export interface SimpleProblem {
-  problemId: number;
-  problemTitle: string;
-}
-
-export async function fetchSimpleProblems(): Promise<SimpleProblem[]> {
-  try {
-    const res = await api.get<{
-      content: {
-        problemId: number;
-        title: string;
-      }[];
-    }>("/problems/list");
-
-    return res.data.content.map((p) => ({
-      problemId: p.problemId,
-      problemTitle: p.title,
-    }));
-  } catch (err) {
-    console.error("문제 목록 조회 실패 → 더미 사용");
-    return [
-      { problemId: 1, problemTitle: "더미 문제 1" },
-      { problemId: 2, problemTitle: "더미 문제 2" },
-    ];
-  }
 }
