@@ -9,7 +9,6 @@ import {
   ModalTitle,
 } from "../../theme/StudyGroupMain.Style";
 import ProblemListModal from "./CreateProblemList";
-
 import type { AssignedProblemList } from "../../api/studygroup_api";
 
 export default function ProblemListManageModal({
