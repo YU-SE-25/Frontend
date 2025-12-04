@@ -8,7 +8,6 @@ import {
   dummySaveDraft,
   dummyLoadDraft,
   dummySubmitCode,
-  dummyGetSubmissionStatus,
 } from "./dummy/codeeditor_dummy";
 
 // 실제 API와 동일한 인터페이스 제공
