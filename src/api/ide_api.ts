@@ -67,3 +67,19 @@ export const IDEAPI = {
     return res.data;
   },
 };
+
+// 코딩 습관 분석
+export const fetchHabitAnalysis = () =>
+  api.get("/analysis/habits").then((res) => res.data);
+
+// 복잡도 분석
+export const fetchComplexityAnalysis = (submissionId: number) =>
+  api
+    .get(`/submissions/${submissionId}/analysis/complexity`)
+    .then((res) => res.data);
+
+// 플로우차트 분석
+export const fetchFlowchartAnalysis = (submissionId: number) =>
+  api
+    .get(`/submissions/${submissionId}/analysis/flowchart`)
+    .then((res) => res.data);

@@ -603,13 +603,12 @@ export default function SolveResult({
           <ActionButton
             variant="ghost"
             onClick={() =>
-              problemId
-                ? navigate(`/problem-list?ids=${problemId}`)
-                : navigate("/problem-list")
+              navigate(`/problems/${problemId}/analysis/${submissionId}`)
             }
           >
             코드 분석
           </ActionButton>
+
           <ActionButton variant="primary" onClick={handleClickNavEditor}>
             에디터로 돌아가기
           </ActionButton>

@@ -65,7 +65,7 @@ export default function HomePage() {
     RANKING_TABS.PROBLEM_VIEWS
   );
 
-  // ✨ 더미 삭제 → 빈 배열로 초기화
+  // 더미 삭제 → 빈 배열로 초기화
   const [problemRanking, setProblemRanking] = useState<ProblemItem[]>([]);
   const [reputationRanking, setReputationRanking] = useState<ReputationItem[]>(
     []
@@ -101,11 +101,6 @@ export default function HomePage() {
       desc: "실행 시간 및 메모리 사용량, 라인별 호출 횟수를 분석하여 최적화 포인트를 제시합니다.",
     },
     {
-      icon: "💡",
-      title: "플로우차트 자동 생성",
-      desc: "사용자가 작성한 코드를 분석하여 제어 흐름을 플로우차트로 자동 생성합니다.",
-    },
-    {
       icon: "🛡️",
       title: "취약점 개념 분석",
       desc: "코드 내 잠재적 취약점을 분석하고 관련 보안 개념을 학습 자료로 제공합니다.",
@@ -114,19 +109,14 @@ export default function HomePage() {
 
   const userDashboardFeatures = [
     {
-      icon: "🏆",
-      title: "연속 학습일 기록",
-      desc: "연속 학습일 기록 및 누적 성실도를 시각화하여 학습 지속성을 강화합니다.",
-    },
-    {
       icon: "📊",
-      title: "개인화된 성과 리포트",
-      desc: "정답률, 평균 실행 시간 등을 그래프로 제공하여 맞춤형 피드백을 제공합니다.",
+      title: "개인화된 학습 목표",
+      desc: "언어별 학습 시간, 주간 학습 목표 등을 설정하여 의지를 불태워보세요.",
     },
     {
       icon: "💬",
       title: "커뮤니티 활동 성과",
-      desc: "좋은 답변/리뷰 제공 시 평판 점수를 부여하고 배지를 수여합니다.",
+      desc: "좋은 답변/리뷰 제공 시 평판 점수를 부여합니다.",
     },
     {
       icon: "🔔",

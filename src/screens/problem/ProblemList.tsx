@@ -167,7 +167,20 @@ export default function ProblemList() {
   };
 
   // 기록 필터
+  // 태그 + 기록 필터 함께 적용
   const filteredProblems = problems.filter((problem) => {
+    // 1) 태그 필터
+    if (selectedTags.length > 0) {
+      // 문제에 태그가 없거나, 선택된 태그와 하나도 안 겹치면 제외
+      if (
+        !problem.tags ||
+        !problem.tags.some((t) => selectedTags.includes(t))
+      ) {
+        return false;
+      }
+    }
+
+    // 2) 기록 필터
     if (filter === "off") return true;
 
     if (filter === "tried") {
