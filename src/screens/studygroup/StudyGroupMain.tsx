@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+
 import { useNavigate } from "react-router-dom";
 import CreateStudyGroup from "./StudyGroupCreate";
 
@@ -42,10 +43,10 @@ export default function StudyGroupListPage() {
   const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<StudyGroup | null>(null);
-  //초기 데이터 로딩
+
+  // 🔥 초기 데이터 로딩
   const reloadGroups = async () => {
     const all = await fetchStudyGroups();
-
     setGroups(all);
 
     const mine = all.filter(
@@ -54,7 +55,11 @@ export default function StudyGroupListPage() {
     setMyGroups(mine);
   };
 
-  // 검색 필터
+  useEffect(() => {
+    reloadGroups();
+  }, []);
+
+  // 🔍 검색 필터
   const filteredGroups = useMemo(() => {
     const lowered = searchTerm.toLowerCase();
     return lowered
@@ -62,13 +67,13 @@ export default function StudyGroupListPage() {
       : groups;
   }, [searchTerm, groups]);
 
-  // 내가 가입한 그룹 id set
+  // 내가 가입한 그룹 ID set
   const myGroupIds = useMemo(
     () => new Set(myGroups.map((g) => g.groupId)),
     [myGroups]
   );
 
-  // 그룹 카드 클릭 시
+  // 그룹 카드 클릭
   const handleGroupClick = (groupId: number) => {
     if (myGroupIds.has(groupId)) {
       navigate(`/studygroup/${groupId}`);
@@ -82,20 +87,20 @@ export default function StudyGroupListPage() {
     setShowJoinModal(true);
   };
 
-  // "예, 가입하기"
+  // 그룹 참가 확인
   const handleConfirmJoin = async () => {
     if (!selectedGroup) return;
     await joinStudyGroup(selectedGroup.groupId);
-    setMyGroups((prev) => [...prev, selectedGroup]);
 
+    setMyGroups((prev) => [...prev, selectedGroup]);
     setShowJoinModal(false);
     navigate(`/studygroup/${selectedGroup.groupId}`);
   };
 
-  //스터디 그룹 생성 완료 콜백
+  // 그룹 생성 완료 콜백
   const handleCreated = async () => {
-    await reloadGroups(); // 데이터 다시 불러오기
-    setShowCreateModal(false); // 모달 닫기
+    await reloadGroups();
+    setShowCreateModal(false);
   };
 
   return (
@@ -110,6 +115,7 @@ export default function StudyGroupListPage() {
         </AddButton>
       </HeaderContainer>
 
+      {/* 나의 스터디 그룹 */}
       <MyGroupSection>
         <h2>나의 소속 스터디 그룹</h2>
         <GroupGrid>
@@ -144,6 +150,7 @@ export default function StudyGroupListPage() {
         </GroupGrid>
       </MyGroupSection>
 
+      {/* 전체 그룹 목록 */}
       <SectionContainer>
         <h2>전체 스터디 그룹 목록</h2>
 
@@ -167,7 +174,6 @@ export default function StudyGroupListPage() {
                 </CardHeader>
 
                 <GroupLeader>그룹장: {group.leaderName ?? "미정"}</GroupLeader>
-
                 <p>{group.groupDescription}</p>
 
                 <p>

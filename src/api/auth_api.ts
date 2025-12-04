@@ -65,6 +65,7 @@ export const AuthAPI = {
       { name, phoneNumber: phone }
     ),
 */
+
   // 5. 회원가입 요청
   register: (data: RegisterRequest) => api.post("/auth/register", data),
 
@@ -76,7 +77,7 @@ export const AuthAPI = {
   sendWelcomeEmail: (email: string) =>
     api.post("/auth/email/send-welcome", { email }),
 
-  // 토큰 재발급 (postRefresh 대체)
+  // 토큰 재발급
   refresh: async (refreshToken: string): Promise<RefreshResponse> => {
     return api
       .post<RefreshResponse>("/auth/refresh", { refreshToken })
@@ -84,17 +85,14 @@ export const AuthAPI = {
   },
 
   // 비밀번호 재설정 관련
+
   // 1) 이메일로 인증번호 발송
   sendResetCode: async (email: string): Promise<SendResetCodeResponse> => {
-    try {
-      const res = await api.post<SendResetCodeResponse>(
-        "/auth/password/send-reset-code",
-        { email }
-      );
-      return res.data;
-    } catch (err) {
-      return { message: "[MOCK] 인증번호가 발송된 것처럼 처리합니다." };
-    }
+    const res = await api.post<SendResetCodeResponse>(
+      "/auth/password/send-reset-code",
+      { email }
+    );
+    return res.data;
   },
 
   // 2) 인증번호 검증 → resetToken 반환
@@ -102,18 +100,11 @@ export const AuthAPI = {
     email: string,
     code: string
   ): Promise<VerifyResetCodeResponse> => {
-    try {
-      const res = await api.post<VerifyResetCodeResponse>(
-        "/auth/password/verify-reset-code",
-        { email, code }
-      );
-      return res.data;
-    } catch (err) {
-      return {
-        resetToken: "MOCK_TOKEN_123456",
-        message: "[MOCK] 인증 성공",
-      };
-    }
+    const res = await api.post<VerifyResetCodeResponse>(
+      "/auth/password/verify-reset-code",
+      { email, code }
+    );
+    return res.data;
   },
 
   // 3) 최종 비밀번호 재설정
@@ -122,15 +113,11 @@ export const AuthAPI = {
     pw: string,
     pwConfirm: string
   ): Promise<ResetPasswordResponse> => {
-    try {
-      const res = await api.put<ResetPasswordResponse>("/auth/password/reset", {
-        resetToken: token,
-        newPassword: pw,
-        newPasswordConfirm: pwConfirm,
-      });
-      return res.data;
-    } catch (err) {
-      return { message: "[MOCK] 비밀번호가 변경된 것처럼 처리합니다." };
-    }
+    const res = await api.put<ResetPasswordResponse>("/auth/password/reset", {
+      resetToken: token,
+      newPassword: pw,
+      newPasswordConfirm: pwConfirm,
+    });
+    return res.data;
   },
 };

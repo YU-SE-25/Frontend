@@ -10,7 +10,7 @@ import {
   likeDiscussionComment,
   deleteDiscussion,
 } from "../../api/studygroupdiscussion_api";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useOutletContext } from "react-router-dom";
 
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
@@ -26,7 +26,8 @@ interface SGComment {
 }
 
 export default function StudyGroupBoardDetail() {
-  const { groupId, postId } = useParams();
+  const { postId } = useParams();
+  const { groupId } = useOutletContext<{ groupId: number; role: string }>();
   const nav = useNavigate();
 
   const user = useAtomValue(userProfileAtom);
@@ -36,17 +37,14 @@ export default function StudyGroupBoardDetail() {
   const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const formatDate = (iso?: string) => {
-    if (!iso) return "-";
-    return iso.slice(0, 10);
-  };
-
   // 상세 조회
   useEffect(() => {
     if (!groupId || !postId) return;
+
     (async () => {
       const detail = await getDiscussionDetail(Number(groupId), Number(postId));
-      setPost(detail);
+      //console.log("상세조회 응답:", detail);
+      setPost(detail); // 끝!
       window.scrollTo(0, 0);
     })();
   }, [groupId, postId]);
@@ -150,10 +148,7 @@ export default function StudyGroupBoardDetail() {
 
             <MetaRow>
               <span>
-                <strong>작성자:</strong> {post.author}
-              </span>
-              <span>
-                <strong>작성일:</strong> {formatDate(post.createTime)}
+                <strong>작성자:</strong> {post.authorName}
               </span>
             </MetaRow>
           </TitleBlock>
@@ -163,7 +158,7 @@ export default function StudyGroupBoardDetail() {
               <>
                 <button
                   onClick={() =>
-                    nav(`/studygroup/${groupId}/discuss/${postId}/edit`, {
+                    nav(`/studygroup/${groupId}/discussion/${postId}/edit`, {
                       state: { post },
                     })
                   }

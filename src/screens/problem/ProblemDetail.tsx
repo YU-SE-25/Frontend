@@ -2,10 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchProblemDetail } from "../../api/problem_api";
 import type { IProblem } from "../../api/problem_api";
-import {
-  fetchDummyProblemDetail,
-  increaseDummyView,
-} from "../../api/dummy/problem_dummy_new";
 
 import {
   ProblemWrapper,
@@ -35,7 +31,7 @@ export default function ProblemDetail() {
   const userRole = user?.role;
   const isLoggedIn = !!user;
 
-  //문제목록
+  // 문제 상세 조회
   useEffect(() => {
     if (!problemId) return;
 
@@ -47,21 +43,15 @@ export default function ProblemDetail() {
       try {
         const real = await fetchProblemDetail(Number(problemId));
         if (mounted) setProblem(real);
-        increaseDummyView(Number(problemId));
-      } catch {
-        try {
-          const dummy = await fetchDummyProblemDetail(Number(problemId));
-          if (mounted) setProblem(dummy);
-        } catch {
-          if (mounted) setProblem(null);
-        }
+      } catch (err) {
+        console.error("문제 상세 조회 실패:", err);
+        if (mounted) setProblem(null);
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
     load();
-
     return () => {
       mounted = false;
     };
