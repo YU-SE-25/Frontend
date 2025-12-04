@@ -1,3 +1,5 @@
+// ⚠️ ProblemSolvePage.tsx — 더 안전 버전 (주석 모두 유지)
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 

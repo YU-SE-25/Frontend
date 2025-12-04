@@ -166,6 +166,9 @@ ${result.compileTimeMs} ms
   const saveCode = async () => {
     if (!problem) return alert("먼저 문제를 선택하세요!");
 
+    const numericId = Number(problem.problemId);
+    if (isNaN(numericId)) return alert("문제ID 오류!");
+
     await IDEAPI.saveDraft({
       problemId: problem.problemId,
       code,
@@ -208,6 +211,8 @@ ${result.compileTimeMs} ms
         "&showResult=true"
     );
   };
+
+  // ---------------- 렌더 ----------------
 
   return (
     <ProblemSolveWrapper>
