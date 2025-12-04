@@ -240,3 +240,87 @@ export async function likeComment(
   const res = await api.post(`/dis_board/comment/${commentId}/like`);
   return res.data;
 }
+
+export interface DiscussTagDto {
+  id: number;
+  name: string;
+}
+
+export interface TagPostSummaryDto {
+  postId: number;
+  title: string;
+  contents: string;
+  authorId: number;
+  authorName: string;
+  likeCount: number;
+  commentCount: number;
+  viewerLiked: boolean;
+  createdAt?: string;
+}
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+export type BoardPage = PageResponse<BoardContent>;
+
+function mapTagPostToBoardContent(dto: TagPostSummaryDto): BoardContent {
+  return {
+    post_id: dto.postId,
+    post_title: dto.title,
+    author: dto.authorName,
+    author_id: dto.authorId,
+    updated_time: dto.createdAt ?? "",
+    viewer_liked: dto.viewerLiked,
+    attachment_url: null,
+    message: null,
+    tag: { id: 0, name: "" }, // 필요하면 나중에 채워도 됨
+    anonymity: false,
+    like_count: dto.likeCount,
+    comment_count: dto.commentCount,
+    create_time: dto.createdAt ?? "",
+    is_private: false,
+    contents: dto.contents,
+    comments: [],
+  };
+}
+
+export async function fetchAllDiscussTags(): Promise<DiscussTagDto[]> {
+  const res = await api.get<DiscussTagDto[]>("/dis_board/tags");
+  return res.data;
+}
+
+export async function updatePostTags(
+  postId: number,
+  tagIds: number[]
+): Promise<void> {
+  await api.post(`/dis_board/${postId}/tag`, { tagIds });
+}
+
+/**
+ * 3. 특정 게시글의 태그 조회
+ * GET /api/dis_board/tag/list/{postId}
+ * 응답: number[] (tagId 배열)
+ */
+export async function fetchTagIdsByPost(postId: number): Promise<number[]> {
+  const res = await api.get<number[]>(`/dis_board/tag/list/${postId}`);
+  return res.data;
+}
+
+export async function fetchPostsByTag(
+  tagId: number,
+  page: number
+): Promise<BoardPage> {
+  const res = await api.get<PageResponse<TagPostSummaryDto>>(
+    `/dis_board/tag/${tagId}/posts`,
+    { params: { page } }
+  );
+
+  return {
+    ...res.data,
+    content: res.data.content.map(mapTagPostToBoardContent),
+  };
+}

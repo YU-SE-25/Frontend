@@ -74,6 +74,7 @@ export interface IProblem {
   difficulty: string;
   viewCount: number;
   createdAt: string;
+  status?: string;
 
   summary?: string;
   solvedCount?: number;
