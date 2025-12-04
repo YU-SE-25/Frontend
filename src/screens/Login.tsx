@@ -19,10 +19,6 @@ import {
   OptionsGroup,
   CheckboxLabel,
 } from "../theme/Login.Style";
-import axios from "axios";
-import styled from "styled-components";
-
-const SuperForceLoginButton = styled.button``;
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -43,23 +39,17 @@ export default function Login() {
     }
 
     try {
-      //현재는 mock API 사용
       const response = await postLogin({ email, password, keepLogin });
 
-      // Jotai 전역 상태 저장
       runLoginAction(response);
-
-      navigate(-1); // 로그인 성공 후 이전 페이지로
+      navigate(-1);
     } catch (error: any) {
-      if (axios.isAxiosError(error) && error.response) {
-        setErrorMessage(
-          error.response.data?.message || "로그인에 실패했습니다."
-        );
-      } else if (error.response) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage("서버와 연결할 수 없습니다. (네트워크 오류)");
-      }
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        "서버와 연결할 수 없습니다. (네트워크 오류)";
+
+      setErrorMessage(message);
     }
   };
 
@@ -130,87 +120,6 @@ export default function Login() {
           </SocialButton>
         </SocialLoginGroup>
       </LoginBox>
-      <SuperForceLoginButton
-        type="button"
-        onClick={async () => {
-          try {
-            const response = {
-              accessToken: "mock_access_token_123",
-              refreshToken: "mock_refresh_token_xyz",
-              expiresIn: 3600,
-              user: {
-                userId: 1,
-                nickname: "gamppe",
-                role: "LEARNER" as const,
-              },
-            };
-
-            runLoginAction(response);
-            navigate(-1);
-          } catch (error) {
-            console.error("슈퍼 로그인 실패:", error);
-            setErrorMessage(
-              "슈퍼 로그인에도 실패했습니다… 서버 상태를 확인해주세요."
-            );
-          }
-        }}
-      >
-        ⚡ 슈퍼 초강력 로그인 학습자 버튼(테스트 계정) ⚡
-      </SuperForceLoginButton>
-      <SuperForceLoginButton
-        type="button"
-        onClick={async () => {
-          try {
-            const response = {
-              accessToken: "mock_access_token_123",
-              refreshToken: "mock_refresh_token_xyz",
-              expiresIn: 3600,
-              user: {
-                userId: 1,
-                nickname: "gamppe",
-                role: "INSTRUCTOR" as const,
-              },
-            };
-
-            runLoginAction(response);
-            navigate(-1);
-          } catch (error) {
-            console.error("슈퍼 로그인 실패:", error);
-            setErrorMessage(
-              "슈퍼 로그인에도 실패했습니다… 서버 상태를 확인해주세요."
-            );
-          }
-        }}
-      >
-        ⚡ 슈퍼 초강력 로그인 강사 버튼(테스트 계정) ⚡
-      </SuperForceLoginButton>
-      <SuperForceLoginButton
-        type="button"
-        onClick={async () => {
-          try {
-            const response = {
-              accessToken: "mock_access_token_123",
-              refreshToken: "mock_refresh_token_xyz",
-              expiresIn: 3600,
-              user: {
-                userId: 1,
-                nickname: "gamppe",
-                role: "MANAGER" as const,
-              },
-            };
-
-            runLoginAction(response);
-            navigate(-1);
-          } catch (error) {
-            console.error("슈퍼 로그인 실패:", error);
-            setErrorMessage(
-              "슈퍼 로그인에도 실패했습니다… 서버 상태를 확인해주세요."
-            );
-          }
-        }}
-      >
-        ⚡ 슈퍼 초강력 로그인 관리자 버튼(테스트 계정) ⚡
-      </SuperForceLoginButton>
     </LoginPageWrapper>
   );
 }

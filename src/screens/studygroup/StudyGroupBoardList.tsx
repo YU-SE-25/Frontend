@@ -27,13 +27,11 @@ import {
   AddButton,
 } from "../../theme/ProblemList.Style";
 
-interface StudyGroupBoardListProps {
-  groupId: number;
-}
+import { useOutletContext } from "react-router-dom";
 
-export default function StudyGroupBoardList({
-  groupId,
-}: StudyGroupBoardListProps) {
+export default function StudyGroupBoardList() {
+  const { groupId } = useOutletContext<{ groupId: number; role: string }>();
+
   const navigate = useNavigate();
 
   const [posts, setPosts] = useState<DiscussionListItem[]>([]);
@@ -73,13 +71,12 @@ export default function StudyGroupBoardList({
   };
 
   const handleWritePost = () => {
-    navigate(`/studygroup/${groupId}/discuss/write`);
+    navigate(`/studygroup/${groupId}/discussion/write`);
   };
 
   const handleViewDetails = (postId: number) => {
-    navigate(`/studygroup/${groupId}/discuss/${postId}`);
+    navigate(`/studygroup/${groupId}/discussion/${postId}`);
   };
-
   // 필터 + 정렬
   const filtered = posts.filter((p) =>
     p.title.toLowerCase().includes(searchTerm.toLowerCase())

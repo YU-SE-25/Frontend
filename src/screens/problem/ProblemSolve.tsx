@@ -1,13 +1,11 @@
+// ⚠️ ProblemSolvePage.tsx — 더 안전 버전 (주석 모두 유지)
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 import type { IProblem } from "../../api/problem_api";
-import {
-  fetchProblemDetail,
-  mapDetailDtoToProblem,
-} from "../../api/problem_api";
+import { fetchProblemDetail } from "../../api/problem_api";
 
-import { fetchDummyProblemDetail } from "../../api/dummy/problem_dummy_new";
 import { IDEAPI } from "../../api/ide_api";
 import CodeEditorView from "./CodeEditorView";
 
@@ -20,6 +18,7 @@ import {
   EditorPanelContainer,
   ExampleBox,
 } from "../../theme/ProblemSolve.Style";
+
 import { userProfileAtom } from "../../atoms";
 import { useAtom } from "jotai";
 
@@ -42,15 +41,17 @@ export default function ProblemSolvePage() {
   const [problemData, setProblemData] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProfile] = useAtom(userProfileAtom);
+  const [runInput, setRunInput] = useState("");
 
-  // 내가 푼 문제 다시 풀어보기(language type 확인 필요!!)
+  // language / code 초기값
   const [language, setLanguage] = useState(
     location.state?.language ?? "Python"
   );
   const [code, setCode] = useState(location.state?.initialCode ?? "");
+
   const token = localStorage.getItem("accessToken");
 
-  // 이미 라우터에서 막더라도, 토큰이 없으면 한 번 더 보호
+  // 로그인 체크
   useEffect(() => {
     if (!token) {
       alert("로그인 후 이용해주세요!");
@@ -58,8 +59,14 @@ export default function ProblemSolvePage() {
     }
   }, [token, navigate]);
 
+  // 문제 상세 로딩
   useEffect(() => {
     if (!problemId) return;
+    const numericId = Number(problemId);
+    if (isNaN(numericId)) {
+      alert("유효하지 않은 문제 ID입니다.");
+      return;
+    }
 
     let mounted = true;
 
@@ -67,12 +74,12 @@ export default function ProblemSolvePage() {
       setLoading(true);
 
       try {
-        // 1차: 실서버 문제 상세 호출
-        const real = await fetchProblemDetail(Number(problemId));
+        const real = await fetchProblemDetail(numericId);
         if (!mounted) return;
 
         setProblemData(real);
 
+        // 언어 설정
         if (real.allowedLanguages?.length) {
           const preferred = ["Python", "C++", "Java"];
           setLanguage(
@@ -81,48 +88,28 @@ export default function ProblemSolvePage() {
           );
         }
       } catch (e) {
-        console.warn("문제 상세 API 실패 → 더미 문제로 fallback 시도", e);
-
-        try {
-          //2차: 더미 상세 (DTO) 불러오기
-          const dummyDto = await fetchDummyProblemDetail(Number(problemId));
-          if (!mounted) return;
-
-          // 더미는 ProblemDetailDto 형태라, IProblem으로 변환
-          const mapped = mapDetailDtoToProblem(dummyDto);
-          setProblemData(mapped);
-
-          if (mapped.allowedLanguages?.length) {
-            const preferred = ["Python", "C++", "Java"];
-            setLanguage(
-              preferred.find((l) => mapped.allowedLanguages!.includes(l)) ??
-                mapped.allowedLanguages[0]
-            );
-          }
-        } catch (err) {
-          console.error("더미 문제 로드도 실패:", err);
-          if (mounted) setProblemData(null);
-        }
+        console.error("문제 상세 API 실패", e);
+        if (mounted) setProblemData(null);
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
     load();
-
     return () => {
       mounted = false;
     };
   }, [problemId]);
 
-  // 실행하기
+  // 코드 실행
   const handleRun = async () => {
-    if (!problemId) return "문제 ID 없음";
+    const numericId = Number(problemId);
+    if (isNaN(numericId)) return "문제 ID 없음";
 
     const result = await IDEAPI.run({
       code,
       language: languageMap[language],
-      input: "",
+      input: runInput, // 사용자 Input 적용!
     });
 
     return `
@@ -139,10 +126,11 @@ ${result.compileTimeMs} ms
 
   // 임시 저장
   const handleSaveDraft = async () => {
-    if (!problemId) return;
+    const numericId = Number(problemId);
+    if (isNaN(numericId)) return alert("문제 ID 오류로 저장 불가!");
 
     await IDEAPI.saveDraft({
-      problemId: Number(problemId),
+      problemId: numericId,
       code,
       language: languageMap[language],
     });
@@ -152,9 +140,10 @@ ${result.compileTimeMs} ms
 
   // 임시 저장 불러오기
   const handleLoadDraft = async () => {
-    if (!problemId) return;
+    const numericId = Number(problemId);
+    if (isNaN(numericId)) return alert("문제 ID 오류로 불러오기 불가!");
 
-    const saved = await IDEAPI.loadDraft(Number(problemId));
+    const saved = await IDEAPI.loadDraft(numericId);
 
     setCode(saved.code);
     setLanguage(reverseLanguageMap[saved.language] ?? "Python");
@@ -162,29 +151,25 @@ ${result.compileTimeMs} ms
     alert("불러오기 완료!");
   };
 
-  // 제출하기
+  // 제출
   const handleSubmit = async () => {
-    if (!problemId) return;
+    const numericId = Number(problemId);
+    if (isNaN(numericId)) return alert("문제 ID 오류로 제출 불가!");
 
     await IDEAPI.submit({
-      problemId: Number(problemId),
+      problemId: numericId,
       code,
       language: languageMap[language],
     });
 
-    // TODO: username 나중에 실제 값으로 치환 예정이라면 여기는 그대로 유지
     navigate(
       "/problems/" +
         userProfile?.nickname +
         "/submitted?id=" +
-        problemId +
+        numericId +
         "&showResult=true"
     );
   };
-
-  // -----------------------------
-  // 렌더링
-  // -----------------------------
 
   if (loading) {
     return <ProblemSolveWrapper>로딩 중...</ProblemSolveWrapper>;
@@ -211,6 +196,24 @@ ${result.compileTimeMs} ms
             <ExampleBox>{problemData.inputOutputExample}</ExampleBox>
           </div>
         )}
+
+        <div style={{ marginTop: "25px" }}>
+          <h3>실행 입력값</h3>
+          <textarea
+            value={runInput}
+            onChange={(e) => setRunInput(e.target.value)}
+            placeholder="여기에 실행 input을 입력하세요"
+            style={{
+              width: "100%",
+              height: "80px",
+              marginTop: "8px",
+              borderRadius: "6px",
+              padding: "8px",
+              border: "1px solid #ccc",
+              resize: "vertical",
+            }}
+          />
+        </div>
       </ProblemInfoContainer>
 
       <EditorPanelContainer>

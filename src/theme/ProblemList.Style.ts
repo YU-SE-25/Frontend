@@ -6,10 +6,11 @@ import { TOPBAR_HEIGHT } from "../components/Topbar";
 export interface HeaderCellProps {
   width: string;
 }
-export type UserProblemStatus = "SOLVED" | "ATTEMPTED" | undefined;
+export type UserProblemStatus = "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
+
 // 푼 문제 상태 타입
 export interface StatusProps {
-  $userStatus?: "SOLVED" | "ATTEMPTED" | undefined;
+  $userStatus?: "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
 }
 //레이아웃 및 컨트롤 스타일, 스터디그룹 화면 크기용 추가
 export const ProblemListWrapper = styled.div<{ $fullWidth?: boolean }>`
@@ -69,6 +70,7 @@ export const SearchButton = styled.button`
   transition: background-color 0.2s;
 `;
 export const SortSelect = styled.select`
+  min-width: 120px;
   padding: 10px 14px;
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   border-radius: 6px;
@@ -327,13 +329,36 @@ export const TagChip = styled.span<{ $active?: boolean }>`
 `;
 
 //문제 목록 속 태그 칩
-export const ProblemTagChip = styled.span<{ $active?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  background-color: ${(props) => props.theme.focusColor};
-  color: ${(props) => props.theme.bgColor};
-  padding: 4px 9px;
-  border-radius: 13px;
-  font-size: 15px;
-  font-weight: 500;
+export const ProblemTagChip = styled.span<{ $status?: string }>`
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+
+  background-color: ${({ $status }) =>
+    $status === "SOLVED"
+      ? "#4caf50"
+      : $status === "ATTEMPTED"
+      ? "#ff9800"
+      : "transparent"};
+`;
+
+// 문제 기록 상태 뱃지
+export const StatusChip = styled.span<{
+  $status?: "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
+}>`
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+
+  background-color: ${({ $status }) =>
+    $status === "SOLVED"
+      ? "#4caf50" // 초록
+      : $status === "ATTEMPTED"
+      ? "#f44336" // 빨강
+      : "gray"}; // NONE = 회색
 `;

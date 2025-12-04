@@ -6,11 +6,13 @@ import { fetchSimpleProblems, type SimpleProblem } from "../../api/problem_api";
 interface Props {
   onClose: () => void;
   onSelectProblem: (problem: SimpleProblem) => void;
+  exclude?: number[];
 }
 
 export default function ProblemSearchModal({
   onClose,
   onSelectProblem,
+  exclude = [],
 }: Props) {
   const [keyword, setKeyword] = useState("");
 
@@ -48,11 +50,22 @@ export default function ProblemSearchModal({
         />
 
         <List>
-          {filtered.map((p) => (
-            <Item key={p.problemId} onClick={() => onSelectProblem(p)}>
-              {p.problemId}. {p.problemTitle}
-            </Item>
-          ))}
+          {filtered.map((p) => {
+            const isDisabled = exclude.includes(p.problemId);
+
+            return (
+              <Item
+                key={p.problemId}
+                disabled={isDisabled}
+                onClick={() => {
+                  if (isDisabled) return;
+                  onSelectProblem(p);
+                }}
+              >
+                {p.problemId}. {p.problemTitle}
+              </Item>
+            );
+          })}
         </List>
       </Modal>
     </Overlay>
@@ -108,13 +121,16 @@ const List = styled.div`
   color: ${({ theme }) => theme.textColor};
 `;
 
-const Item = styled.div`
+const Item = styled.div<{ disabled?: boolean }>`
   padding: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.authHoverBgColor};
-  cursor: pointer;
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
   color: ${({ theme }) => theme.textColor};
+  opacity: ${({ disabled }) => (disabled ? 0.4 : 1)};
+  pointer-events: ${({ disabled }) => (disabled ? "none" : "auto")};
 
   &:hover {
-    background: ${({ theme }) => theme.authHoverBgColor};
+    background: ${({ theme, disabled }) =>
+      disabled ? "transparent" : theme.authHoverBgColor};
   }
 `;

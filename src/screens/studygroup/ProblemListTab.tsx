@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useOutletContext } from "react-router-dom";
+
 import {
   TabContentHeader,
   ProblemListAddButton,
@@ -25,16 +27,16 @@ import { api } from "../../api/axios"; // 제출 API 불러오기 위함
 import CreateProblemList from "./CreateProblemList";
 import { useNavigate } from "react-router-dom";
 
-interface Props {
-  role: GroupRole | undefined;
-  groupId: number;
-}
+export default function ProblemListTab() {
+  const { groupId, role } = useOutletContext<{
+    groupId: number;
+    role: GroupRole;
+  }>();
 
-export default function ProblemListTab({ role, groupId }: Props) {
   const [lists, setLists] = useState<AssignedProblemList[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [solvedSet, setSolvedSet] = useState<Set<number>>(new Set()); // 🔥 제출된 문제 ID 저장
+  const [solvedSet, setSolvedSet] = useState<Set<number>>(new Set()); // 제출된 문제 ID 저장
   const navigate = useNavigate();
 
   // 제출 이력 전체 불러오기

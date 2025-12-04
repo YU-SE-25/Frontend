@@ -27,7 +27,6 @@ import ProblemSolve from "./screens/problem/ProblemSolve";
 import CodeResult from "./screens/problem/SolveResult";
 import MySolvedProblem from "./screens/problem/MySubmissionsList";
 import ProblemAdd from "./screens/problem/ProblemAdd";
-import ProblemEdit from "./screens/problem/ProblemEdit";
 import CodeAnalysis from "./screens/problem/CodeAnalysis";
 import SolvedProblemList from "./screens/problem/reviews/SolvedProblemList";
 
@@ -39,6 +38,9 @@ import QnaWrite from "./screens/board/QnaWrite";
 
 // 스터디 그룹
 import StudyGroupMain from "./screens/studygroup/StudyGroupMain";
+import StudyGroupBoardList from "./screens/studygroup/StudyGroupBoardList";
+import ActivityTab from "./screens/studygroup/ActivityTab";
+import ProblemListTab from "./screens/studygroup/ProblemListTab";
 import StudyGroupDetail from "./screens/studygroup/StudyGroupDetail";
 import StudyGroupBoardDetail from "./screens/studygroup/StudyGroupBoardDetail";
 import StudyGroupBoardWrite from "./screens/studygroup/StudyGroupBoardWrite";
@@ -55,7 +57,7 @@ const router = createBrowserRouter([
       { path: "problem-list", element: <ProblemList /> },
       { path: "problem-detail/:problemId", element: <ProblemDetail /> },
       { path: "problem-add", element: <ProblemAdd /> },
-      { path: "problem-edit/:problemId", element: <ProblemEdit /> },
+      { path: "problem-edit/:problemId", element: <ProblemAdd /> },
       { path: "problems/:problemId/solve", element: <ProblemSolve /> },
       { path: "problems/result", element: <CodeResult /> }, //debrecated
       { path: "problems/:username/submitted", element: <MySolvedProblem /> },
@@ -92,18 +94,23 @@ const router = createBrowserRouter([
       },
 
       { path: "studygroup-main", element: <StudyGroupMain /> },
-      { path: "studygroup/:groupId", element: <StudyGroupDetail /> },
       {
-        path: "studygroup/:groupId/discuss/:postId",
-        element: <StudyGroupBoardDetail />,
-      },
-      {
-        path: "studygroup/:groupId/discuss/write",
-        element: <StudyGroupBoardWrite />,
-      },
-      {
-        path: "studygroup/:groupId/discuss/:postId/edit",
-        element: <StudyGroupBoardWrite />,
+        path: "studygroup/:groupId",
+        element: <StudyGroupDetail />,
+        children: [
+          { index: true, element: <ProblemListTab /> },
+
+          { path: "problem", element: <ProblemListTab /> },
+          { path: "discussion", element: <StudyGroupBoardList /> },
+          { path: "activity", element: <ActivityTab /> },
+
+          { path: "discussion/write", element: <StudyGroupBoardWrite /> },
+          { path: "discussion/:postId", element: <StudyGroupBoardDetail /> },
+          {
+            path: "discussion/:postId/edit",
+            element: <StudyGroupBoardWrite />,
+          },
+        ],
       },
 
       {

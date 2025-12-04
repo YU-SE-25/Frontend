@@ -14,6 +14,8 @@ export interface DiscussionListItem {
   attachmentUrl: string | null;
   message: string | null;
   viewerLiked: boolean;
+  createTime: string;
+  modifyTime: string;
 }
 
 // 상세 조회
@@ -28,38 +30,6 @@ export interface DiscussionPostDetailAPI {
   comment_count: number;
   create_time: string;
   modify_time: string;
-}
-
-// 상세 조회
-export interface DiscussionPostDetail {
-  postId: number;
-  groupId: number;
-  authorId: number;
-  authorName: string;
-  title: string;
-  contents: string;
-  privatePost: boolean;
-  likeCount: number;
-  commentCount: number;
-  attachmentUrl: string | null;
-  viewerLiked: boolean;
-}
-
-// 상세 조회 매핑 함수
-export function mapDetailResponse(data: any): DiscussionPostDetail {
-  return {
-    postId: data.postId,
-    groupId: data.groupId,
-    authorId: data.authorId,
-    authorName: data.authorName,
-    title: data.title,
-    contents: data.contents,
-    privatePost: data.privatePost,
-    likeCount: data.likeCount,
-    commentCount: data.commentCount,
-    attachmentUrl: data.attachmentUrl,
-    viewerLiked: data.viewerLiked ?? false,
-  };
 }
 
 export interface LikeDiscussionResponse {
@@ -93,7 +63,7 @@ export async function getDiscussionList(
 // 상세 조회
 export async function getDiscussionDetail(groupId: number, postId: number) {
   const res = await api.get(`/studygroup/discuss/${groupId}/${postId}`);
-  return mapDetailResponse(res.data);
+  return res.data;
 }
 
 // 게시글 등록
@@ -187,16 +157,11 @@ export async function votePoll(
   pollId: number,
   optionIds: number[]
 ) {
-  const res = await api.post(
-    `/studygroup/discuss/${groupId}/poll/${pollId}/vote`,
-    {
-      optionIds,
-    }
-  );
+  const res = await api.post(`/studygroup/${groupId}/poll/${pollId}/vote`, {
+    optionIds,
+  });
   return res.data;
 }
-
-// 댓글 api
 
 // 댓글 타입
 export interface DiscussionCommentItem {
