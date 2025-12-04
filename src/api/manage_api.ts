@@ -223,3 +223,13 @@ export async function resolveReport(
   );
   return res.data;
 }
+
+//블랙리스트 해제
+export async function removeFromBlacklist(
+  blacklistId: number
+): Promise<MessageResponseDto> {
+  const res = await api.delete<MessageResponseDto>(
+    `/admin/blacklist/${blacklistId}`
+  );
+  return res.data;
+}

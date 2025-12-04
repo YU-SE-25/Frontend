@@ -321,3 +321,17 @@ export async function updateMyProfile(payload: UpdateMyProfileDto | FormData) {
     throw err;
   }
 }
+
+//마이페이지용 코딩 성향 분석
+export const fetchCodingHabits = async () => {
+  const res = await api.get("/analysis/habits");
+  return res.data;
+};
+
+// 회원 탈퇴
+export const withdrawAccount = async (password: string) => {
+  const res = await api.delete("/auth/withdraw", {
+    data: { password },
+  });
+  return res.data;
+};

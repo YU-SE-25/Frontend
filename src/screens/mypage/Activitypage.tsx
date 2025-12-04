@@ -419,7 +419,7 @@ export default function ActivityPage() {
         </Stat>
         <Stat>
           <StatLabel>정답률</StatLabel>
-          <StatValue>{stat?.acceptanceRate}%</StatValue>
+          <StatValue>{stat?.acceptanceRate?.toFixed(2)}%</StatValue>
         </Stat>
       </StatGrid>
 

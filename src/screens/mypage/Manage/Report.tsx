@@ -5,6 +5,7 @@ import {
   fetchAdminReports,
   fetchBlacklist,
   resolveReport,
+  removeFromBlacklist,
   type AdminReportDetailDto,
 } from "../../../api/manage_api";
 
@@ -378,18 +379,34 @@ export default function ReportManagementScreen() {
     alert("유저 정보가 클립보드에 복사되었습니다!");
   };
 
-  const handleUnblacklist = () => {
+  const handleUnblacklist = async () => {
     if (!selectedBlacklistUser) return;
+
+    // 해제 전 확인 메시지
     if (
       !window.confirm(
         `${selectedBlacklistUser.nickname} (${selectedBlacklistUser.userId}) 의 블랙리스트를 해제할까요?`
       )
     )
       return;
-    setBlacklist((prev) =>
-      prev.filter((u) => u.id !== selectedBlacklistUser.id)
-    );
-    setSelectedBlacklistId(null);
+
+    try {
+      // 블랙리스트 해제 API 호출
+      await removeFromBlacklist(selectedBlacklistUser.id); // async/await 추가
+
+      // 로컬 상태에서 해당 유저를 삭제
+      setBlacklist((prev) =>
+        prev.filter((u) => u.id !== selectedBlacklistUser.id)
+      );
+
+      // 선택된 블랙리스트 유저 초기화
+      setSelectedBlacklistId(null);
+
+      alert("블랙리스트가 해제되었습니다.");
+    } catch (e) {
+      console.error("블랙리스트 해제 실패:", e);
+      alert("블랙리스트 해제 중 오류가 발생했습니다.");
+    }
   };
 
   const isReportResolveDisabled = !selectedReport;

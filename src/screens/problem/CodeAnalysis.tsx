@@ -20,7 +20,6 @@ import {
 } from "../../theme/CodeAnalysis.Style";
 
 // 오른쪽 탭 컴포넌트
-import CodePerformance from "./CodePerformance";
 import CodeProfiling from "./CodeProfiling";
 import CodeFlowchart from "./CodeFlowchart";
 
@@ -28,11 +27,23 @@ import CodeFlowchart from "./CodeFlowchart";
 import { fetchSubmissionDetail } from "../../api/mySubmissions_api";
 import { fetchProblemDetail } from "../../api/problem_api";
 import {
-  fetchHabitAnalysis,
   fetchComplexityAnalysis,
   fetchFlowchartAnalysis,
 } from "../../api/ide_api";
 import type { SubmissionDetail } from "../../api/mySubmissions_api";
+
+function timeConverter(iso: string) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return d.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 export default function CodeAnalysis() {
   const { problemId, submissionId } = useParams();
@@ -59,13 +70,13 @@ export default function CodeAnalysis() {
   const [problemTitle, setProblemTitle] = useState("");
 
   // 분석 데이터
-  const [habitData, setHabitData] = useState(null);
   const [complexityData, setComplexityData] = useState(null);
   const [flowchartData, setFlowchartData] = useState(null);
 
   const handleMouseDown = () => (dragging.current = true);
   const handleMouseUp = () => (dragging.current = false);
 
+  const handleMouseMove = (e) => {
   const handleMouseMove = (e) => {
     if (!dragging.current) return;
     const newWidth = window.innerWidth - e.clientX;
@@ -98,10 +109,6 @@ export default function CodeAnalysis() {
   // API 호출
   useEffect(() => {
     if (!submissionId) return;
-
-    if (activeTab === "performance") {
-      fetchHabitAnalysis().then(setHabitData).catch(console.error);
-    }
 
     if (activeTab === "profiling") {
       fetchComplexityAnalysis(Number(submissionId))
@@ -189,13 +196,6 @@ export default function CodeAnalysis() {
       <RightPanel width={panelWidth}>
         <Tabs>
           <TabButton
-            active={activeTab === "performance"}
-            onClick={() => setActiveTab("performance")}
-          >
-            성능 분석
-          </TabButton>
-
-          <TabButton
             active={activeTab === "profiling"}
             onClick={() => setActiveTab("profiling")}
           >
@@ -211,7 +211,6 @@ export default function CodeAnalysis() {
         </Tabs>
 
         <Content>
-          {activeTab === "performance" && <CodePerformance data={habitData} />}
           {activeTab === "profiling" && <CodeProfiling data={complexityData} />}
           {activeTab === "flowchart" && (
             <CodeFlowchart mermaidCode={flowchartData} />
