@@ -643,7 +643,7 @@ export default function EditPage() {
       });
 
       alert("프로필이 성공적으로 업데이트되었습니다!");
-      window.location.reload();
+      //window.location.reload();
     } catch (err) {
       console.error(err);
       alert("프로필 수정 중 오류가 발생했습니다.");
