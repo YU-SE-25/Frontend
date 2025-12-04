@@ -16,6 +16,7 @@ import {
 } from "../../theme/StudyGroupMain.Style";
 
 import CommonModal from "./CommomModal";
+import ProblemListManageModal from "./ProblemListManager"; // ⭐ 문제 리스트 관리 모달
 import type { StudyGroupDetail } from "../../api/studygroup_api";
 import {
   kickMember,
@@ -38,8 +39,11 @@ export default function StudyGroupManageModal({
   const [desc, setDesc] = useState(group.groupDescription);
   const [maxMembers, setMaxMembers] = useState(group.maxMembers);
   const [kickTarget, setKickTarget] = useState<number | null>(null);
+
   const [showKickModal, setShowKickModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showProblemListManage, setShowProblemListManage] = useState(false);
+
   const navigate = useNavigate();
 
   const handleKick = async () => {
@@ -47,7 +51,6 @@ export default function StudyGroupManageModal({
 
     await kickMember(group.groupId, kickTarget);
     alert("멤버가 강퇴되었습니다!");
-
     setShowKickModal(false);
   };
 
@@ -78,6 +81,7 @@ export default function StudyGroupManageModal({
       <ModalContent>
         <ModalTitle>그룹 관리</ModalTitle>
 
+        {/* 그룹 기본 정보 */}
         <Label>그룹명</Label>
         <InputField value={name} onChange={(e) => setName(e.target.value)} />
 
@@ -91,6 +95,7 @@ export default function StudyGroupManageModal({
           onChange={(e) => setMaxMembers(Number(e.target.value))}
         />
 
+        {/* 멤버 관리 */}
         <ModalSubTitle>멤버 관리</ModalSubTitle>
 
         {group.members.map((m) => (
@@ -112,6 +117,15 @@ export default function StudyGroupManageModal({
           </MemberRow>
         ))}
 
+        {/* 문제 리스트 관리하기 버튼 */}
+        <PrimaryButton
+          style={{ width: "100%", marginTop: "15px" }}
+          onClick={() => setShowProblemListManage(true)}
+        >
+          문제 리스트 관리하기
+        </PrimaryButton>
+
+        {/* 그룹 삭제 */}
         {isOnlyLeader && (
           <DangerButton
             style={{ width: "100%", marginTop: 20 }}
@@ -121,11 +135,13 @@ export default function StudyGroupManageModal({
           </DangerButton>
         )}
 
+        {/* 하단 버튼 */}
         <ButtonContainer>
           <SecondaryButton onClick={onClose}>닫기</SecondaryButton>
           <PrimaryButton onClick={handleSave}>저장</PrimaryButton>
         </ButtonContainer>
 
+        {/* 강퇴 모달 */}
         {showKickModal && (
           <CommonModal
             title="멤버 강퇴"
@@ -136,6 +152,7 @@ export default function StudyGroupManageModal({
           />
         )}
 
+        {/* 삭제 모달 */}
         {showDeleteModal && (
           <CommonModal
             title="그룹 삭제"
@@ -143,6 +160,13 @@ export default function StudyGroupManageModal({
             dangerText="삭제하기"
             onConfirm={handleDeleteGroup}
             onCancel={() => setShowDeleteModal(false)}
+          />
+        )}
+
+        {showProblemListManage && (
+          <ProblemListManageModal
+            groupId={group.groupId}
+            onClose={() => setShowProblemListManage(false)}
           />
         )}
       </ModalContent>

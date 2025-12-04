@@ -258,7 +258,7 @@ interface ProblemCreateResponse {
 export async function fetchProblemDetailForEdit(
   problemId: number
 ): Promise<ProblemEditDetail> {
-  const res = await api.get<ProblemEditDetail>(`/problems/${problemId}`);
+  const res = await api.get<ProblemEditDetail>(`/problems/detail/${problemId}`);
   return res.data;
 }
 

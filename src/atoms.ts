@@ -12,6 +12,11 @@ const getInitialIsDark = () => {
 
 export const isDarkAtom = atom<boolean>(getInitialIsDark());
 
+// 🔥 여기 다시 추가해야 함!!
+export const toggleThemeActionAtom = atom(null, (get, set) => {
+  set(isDarkAtom, (prev) => !prev);
+});
+
 // 사용자 프로필 정보
 export interface UserProfile {
   userId: number;
@@ -22,33 +27,55 @@ export interface UserProfile {
 // 로그인 응답
 export interface LoginResponse {
   accessToken: string;
-  refreshToken: string; // 로그인시에만 refreshToken 옴
+  refreshToken: string;
   expiresIn: number;
   user: UserProfile;
 }
 
-// refresh 응답 (refreshToken 없음!!)
+// refresh 응답
 export interface RefreshResponse {
   accessToken: string;
   expiresIn: number;
 }
 
-// 테마 토글
-export const toggleThemeActionAtom = atom(null, (get, set) => {
-  set(isDarkAtom, (prev) => !prev);
-});
+// 🔥 JSON.stringify 되지 않는 custom storage
+const stringStorage = {
+  getItem: (key: string) => {
+    if (typeof localStorage === "undefined") return null;
+    const value = localStorage.getItem(key);
+    return value ?? null; // 그대로 반환
+  },
+  setItem: (key: string, value: string | null) => {
+    if (typeof localStorage === "undefined") return;
+    if (value === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, value); // string 그대로 저장
+    }
+  },
+  removeItem: (key: string) => {
+    if (typeof localStorage === "undefined") return;
+    localStorage.removeItem(key);
+  },
+};
 
-// 저장되는 상태들
+// ----------------------
+// 🔥 여기에 customStorage를 적용하면
+// localStorage에 "토큰" 형태로 저장되는 문제 완전히 해결됨
+// ----------------------
+
 export const accessTokenAtom = atomWithStorage<string | null>(
   "accessToken",
-  null
+  null,
+  stringStorage
 );
 
 export const accessTokenExpiresInAtom = atom<number | null>(null);
 
 export const refreshTokenAtom = atomWithStorage<string | null>(
   "refreshToken",
-  null
+  null,
+  stringStorage
 );
 
 export const userProfileAtom = atomWithStorage<UserProfile | null>(
@@ -64,12 +91,12 @@ export const isLoggedInAtom = atom((get) => {
 // 로그인 액션
 export const loginActionAtom = atom(null, (get, set, data: LoginResponse) => {
   set(accessTokenAtom, data.accessToken);
-  set(refreshTokenAtom, data.refreshToken); // 로그인에서는 저장 OK
+  set(refreshTokenAtom, data.refreshToken);
   set(accessTokenExpiresInAtom, data.expiresIn);
   set(userProfileAtom, data.user);
 });
 
-// 로그아웃 액션
+// 로그아웃
 export const logoutActionAtom = atom(null, (get, set) => {
   set(accessTokenAtom, null);
   set(refreshTokenAtom, null);
@@ -77,15 +104,12 @@ export const logoutActionAtom = atom(null, (get, set) => {
   set(userProfileAtom, null);
 });
 
-// refresh 액션 (여기가 핵심!!)
+// refresh
 export const refreshActionAtom = atom(
   null,
   (get, set, data: RefreshResponse) => {
     set(accessTokenAtom, data.accessToken);
     set(accessTokenExpiresInAtom, data.expiresIn);
-
-    // refreshToken 저장하지 않는다
-    // 왜냐면 백엔드 refresh 응답에는 refreshToken이 없기 때문
   }
 );
 

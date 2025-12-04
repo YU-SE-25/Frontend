@@ -16,8 +16,14 @@ export default function OAuthCallback() {
 
     const params = new URLSearchParams(window.location.search);
 
-    const accessToken = params.get("accessToken");
-    const refreshToken = params.get("refreshToken");
+    // 쿼리에서 가져온 토큰 값
+    const rawAccessToken = params.get("accessToken") ?? "";
+    const rawRefreshToken = params.get("refreshToken") ?? "";
+
+    // 양쪽 따옴표 제거
+    const accessToken = rawAccessToken.replace(/"/g, "");
+    const refreshToken = rawRefreshToken.replace(/"/g, "");
+
     const nickname = params.get("nickname") ?? "";
     const role =
       (params.get("role") as "MANAGER" | "INSTRUCTOR" | "LEARNER") ?? "LEARNER";
@@ -28,7 +34,6 @@ export default function OAuthCallback() {
       return;
     }
 
-    // 프론트는 받은 정보 그대로 저장만 하면 됨
     const loginData: LoginResponse = {
       accessToken,
       refreshToken,
