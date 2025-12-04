@@ -16,12 +16,12 @@ const Wrap = styled.div`
   margin-top: 30px;
 `;
 
-const Header = styled.h3`
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.textColor};
-`;
+// const Header = styled.h3`
+//   margin: 0;
+//   font-size: 22px;
+//   font-weight: 700;
+//   color: ${({ theme }) => theme.textColor};
+// `;
 
 const TopBar = styled.div`
   display: flex;
@@ -112,7 +112,6 @@ const Td = styled.td`
 
 export default function UserManagementScreen() {
   const [users, setUsers] = useState<any[]>([]);
-  const [blacklist, setBlacklist] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -192,8 +191,6 @@ export default function UserManagementScreen() {
         reason,
       });
 
-      // 로컬 상태에서도 제거 + 블랙리스트 목록 갱신
-      setBlacklist((prev) => [...prev, String(selectedUser.userId)]);
       setUsers((prev) => prev.filter((u) => u.userId !== selectedUser.userId));
       setSelectedId(null);
 

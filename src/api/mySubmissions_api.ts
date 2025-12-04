@@ -1,8 +1,4 @@
 import { api } from "./axios";
-import {
-  fetchDummySubmissionById,
-  fetchDummySubmissions,
-} from "./dummy/mySubmissions_dummy";
 
 export type SubmissionStatus =
   | "PENDING"

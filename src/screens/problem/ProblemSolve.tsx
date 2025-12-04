@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 import type { IProblem } from "../../api/problem_api";
@@ -21,7 +21,7 @@ import {
   ExampleBox,
 } from "../../theme/ProblemSolve.Style";
 import { userProfileAtom } from "../../atoms";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom } from "jotai";
 
 const languageMap: Record<string, string> = {
   Python: "PYTHON",
