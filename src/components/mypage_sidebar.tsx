@@ -109,6 +109,14 @@ export default function Mypage_sidebar({
         )}
         {isMyPage && <NavLink to="/studygroup-main">- 내 스터디그룹</NavLink>}
       </NavList>
+      {isMyPage && (
+        <NavItem
+          onClick={() => go("coding-style")}
+          $active={active === "coding-style"}
+        >
+          - 코딩 성향 분석
+        </NavItem>
+      )}
     </SidebarWrap>
   );
 }

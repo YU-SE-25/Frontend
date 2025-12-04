@@ -114,14 +114,32 @@ export default function ProblemAdd() {
       setError("테스트케이스 파일은 필수입니다.");
       return;
     }
+    const payload = {
+      title: form.title,
+      description: form.description,
+      inputOutputExample: form.inputOutputExample,
+      difficulty: form.difficulty,
+      timeLimit: Number(form.timeLimit),
+      memoryLimit: Number(form.memoryLimit),
+      tags: tags,
+      hint: form.hint,
+      source: form.source,
+      visibility: "PUBLIC",
+    };
 
     const formData = new FormData();
-    formData.append("title", form.title);
-    formData.append("description", form.description);
-    formData.append("inputOutputExample", form.inputOutputExample);
-    formData.append("difficulty", form.difficulty);
-    formData.append("timeLimit", form.timeLimit);
-    formData.append("memoryLimit", form.memoryLimit);
+
+    // 'data' 파트
+    formData.append(
+      "data",
+      new Blob([JSON.stringify(payload)], { type: "application/json" })
+    );
+
+    // 파일
+    const selectedFile = fileRef.current?.files?.[0];
+    if (selectedFile) {
+      formData.append("testcaseFile", selectedFile);
+    }
 
     tags.forEach((t) => {
       const eng = TAG_REVERSE_MAP[t] ?? t;
@@ -130,11 +148,6 @@ export default function ProblemAdd() {
 
     formData.append("hint", form.hint);
     formData.append("source", form.source);
-
-    const selectedFile = fileRef.current?.files?.[0];
-    if (selectedFile) {
-      formData.append("testcasefile", selectedFile);
-    }
 
     try {
       let id: number;
