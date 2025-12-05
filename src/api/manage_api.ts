@@ -291,3 +291,9 @@ export async function removeFromBlacklist(
   );
   return res.data;
 }
+export async function downloadPortfolioFile(fileName: string): Promise<Blob> {
+  const res = await api.get(`/files/${fileName}`, {
+    responseType: "blob",
+  });
+  return res.data;
+}
