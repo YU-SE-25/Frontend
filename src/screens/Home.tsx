@@ -36,6 +36,7 @@ const RANKING_TABS = {
   CODE_REVIEW: "코드 리뷰",
 };
 
+// ⭐ 서버 응답 타입 그대로
 type ProblemItem = {
   rank: number;
   delta: number;
@@ -47,14 +48,16 @@ type ProblemItem = {
 
 type ReputationItem = {
   userId: number;
-  rank: number;
+  nickname: string;
+  ranking: number;
   delta: number;
 };
 
 type ReviewItem = {
-  id: number;
+  reviewId: number;
   authorId: number;
-  rank: number;
+  nickname: string;
+  ranking: number;
   delta: number;
   vote: number;
 };
@@ -65,30 +68,36 @@ export default function HomePage() {
     RANKING_TABS.PROBLEM_VIEWS
   );
 
-  // 더미 삭제 → 빈 배열로 초기화
   const [problemRanking, setProblemRanking] = useState<ProblemItem[]>([]);
   const [reputationRanking, setReputationRanking] = useState<ReputationItem[]>(
     []
   );
   const [reviewRanking, setReviewRanking] = useState<ReviewItem[]>([]);
 
+  // ⭐ 메인 렌더 데이터 로딩
   useEffect(() => {
-    // 문제 조회수 랭킹
-    getProblemRanking()
-      .then((res) => setProblemRanking(res))
-      .catch(() => setProblemRanking([]));
+    const load = async () => {
+      try {
+        // 문제 조회수 랭킹
+        const problemRes = await getProblemRanking();
+        setProblemRanking(problemRes.slice(0, 5));
 
-    // 평판 랭킹
-    getReputationRanking()
-      .then((res) => setReputationRanking(res))
-      .catch(() => setReputationRanking([]));
+        // 평판 랭킹
+        const repRes = await getReputationRanking();
+        setReputationRanking(repRes);
 
-    // 코드 리뷰 랭킹
-    getReviewRanking()
-      .then((res) => setReviewRanking(res))
-      .catch(() => setReviewRanking([]));
+        // 리뷰 랭킹
+        const reviewRes = await getReviewRanking();
+        setReviewRanking(reviewRes);
+      } catch (e) {
+        console.error("랭킹 로딩 실패", e);
+      }
+    };
+
+    load();
   }, []);
 
+  // 소개 카드들
   const codeAnalysisFeatures = [
     {
       icon: "🧩",
@@ -98,12 +107,12 @@ export default function HomePage() {
     {
       icon: "🚀",
       title: "성능 분석 및 프로파일링",
-      desc: "실행 시간 및 메모리 사용량, 라인별 호출 횟수를 분석하여 최적화 포인트를 제시합니다.",
+      desc: "실행 시간 및 메모리 사용량, 라인별 호출 횟수를 분석합니다.",
     },
     {
       icon: "🛡️",
       title: "취약점 개념 분석",
-      desc: "코드 내 잠재적 취약점을 분석하고 관련 보안 개념을 학습 자료로 제공합니다.",
+      desc: "코드 내 잠재적 취약점을 식별하고 관련 개념을 제공합니다.",
     },
   ];
 
@@ -111,7 +120,7 @@ export default function HomePage() {
     {
       icon: "📊",
       title: "개인화된 학습 목표",
-      desc: "언어별 학습 시간, 주간 학습 목표 등을 설정하여 의지를 불태워보세요.",
+      desc: "언어별 학습 시간, 주간 학습 목표를 설정해보세요.",
     },
     {
       icon: "💬",
@@ -120,16 +129,17 @@ export default function HomePage() {
     },
     {
       icon: "🔔",
-      title: "학습 독려 리마인드",
-      desc: "활동 패턴 분석을 통한 시의적절한 학습 독려 리마인드를 제공합니다.",
+      title: "학습 리마인드",
+      desc: "활동 패턴 분석을 통한 맞춤 리마인드를 제공합니다.",
     },
   ];
 
+  // ⭐ 테이블 표현용 구조
   const renderRankingData = () => {
     switch (activeRankingTab) {
       case RANKING_TABS.PROBLEM_VIEWS:
         return {
-          headers: ["번호", "문제제목", "총 조회수", "주간 조회수"],
+          headers: ["순위", "문제 제목", "총 조회수", "주간 변화량"],
           data: problemRanking.map((item) => ({
             rank: item.rank,
             title: item.title,
@@ -142,8 +152,8 @@ export default function HomePage() {
         return {
           headers: ["순위", "유저명", "주간 평판 변화", "비고"],
           data: reputationRanking.map((item) => ({
-            rank: item.rank,
-            title: `User ${item.userId}`,
+            rank: item.ranking,
+            title: item.nickname,
             value1: item.delta,
             value2: item.delta,
           })),
@@ -151,10 +161,10 @@ export default function HomePage() {
 
       case RANKING_TABS.CODE_REVIEW:
         return {
-          headers: ["순위", "문제제목 / 리뷰제목", "투표수", "주간 변화량"],
-          data: reviewRanking.map((item) => ({
-            rank: item.rank,
-            title: `User ${item.authorId}`,
+          headers: ["순위", "작성자", "투표수", "주간 변화량"],
+          data: reviewRanking.slice(0, 5).map((item) => ({
+            rank: item.ranking,
+            title: item.nickname,
             value1: item.vote,
             value2: item.delta,
           })),
