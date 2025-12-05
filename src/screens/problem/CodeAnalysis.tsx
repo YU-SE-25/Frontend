@@ -77,11 +77,10 @@ export default function CodeAnalysis() {
   const handleMouseUp = () => (dragging.current = false);
 
   const handleMouseMove = (e) => {
-    const handleMouseMove = (e) => {
-      if (!dragging.current) return;
-      const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 240 && newWidth < 700) setPanelWidth(newWidth);
-    };
+    if (!dragging.current) return;
+    const newWidth = window.innerWidth - e.clientX;
+    if (newWidth > 240 && newWidth < 700) setPanelWidth(newWidth);
+  };
 
     // 제출 코드 + 문제 제목 로딩
     useEffect(() => {

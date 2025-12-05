@@ -168,10 +168,18 @@ export default function ProblemList() {
 
   // 기록 필터
   // 태그 + 기록 필터 함께 적용
-  const filteredProblems = problems.filter((problem) => {
+  // 난이도 정렬을 위한 순위 매핑
+  const difficultyRank = (d: string) => {
+    if (d === "EASY") return 1;
+    if (d === "MEDIUM") return 2;
+    if (d === "HARD") return 3;
+    return 999;
+  };
+
+  // 🔥 필터 적용
+  let filteredProblems = problems.filter((problem) => {
     // 1) 태그 필터
     if (selectedTags.length > 0) {
-      // 문제에 태그가 없거나, 선택된 태그와 하나도 안 겹치면 제외
       if (
         !problem.tags ||
         !problem.tags.some((t) => selectedTags.includes(t))
@@ -195,12 +203,31 @@ export default function ProblemList() {
     return true;
   });
 
+  // 🔥 정렬 적용 (프런트에서 직접 정렬)
+  if (sortType === "latest") {
+    // createdAt 내림차순 (최신순)
+    filteredProblems.sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+  } else if (sortType === "low_difficulty") {
+    filteredProblems.sort(
+      (a, b) => difficultyRank(a.difficulty) - difficultyRank(b.difficulty)
+    );
+  } else if (sortType === "high_difficulty") {
+    filteredProblems.sort(
+      (a, b) => difficultyRank(b.difficulty) - difficultyRank(a.difficulty)
+    );
+  } else if (sortType === "views") {
+    filteredProblems.sort((a, b) => b.viewCount - a.viewCount);
+  } else if (sortType === "id") {
+    filteredProblems.sort((a, b) => a.problemId - b.problemId);
+  }
+
   // 페이지네이션 계산
   const totalItems = filteredProblems.length;
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  // 화면에 보여줄 문제 리스트
   const currentProblems = filteredProblems.slice(
     indexOfFirstItem,
     indexOfLastItem
@@ -343,7 +370,7 @@ export default function ProblemList() {
                 {/* Summary Section */}
                 {expandedProblemId === problem.problemId && (
                   <SummaryRow>
-                    <TableCell colSpan={isLoggedIn ? 8 : 7}>
+                    <TableCell colSpan={isLoggedIn ? 7 : 6}>
                       <SummaryBox>
                         <div>
                           <p>
