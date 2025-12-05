@@ -262,23 +262,21 @@ export interface ResolveReportResponse {
 }
 
 export async function fetchAdminReports(): Promise<AdminReportDto[]> {
-  const res = await api.get<AdminReportDto[]>("/admin/page/reports");
+  const res = await api.get<AdminReportDto[]>("reports");
   return res.data;
 }
 export async function fetchAdminReportDetail(
   reportId: number
 ): Promise<AdminReportDetailDto> {
-  const res = await api.get<AdminReportDetailDto>(
-    `/admin/page/reports/${reportId}`
-  );
+  const res = await api.get<AdminReportDetailDto>(`reports/${reportId}`);
   return res.data;
 }
 export async function resolveReport(
   reportId: number,
   payload: ResolveReportRequest
 ): Promise<ResolveReportResponse> {
-  const res = await api.post<ResolveReportResponse>(
-    `/admin/page/reports/${reportId}/resolve`,
+  const res = await api.patch<ResolveReportResponse>(
+    `reports/${reportId}/resolve`,
     payload
   );
   return res.data;

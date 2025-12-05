@@ -791,7 +791,6 @@ export default function EditPage() {
               style={{ display: "none" }}
               onChange={handleAvatarChange}
             />
-            <span>!!이 공간에 추가할 것 : 사진 크기별로 보여주기</span>
           </AvatarRow>
         </FieldGroup>
 
