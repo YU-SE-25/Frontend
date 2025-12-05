@@ -186,6 +186,15 @@ export const TAG_REVERSE_MAP: Record<string, string> = {
   DFS: "DFS",
 };
 
+//페이지 목록용
+interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+}
+
 // 태그 목록 조회
 export async function fetchAvailableTags(): Promise<string[]> {
   try {
@@ -202,11 +211,9 @@ export async function fetchAvailableTags(): Promise<string[]> {
 
 // 문제 목록 조회
 export async function fetchProblems(): Promise<IProblem[]> {
-  const res = await api.get<{ content: ProblemListItemDto[] }>(
-    "/problems/list"
+  const res = await api.get<PageResponse<ProblemListItemDto>>(
+    "/problems/list?page=0&size=2000"
   );
-
-  if (!res.data?.content) throw new Error("empty");
 
   return res.data.content.map(mapListDtoToProblem);
 }

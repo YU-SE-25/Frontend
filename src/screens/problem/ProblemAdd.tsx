@@ -150,12 +150,11 @@ export default function ProblemAdd() {
     formData.append("source", form.source);
 
     try {
-      let id: number;
       if (isEdit) {
-        id = await updateProblem(Number(problemId), formData);
+        await updateProblem(Number(problemId), formData);
         alert("문제가 수정되었습니다!");
       } else {
-        id = await registerProblem(formData);
+        await registerProblem(formData);
         alert("문제가 등록되었습니다!");
       }
 
@@ -201,39 +200,48 @@ export default function ProblemAdd() {
           <InputGroup>
             <Label>태그</Label>
 
-            <StyledSelect
-              onChange={(e) => {
-                if (!tags.includes(e.target.value)) {
-                  setTags([...tags, e.target.value]);
-                }
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                width: "100%",
               }}
-              value=""
             >
-              <option value="" disabled>
-                태그 선택
-              </option>
+              <StyledSelect
+                onChange={(e) => {
+                  if (!tags.includes(e.target.value)) {
+                    setTags([...tags, e.target.value]);
+                  }
+                }}
+                value=""
+              >
+                <option value="" disabled>
+                  태그 선택
+                </option>
 
-              {availableTags
-                .filter((t) => !tags.includes(t))
-                .map((t) => (
-                  <option key={t} value={t}>
+                {availableTags
+                  .filter((t) => !tags.includes(t))
+                  .map((t) => (
+                    <option key={t} value={t}>
+                      {TAG_LABEL_MAP[t] ?? t}
+                    </option>
+                  ))}
+              </StyledSelect>
+
+              <TagDisplayContainer>
+                {tags.map((t) => (
+                  <TagChip key={t}>
                     {TAG_LABEL_MAP[t] ?? t}
-                  </option>
+                    <RemoveTagButton
+                      onClick={() => setTags(tags.filter((x) => x !== t))}
+                    >
+                      ×
+                    </RemoveTagButton>
+                  </TagChip>
                 ))}
-            </StyledSelect>
-
-            <TagDisplayContainer>
-              {tags.map((t) => (
-                <TagChip key={t}>
-                  {TAG_LABEL_MAP[t] ?? t}
-                  <RemoveTagButton
-                    onClick={() => setTags(tags.filter((x) => x !== t))}
-                  >
-                    ×
-                  </RemoveTagButton>
-                </TagChip>
-              ))}
-            </TagDisplayContainer>
+              </TagDisplayContainer>
+            </div>
           </InputGroup>
 
           <SectionTitle>문제 설명</SectionTitle>
@@ -245,6 +253,8 @@ export default function ProblemAdd() {
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
+              placeholder="문제 설명은 100자 이내로 입력해주세요." // ← 추가!
+              maxLength={100} // ← 추가!
             />
           </InputGroup>
 

@@ -362,3 +362,12 @@ export const StatusChip = styled.span<{
       ? "#f44336" // 빨강
       : "gray"}; // NONE = 회색
 `;
+export const TagChipForList = styled.span`
+  padding: 4px 8px;
+  background-color: ${(props) => props.theme.authHoverBgColor};
+  color: ${(props) => props.theme.textColor};
+  border-radius: 8px;
+  font-size: 12px;
+  margin-right: 6px;
+  white-space: nowrap;
+`;
