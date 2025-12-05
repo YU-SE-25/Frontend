@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   PageTitle,
   ControlBar,
@@ -21,6 +21,7 @@ import {
 } from "../../theme/ProblemList.Style";
 import { TOPBAR_HEIGHT } from "../../components/Topbar";
 import CodeResult from "./SolveResult";
+import type { GradingResponse } from "./SolveResult";
 import styled, { css, keyframes } from "styled-components";
 
 import {
@@ -194,11 +195,17 @@ export default function MySubmissionsList() {
   const [sortType, setSortType] = useState("latest");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
+  const location = useLocation();
   const selectedSubmissionId = searchParams.get("id")
     ? Number(searchParams.get("id"))
     : null;
-
+  type SubmitState = {
+    submitResult?: GradingResponse;
+    problemId?: number;
+  } | null;
+  const state = location.state as SubmitState;
+  const initialSubmitResult = state?.submitResult ?? null;
+  const initialProblemId = state?.problemId ?? null;
   const rawShowResult = searchParams.get("showResult");
   const showResult: boolean | null =
     rawShowResult === "true" ? true : rawShowResult === "false" ? false : null;
@@ -386,7 +393,12 @@ export default function MySubmissionsList() {
   return (
     <WholeWrapper>
       <Blankdiv $visible={panelVisible} $animate={panelAnimate}>
-        <CodeResult onLookMyCode={seeMyCode} onNavEditor={handleDirectSolve} />
+        <CodeResult
+          onLookMyCode={seeMyCode}
+          onNavEditor={handleDirectSolve}
+          initialResult={initialSubmitResult}
+          initialProblemId={initialProblemId}
+        />
       </Blankdiv>
 
       <ProblemListWrapper>

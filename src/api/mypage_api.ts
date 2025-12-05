@@ -1,3 +1,4 @@
+import axios from "axios";
 import type { EditableProfile } from "../screens/mypage/EditPage";
 import { api } from "./axios";
 export type Submission = {
@@ -164,7 +165,7 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
   return {
     userId: dto.userId,
     username: dto.nickname,
-    avatarUrl: dto.avatarUrl ?? "/images/default-avatar.png",
+    avatarUrl: dto.avatarUrl,
     bio: dto.bio ?? "",
     joinedAt: dto.joinedAt,
     solvedProblems: dto.solvedProblems ?? [],
@@ -205,7 +206,7 @@ export function getDummyUserProfile(): UserProfile {
   return {
     userId: 0,
     username: "",
-    avatarUrl: "/images/default-avatar.png",
+    avatarUrl: "",
     bio: "",
     joinedAt: "",
     solvedProblems: [],
@@ -301,9 +302,24 @@ export async function getMyProfile(): Promise<UserProfile> {
 }
 
 // 내 프로필 업데이트 (PATCH /api/mypage)
+
 export async function updateMyProfile(payload: UpdateMyProfileDto | FormData) {
-  const res = await api.patch("/mypage", payload);
-  return res.data;
+  try {
+    const res = await api.patch("/mypage", payload);
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status;
+
+      if (status === 413) {
+        alert("파일이 너무 큽니다! (최대 업로드 용량을 초과했습니다)");
+        throw err;
+      }
+    }
+
+    // 그 외 에러는 그대로 던지기
+    throw err;
+  }
 }
 
 //마이페이지용 코딩 성향 분석

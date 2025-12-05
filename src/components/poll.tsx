@@ -21,6 +21,7 @@ const PollBox = styled.div`
 const PollTitle = styled.div`
   font-weight: 600;
   margin-bottom: 4px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const PollQuestion = styled.div`
@@ -39,6 +40,8 @@ const PollOptionRow = styled.button<{ $selected: boolean }>`
   justify-content: space-between;
   align-items: center;
   padding: 6px 10px;
+  color: ${({ theme }) => theme.textColor};
+
   border-radius: 6px;
   border: 1px solid
     ${({ theme, $selected }) =>
@@ -49,7 +52,7 @@ const PollOptionRow = styled.button<{ $selected: boolean }>`
 
 const SmallText = styled.div`
   font-size: 12px;
-  color: ${({ theme }) => theme.muteColor ?? "#888"};
+  color: ${({ theme }) => theme.logoColor};
 `;
 
 const PollEditorBox = styled(PollBox)`
@@ -66,6 +69,7 @@ const Row = styled.div`
 const Label = styled.label`
   font-size: 13px;
   font-weight: 500;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const Input = styled.input`
@@ -74,6 +78,7 @@ const Input = styled.input`
   border: 1px solid ${({ theme }) => theme.textColor ?? "#ddd"};
   background: ${({ theme }) => theme.bgColor};
   font-size: 13px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const TextArea = styled.textarea`
@@ -84,6 +89,7 @@ const TextArea = styled.textarea`
   font-size: 13px;
   resize: vertical;
   min-height: 60px;
+  color: ${({ theme }) => theme.textColor};
 `;
 
 const ButtonRow = styled.div`
@@ -125,8 +131,8 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
   });
 
   const voteMutation = useMutation({
-    mutationFn: (optionId: number) =>
-      votePoll(postId, poll!.pollId, optionId, isDiscuss),
+    mutationFn: (label: number) =>
+      votePoll(postId, poll!.pollId, label, isDiscuss),
     onSuccess: (res) => {
       console.log("[votePoll] success", res);
       queryClient.invalidateQueries({
@@ -134,17 +140,19 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
       });
     },
   });
+
   useEffect(() => {
     if (poll) {
       console.log("[PollView] poll changed:", poll);
     }
   }, [poll]);
+
   if (isLoading || isError || !poll) return null;
 
-  const handleVote = (optionId: number) => {
-    setSelected(optionId);
+  const handleVote = (label: number) => {
+    setSelected(label);
     if (!poll.alreadyVoted) {
-      voteMutation.mutate(optionId);
+      voteMutation.mutate(label);
     }
   };
 
@@ -153,18 +161,21 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
       <PollTitle>{poll.question || "투표"}</PollTitle>
       <PollQuestion>{poll.message}</PollQuestion>
       <PollOptionList>
-        {poll.options.map((opt) => (
-          <PollOptionRow
-            key={opt.optionId}
-            type="button"
-            onClick={() => handleVote(opt.optionId)}
-            disabled={poll.alreadyVoted || voteMutation.isPending}
-            $selected={selected === opt.optionId}
-          >
-            <span>{opt.content}</span>
-            <SmallText>{opt.voteCount}표</SmallText>
-          </PollOptionRow>
-        ))}
+        {poll.options.map((opt) => {
+          const numericLabel = Number(opt.label);
+          return (
+            <PollOptionRow
+              key={opt.optionId}
+              type="button"
+              onClick={() => handleVote(numericLabel)}
+              disabled={poll.alreadyVoted || voteMutation.isPending}
+              $selected={selected === numericLabel}
+            >
+              <span>{opt.content}</span>
+              <SmallText>{opt.voteCount}표</SmallText>
+            </PollOptionRow>
+          );
+        })}
       </PollOptionList>
       <SmallText>
         총 {poll.totalVotes}표 ·{" "}

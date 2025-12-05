@@ -26,6 +26,7 @@ export interface CreatePollResponse {
   totalVotes: number;
   alreadyVoted: boolean;
   createdAt: string;
+  label: number;
 }
 export interface PollDetailResponse {
   message: string | null;
@@ -36,10 +37,11 @@ export interface PollDetailResponse {
   totalVotes: number;
   alreadyVoted: boolean;
   createdAt: string;
+  label: number;
 }
 
 export interface VotePollRequest {
-  option_id: number;
+  label: number;
 }
 
 export interface VotePollResponse {
@@ -48,6 +50,7 @@ export interface VotePollResponse {
   voted?: number;
   optionId?: number;
   votedAt: string;
+  label: number;
 }
 function getBoardPrefix(isDiscuss: boolean): string {
   return isDiscuss ? "/dis_board" : "/qna_board";
@@ -82,12 +85,12 @@ export async function fetchPoll(
 export async function votePoll(
   postId: number,
   pollId: number,
-  optionId: number,
+  label: number,
   isDiscuss: boolean
 ): Promise<VotePollResponse> {
   const prefix = getBoardPrefix(isDiscuss);
 
-  const body: VotePollRequest = { option_id: optionId };
+  const body: VotePollRequest = { label };
 
   const res = await api.post<VotePollResponse>(
     `${prefix}/${postId}/poll/${pollId}/vote`,

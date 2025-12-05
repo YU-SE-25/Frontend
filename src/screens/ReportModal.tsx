@@ -29,13 +29,20 @@ export default function ReportModal({
       return;
     }
 
-    const fullReason = `[${reportType}] ${reason.trim()}`;
+    const trimmedReason = reason.trim();
+
+    const fullReason = `[${reportType}] ${trimmedReason}`;
+
+    // 🔹 제목: "신고 유형 + 상세 사유" 를 합친 문자열에서 최대 10자만 사용
+    const baseTitle = `[${reportType}] ${trimmedReason}`;
+    const title = baseTitle.length > 10 ? baseTitle.slice(0, 10) : baseTitle;
 
     try {
       setLoading(true);
       await createReport({
         targetContentType,
         targetContentId,
+        title,
         reason: fullReason,
         extraId,
       });

@@ -82,140 +82,147 @@ export default function CodeAnalysis() {
     if (newWidth > 240 && newWidth < 700) setPanelWidth(newWidth);
   };
 
-  // 제출 코드 + 문제 제목 로딩
-  useEffect(() => {
-    if (!submissionId) return;
+    // 제출 코드 + 문제 제목 로딩
+    useEffect(() => {
+      if (!submissionId) return;
 
-    const run = async () => {
-      try {
-        const detail = await fetchSubmissionDetail(Number(submissionId));
+      const run = async () => {
+        try {
+          const detail = await fetchSubmissionDetail(Number(submissionId));
 
-        setSubmissionDetail(detail);
+          setSubmissionDetail(detail);
 
-        setCode(detail.code ?? "");
-        setRawLang(detail.language ?? "Python");
+          setCode(detail.code ?? "");
+          setRawLang(detail.language ?? "Python");
 
-        const p = await fetchProblemDetail(detail.problemId);
-        setProblemTitle(p.title ?? "");
-      } catch (err) {
-        console.error("로드 오류:", err);
+          const p = await fetchProblemDetail(detail.problemId);
+          setProblemTitle(p.title ?? "");
+        } catch (err) {
+          console.error("로드 오류:", err);
+        }
+      };
+
+      run();
+    }, [submissionId]);
+
+    // API 호출
+    useEffect(() => {
+      if (!submissionId) return;
+
+      if (activeTab === "profiling") {
+        fetchComplexityAnalysis(Number(submissionId))
+          .then(setComplexityData)
+          .catch(console.error);
       }
-    };
 
-    run();
-  }, [submissionId]);
+      if (activeTab === "flowchart") {
+        fetchFlowchartAnalysis(Number(submissionId))
+          .then((data) => setFlowchartData(data.mermaidCode))
+          .catch(console.error);
+      }
+    }, [activeTab, submissionId]);
 
-  // API 호출
-  useEffect(() => {
-    if (!submissionId) return;
+    return (
+      <Container onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+        <LeftPanel>
+          <ProblemInfo>
+            {problemTitle ? (
+              <span>
+                문제 {problemId} · {problemTitle}
+              </span>
+            ) : (
+              <span>문제 정보를 불러오는 중...</span>
+            )}
+          </ProblemInfo>
 
-    if (activeTab === "profiling") {
-      fetchComplexityAnalysis(Number(submissionId))
-        .then(setComplexityData)
-        .catch(console.error);
-    }
+          <Toolbar>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span>사용 언어 : {rawLang || "로드 중..."}</span>
 
-    if (activeTab === "flowchart") {
-      fetchFlowchartAnalysis(Number(submissionId))
-        .then((data) => setFlowchartData(data.mermaidCode))
-        .catch(console.error);
-    }
-  }, [activeTab, submissionId]);
-
-  return (
-    <Container onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
-      <LeftPanel>
-        <ProblemInfo>
-          {problemTitle ? (
-            <span>
-              문제 {problemId} · {problemTitle}
-            </span>
-          ) : (
-            <span>문제 정보를 불러오는 중...</span>
-          )}
-        </ProblemInfo>
-
-        <Toolbar>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span>사용 언어 : {rawLang || "로드 중..."}</span>
-
-            <FontSizeSelect
-              value={fontSize}
-              onChange={(e) => setFontSize(Number(e.target.value))}
-            >
-              {[14, 16, 18, 20, 22, 24, 28].map((v) => (
-                <option key={v} value={v}>
-                  {v}px
-                </option>
-              ))}
-            </FontSizeSelect>
-          </div>
-        </Toolbar>
-
-        {/* 코드 표시 */}
-        <CodeBox>
-          <Editor
-            height="100%"
-            value={code}
-            defaultLanguage="javascript"
-            theme={isDark ? "vs-dark" : "light"}
-            options={{
-              readOnly: true,
-              fontSize,
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-            }}
-          />
-        </CodeBox>
-
-        {/* 제출 정보 */}
-        <Accordion onClick={() => setOpenMeta((v) => !v)}>
-          <strong>제출 정보</strong>
-
-          {openMeta && submissionDetail && (
-            <div style={{ marginTop: "10px" }}>
-              <p>제출 시각: {timeConverter(submissionDetail.submittedAt)}</p>
-              <p>언어: {submissionDetail.language}</p>
-              <p>실행 시간: {submissionDetail.runtime}ms</p>
-              <p>메모리 사용량: {submissionDetail.memory}MB</p>
-              <p>공유 여부: {submissionDetail.shared ? "공유됨" : "비공유"}</p>
+              <FontSizeSelect
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+              >
+                {[14, 16, 18, 20, 22, 24, 28].map((v) => (
+                  <option key={v} value={v}>
+                    {v}px
+                  </option>
+                ))}
+              </FontSizeSelect>
             </div>
-          )}
-        </Accordion>
+          </Toolbar>
 
-        <Accordion onClick={() => setOpenTest((v) => !v)}>
-          <strong>테스트 케이스 결과</strong>
+          {/* 코드 표시 */}
+          <CodeBox>
+            <Editor
+              height="100%"
+              value={code}
+              defaultLanguage="javascript"
+              theme={isDark ? "vs-dark" : "light"}
+              options={{
+                readOnly: true,
+                fontSize,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+              }}
+            />
+          </CodeBox>
 
-          {openTest && <div style={{ marginTop: "10px" }}>추후 추가 예정</div>}
-        </Accordion>
-      </LeftPanel>
+          {/* 제출 정보 */}
+          <Accordion onClick={() => setOpenMeta((v) => !v)}>
+            <strong>제출 정보</strong>
 
-      <Resizer onMouseDown={handleMouseDown} />
+            {openMeta && submissionDetail && (
+              <div style={{ marginTop: "10px" }}>
+                <p>제출 시각: {timeConverter(submissionDetail.submittedAt)}</p>
+                <p>언어: {submissionDetail.language}</p>
+                <p>실행 시간: {submissionDetail.runtime}ms</p>
+                <p>메모리 사용량: {submissionDetail.memory}MB</p>
+                <p>
+                  공유 여부: {submissionDetail.shared ? "공유됨" : "비공유"}
+                </p>
+              </div>
+            )}
+          </Accordion>
 
-      <RightPanel width={panelWidth}>
-        <Tabs>
-          <TabButton
-            active={activeTab === "profiling"}
-            onClick={() => setActiveTab("profiling")}
-          >
-            복잡도 분석
-          </TabButton>
+          <Accordion onClick={() => setOpenTest((v) => !v)}>
+            <strong>테스트 케이스 결과</strong>
 
-          <TabButton
-            active={activeTab === "flowchart"}
-            onClick={() => setActiveTab("flowchart")}
-          >
-            플로우차트
-          </TabButton>
-        </Tabs>
+            {openTest && (
+              <div style={{ marginTop: "10px" }}>추후 추가 예정</div>
+            )}
+          </Accordion>
+        </LeftPanel>
 
-        <Content>
-          {activeTab === "profiling" && <CodeProfiling data={complexityData} />}
-          {activeTab === "flowchart" && (
-            <CodeFlowchart mermaidCode={flowchartData} />
-          )}
-        </Content>
-      </RightPanel>
-    </Container>
-  );
+        <Resizer onMouseDown={handleMouseDown} />
+
+        <RightPanel width={panelWidth}>
+          <Tabs>
+            <TabButton
+              active={activeTab === "profiling"}
+              onClick={() => setActiveTab("profiling")}
+            >
+              복잡도 분석
+            </TabButton>
+
+            <TabButton
+              active={activeTab === "flowchart"}
+              onClick={() => setActiveTab("flowchart")}
+            >
+              플로우차트
+            </TabButton>
+          </Tabs>
+
+          <Content>
+            {activeTab === "profiling" && (
+              <CodeProfiling data={complexityData} />
+            )}
+            {activeTab === "flowchart" && (
+              <CodeFlowchart mermaidCode={flowchartData} />
+            )}
+          </Content>
+        </RightPanel>
+      </Container>
+    );
+  };
 }

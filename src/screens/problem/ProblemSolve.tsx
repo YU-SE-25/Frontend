@@ -155,19 +155,21 @@ ${result.compileTimeMs} ms
   const handleSubmit = async () => {
     const numericId = Number(problemId);
     if (isNaN(numericId)) return alert("문제 ID 오류로 제출 불가!");
-
-    await IDEAPI.submit({
+    const data = await IDEAPI.submit({
       problemId: numericId,
       code,
       language: languageMap[language],
     });
+    const submissionId = data.submissionId;
 
     navigate(
-      "/problems/" +
-        userProfile?.nickname +
-        "/submitted?id=" +
-        numericId +
-        "&showResult=true"
+      `/problems/${userProfile?.nickname}/submitted?id=${submissionId}&showResult=true`,
+      {
+        state: {
+          submitResult: data,
+          problemId: numericId,
+        },
+      }
     );
   };
 

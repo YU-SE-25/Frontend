@@ -64,7 +64,9 @@ export async function fetchPendingProblemList(params: {
   size?: number;
   sort?: string;
 }) {
-  const res = await api.get<ProblemListResponse>("/problems/list", { params });
+  const res = await api.get<ProblemListResponse>("/problems/list/pending", {
+    params,
+  });
   return res.data;
 }
 
@@ -72,7 +74,7 @@ export async function approveProblem(
   problemId: number
 ): Promise<MessageResponseDto> {
   const res = await api.put<MessageResponseDto>(
-    `/admin/page/problems/${problemId}/approve`
+    `/problems/${problemId}/approve`
   );
   return res.data;
 }
@@ -91,7 +93,41 @@ export async function fetchMyProblems(
   });
   return res.data;
 }
+export interface InstructorApplicationDto {
+  applicationId: number;
+  name: string;
+  email: string;
+  submittedAt: string; // ISO String
+  status: "PENDING" | "APPROVED" | "REJECTED";
+}
 
+export interface InstructorApplicationPageResponse {
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  applications: InstructorApplicationDto[];
+}
+
+export interface PageableRequest {
+  page: number;
+  size: number;
+  sort?: string; // 예: "submittedAt,desc"
+}
+export interface InstructorApplicationDetail {
+  applicationId: number;
+  userId: number;
+  name: string;
+  email: string;
+  phone: string;
+  submittedAt: string; // ISO string
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  portfolioFileUrl: string | null;
+  portfolioLinks: string | null;
+  rejectionReason: string | null;
+  processedAt: string | null;
+  processorId: number | null;
+  processorName: string | null;
+}
 // 문제 반려
 export async function rejectProblem(
   problemId: number
@@ -101,6 +137,30 @@ export async function rejectProblem(
   );
   return res.data;
 }
+export async function fetchInstructorApplicationDetail(
+  applicationId: number
+): Promise<InstructorApplicationDetail> {
+  const res = await api.get<InstructorApplicationDetail>(
+    `/admin/instructor/applications/${applicationId}`
+  );
+  return res.data;
+}
+export async function fetchInstructorApplications(
+  pageable: PageableRequest
+): Promise<InstructorApplicationPageResponse> {
+  const res = await api.get<InstructorApplicationPageResponse>(
+    "/admin/instructor/applications",
+    {
+      params: {
+        page: pageable.page,
+        size: pageable.size,
+      },
+    }
+  );
+
+  return res.data;
+}
+
 export async function fetchUserList() {
   const res = await api.get("/admin/users");
   return res.data;
