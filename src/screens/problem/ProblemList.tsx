@@ -29,7 +29,7 @@ import {
   TagDisplayContainer,
   TagChip,
   ProblemTagChip,
-  StatusChip,
+  TagChipForList,
 } from "../../theme/ProblemList.Style";
 
 import type { UserProblemStatus } from "../../theme/ProblemList.Style";
@@ -97,6 +97,7 @@ export default function ProblemList() {
 
       try {
         const real = await fetchProblems();
+        console.log("📌 문제 목록 API 응답:", real);
         if (mounted) {
           setProblems(real);
         }
@@ -346,7 +347,9 @@ export default function ProblemList() {
 
                   <TableCell>
                     {problem.tags?.map((t) => (
-                      <ProblemTagChip key={t}>{t}</ProblemTagChip>
+                      <TagChipForList key={t}>
+                        {TAG_LABEL_MAP[t] ?? t}
+                      </TagChipForList>
                     ))}
                   </TableCell>
 
