@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+//import { DevTools } from "jotai-devtools";
 import Topbar, { TOPBAR_HEIGHT } from "./components/Topbar";
 import styled, { ThemeProvider } from "styled-components";
 import { darkTheme, lightTheme } from "./theme/theme";
@@ -6,7 +7,11 @@ import { darkTheme, lightTheme } from "./theme/theme";
 import { useEffect } from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { isDarkAtom, refreshTokenAtom, refreshActionAtom } from "./atoms";
-import { userProfileAtom, type RefreshResponse } from "./atoms";
+import {
+  userProfileAtom,
+  type RefreshResponse,
+  // type UserProfile,
+} from "./atoms";
 import { api } from "./api/axios";
 
 const Container = styled.div`

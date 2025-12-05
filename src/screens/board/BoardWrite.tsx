@@ -4,7 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
-import { createDiscussPost, updateDiscussPost } from "../../api/board_api";
+import {
+  attachDiscussImageUrl as attachDiscussFile,
+  createDiscussPost,
+  updateDiscussPost,
+} from "../../api/board_api";
 import { updatePostTags } from "../../api/board_api";
 import { createPoll, type CreatePollRequest } from "../../api/poll_api";
 import { PollEditor } from "../../components/poll";
@@ -241,6 +245,7 @@ export default function BoardWrite({
   const initialIsAnonymous = editPost?.isAnonymous ?? false;
   const initialIsPrivate = editPost?.isPrivate ?? false;
 
+  const [imageUrl, setImageUrl] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState<CategorySelectValue>(initialCategory);
   const [title, setTitle] = useState(initialTitle);
@@ -266,7 +271,8 @@ export default function BoardWrite({
     isAnonymous !== initialIsAnonymous ||
     isPrivate !== initialIsPrivate ||
     selectedCategory !== initialCategory ||
-    pollDraft !== null;
+    pollDraft !== null ||
+    imageUrl.trim().length > 0;
 
   useEffect(() => {
     if (!user) {
@@ -371,7 +377,14 @@ export default function BoardWrite({
         // 태그 재설정
         await updatePostTags(editPost.id, [tagId]);
 
-        // (선택) 수정 모드에서도 투표를 새로 만들고 싶다면 여기서 처리 가능
+        // 🔥 이미지 URL 있으면 첨부 API 호출
+        if (imageUrl.trim()) {
+          try {
+            await attachDiscussFile(editPost.id, imageUrl.trim());
+          } catch (err) {
+            console.error("이미지 URL 첨부 실패:", err);
+          }
+        }
 
         navigate(-1);
       } else {
@@ -384,7 +397,7 @@ export default function BoardWrite({
 
         if (!newPostId) {
           console.warn(
-            "새 게시글 ID를 찾을 수 없어 태그/투표를 설정하지 못했습니다.",
+            "새 게시글 ID를 찾을 수 없어 태그/투표/첨부를 설정하지 못했습니다.",
             res
           );
         } else {
@@ -397,6 +410,15 @@ export default function BoardWrite({
               await createPoll(newPostId, pollDraft, true); // true = discuss
             } catch (err) {
               console.error("투표 생성 실패:", err);
+            }
+          }
+
+          // 🔥 이미지 URL 있으면 첨부 API 호출
+          if (imageUrl.trim()) {
+            try {
+              await attachDiscussFile(newPostId, imageUrl.trim());
+            } catch (err) {
+              console.error("이미지 URL 첨부 실패:", err);
             }
           }
         }
@@ -540,7 +562,17 @@ export default function BoardWrite({
         {error && <ErrorText>{error}</ErrorText>}
 
         <BottomRow>
-          <LeftOptions />
+          <LeftOptions>
+            <FieldRow>
+              <Label>이미지 URL</Label>
+              <TextInput
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https:// 로 시작하는 이미지 주소를 입력하세요."
+              />
+            </FieldRow>
+          </LeftOptions>
+
           <ButtonRow>
             <GhostButton type="button" onClick={handleCancel}>
               취소

@@ -434,7 +434,10 @@ export default function BoardDetail({ post }: BoardDetailProps) {
   }, [hasScrolledForPost, isPostFetching, isCommentsFetching, postId]);
 
   const displayAuthor = stablePost.anonymity ? "익명" : stablePost.author;
-
+  const attachmentUrl =
+    (stablePost as any).attachmentUrl ??
+    (stablePost as any).attachment_url ??
+    null;
   // ✅ 게시글 수정 버튼 클릭 시
   const handleEditPost = () => {
     nav(`/board/${currentCategory}/write`, {
@@ -621,7 +624,12 @@ export default function BoardDetail({ post }: BoardDetailProps) {
       <DetailBody>
         <DetailMain>
           <PollView postId={stablePost.post_id} isDiscuss={true} />
-          <ContentArea>{stablePost.contents}</ContentArea>
+          <ContentArea>
+            {attachmentUrl && (
+              <img src={attachmentUrl} alt="게시글 첨부 이미지" />
+            )}
+            {stablePost.contents}
+          </ContentArea>
 
           <StatsRow>
             <span>👍 {like}</span>

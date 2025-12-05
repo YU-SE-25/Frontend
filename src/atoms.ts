@@ -12,7 +12,8 @@ const getInitialIsDark = () => {
 
 export const isDarkAtom = atom<boolean>(getInitialIsDark());
 
-export const toggleThemeActionAtom = atom(null, (_get, set) => {
+// 🔥 여기 다시 추가해야 함!!
+export const toggleThemeActionAtom = atom(null, (_, set) => {
   set(isDarkAtom, (prev) => !prev);
 });
 
@@ -88,7 +89,7 @@ export const isLoggedInAtom = atom((get) => {
 });
 
 // 로그인 액션
-export const loginActionAtom = atom(null, (_get, set, data: LoginResponse) => {
+export const loginActionAtom = atom(null, (_, set, data: LoginResponse) => {
   set(accessTokenAtom, data.accessToken);
   set(refreshTokenAtom, data.refreshToken);
   set(accessTokenExpiresInAtom, data.expiresIn);
@@ -96,7 +97,7 @@ export const loginActionAtom = atom(null, (_get, set, data: LoginResponse) => {
 });
 
 // 로그아웃
-export const logoutActionAtom = atom(null, (_get, set) => {
+export const logoutActionAtom = atom(null, (_, set) => {
   set(accessTokenAtom, null);
   set(refreshTokenAtom, null);
   set(accessTokenExpiresInAtom, null);
@@ -104,13 +105,10 @@ export const logoutActionAtom = atom(null, (_get, set) => {
 });
 
 // refresh
-export const refreshActionAtom = atom(
-  null,
-  (_get, set, data: RefreshResponse) => {
-    set(accessTokenAtom, data.accessToken);
-    set(accessTokenExpiresInAtom, data.expiresIn);
-  }
-);
+export const refreshActionAtom = atom(null, (_, set, data: RefreshResponse) => {
+  set(accessTokenAtom, data.accessToken);
+  set(accessTokenExpiresInAtom, data.expiresIn);
+});
 
 // **********************************************
 isDarkAtom.debugLabel = "Is Dark Mode";
