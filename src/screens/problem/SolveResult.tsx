@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import styled, { css, keyframes } from "styled-components";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import {
-  getSubmissionStatus,
-  type ICodeSubmitRequest,
-  type ICodeSubmitResult,
-} from "../../api/codeeditor_api";
+//import {  getSubmissionStatus,  type ICodeSubmitRequest,  type ICodeSubmitResult,} from "../../api/codeeditor_api";
 import {
   fetchSubmissionDetail,
   type SubmissionDetail,
@@ -443,12 +439,11 @@ export default function SolveResult({
       totalTestCases: initialResult.totalTestCases ?? null,
     });
   }, [initialResult]);
-
+  /*채점 완료후 결과가 나오는 방식이라, 아래코드는 deprecated 예정
   useEffect(() => {
     if (!submissionId) return;
     if (!submission) return;
 
-    // 이미 최종 상태면 굳이 다시 안 때려도 됨
     const baseStatus = submission.status;
     if (baseStatus && baseStatus !== "PENDING" && baseStatus !== "GRADING") {
       return;
@@ -475,7 +470,6 @@ export default function SolveResult({
           totalTestCases: res.totalTestCases,
         });
 
-        // 한 번 요청 후, 결과를 submission에도 반영
         setSubmission((prev) =>
           prev
             ? {
@@ -495,7 +489,7 @@ export default function SolveResult({
       alive = false;
     };
   }, [submissionId, submission]);
-
+*/
   const status: SubmissionStatus =
     liveStatus ?? submission?.status ?? "PENDING";
 

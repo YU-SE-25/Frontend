@@ -93,7 +93,7 @@ const MetaRow = styled.div<{ isDisabled?: boolean }>`
   }
 `;
 
-const LikePanel = styled.button<{ $active?: boolean }>`
+export const LikePanel = styled.button<{ $active?: boolean }>`
   width: 56px;
   height: 56px;
   min-width: 56px;
@@ -120,7 +120,7 @@ const LikePanel = styled.button<{ $active?: boolean }>`
   }
 `;
 
-const LikeCount = styled.div`
+export const LikeCount = styled.div`
   font-size: 18px; /* 숫자 크게 */
   font-weight: 700;
   line-height: 1;

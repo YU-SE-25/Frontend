@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getUserProfile } from "../../api/mypage_api";
+import { useAtomValue } from "jotai";
+import { userProfileAtom } from "../../atoms";
 
 type Submission = {
   id: number;
@@ -321,7 +323,8 @@ const MiniGoalValue = styled.div`
 export default function ActivityPage() {
   const { username } = useParams<{ username: string }>();
   const nav = useNavigate();
-
+  const myProfile = useAtomValue(userProfileAtom);
+  const isMyPage = !!myProfile && myProfile.nickname === username;
   // 🔹 1) 훅은 무조건 위에서 다 호출
   const {
     data: user,
@@ -433,7 +436,7 @@ export default function ActivityPage() {
           <Row>
             <Button
               onClick={goSolved}
-              disabled={isLoading || !solvedIds.length}
+              disabled={isLoading || !solvedIds.length || !isMyPage}
               variant="primary"
             >
               내가 푼 문제 보기

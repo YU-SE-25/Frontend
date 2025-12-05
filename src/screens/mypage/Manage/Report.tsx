@@ -485,7 +485,7 @@ export default function ReportManagementScreen() {
               <tr>
                 <Th>신고 번호</Th>
                 <Th>신고 대상</Th>
-                <Th>신고 제목</Th>
+                <Th></Th>
                 <Th>신고자</Th>
                 <Th>신고일</Th>
               </tr>
