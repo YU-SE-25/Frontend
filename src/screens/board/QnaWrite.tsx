@@ -13,6 +13,7 @@ import { userProfileAtom } from "../../atoms";
 // QnA API
 import {
   addProblemNumber,
+  attachqnaFile,
   createqnaPost,
   updateqnaPost,
 } from "../../api/qna_api";
@@ -380,7 +381,6 @@ export default function QnaWrite() {
 
   const [problemList, setProblemList] = useState<SimpleProblem[]>([]);
   const [problemListLoading, setProblemListLoading] = useState(false);
-
   const [selectedProblem, setSelectedProblem] = useState<SimpleProblem | null>(
     null
   );
@@ -390,6 +390,9 @@ export default function QnaWrite() {
 
   const [problemDetail, setProblemDetail] = useState<IProblem | null>(null);
   const [problemLoading, setProblemLoading] = useState(false);
+
+  // 🔗 이미지 URL
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -527,6 +530,15 @@ export default function QnaWrite() {
         const payloadWithId = { ...basePayload, postId: editPost.id };
         await updateqnaPost(editPost.id, payloadWithId);
 
+        // 🔥 이미지 URL 있으면 첨부
+        if (imageUrl.trim()) {
+          try {
+            await attachqnaFile(editPost.id, imageUrl.trim());
+          } catch (err) {
+            console.error("QnA 이미지 URL 첨부 실패:", err);
+          }
+        }
+
         alert("질문이 수정되었습니다.");
         navigate(-1);
       } else {
@@ -539,6 +551,15 @@ export default function QnaWrite() {
             await createPoll(selectedPostId, pollDraft, false);
           } catch (err) {
             console.error("QnA 투표 생성 실패:", err);
+          }
+        }
+
+        // 🔥 새 글에서도 이미지 URL 첨부
+        if (selectedPostId && imageUrl.trim()) {
+          try {
+            await attachqnaFile(selectedPostId, imageUrl.trim());
+          } catch (err) {
+            console.error("QnA 이미지 URL 첨부 실패:", err);
           }
         }
 
@@ -762,7 +783,17 @@ export default function QnaWrite() {
             {error && <ErrorText>{error}</ErrorText>}
 
             <BottomRow>
-              <LeftOptions />
+              <LeftOptions>
+                <FieldRow>
+                  <Label>이미지 URL</Label>
+                  <TextInput
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https:// 로 시작하는 이미지 주소를 입력하세요."
+                  />
+                </FieldRow>
+              </LeftOptions>
+
               <ButtonRow>
                 <GhostButton type="button" onClick={handleCancel}>
                   취소

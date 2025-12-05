@@ -393,7 +393,10 @@ export default function QnaDetail({ post }: QnaDetailProps) {
   }, [hasScrolledForPost, isPostFetching, isCommentsFetching, postId]);
 
   const displayAuthor = stablePost.anonymity ? "익명" : stablePost.author;
-
+  const attachmentUrl =
+    (stablePost as any).attachmentUrl ??
+    (stablePost as any).attachment_url ??
+    null;
   const handleNavigateMypage = (username: string) => () => {
     if (!username || username === "익명") return;
     nav(`/mypage/${username}`);
@@ -640,7 +643,12 @@ export default function QnaDetail({ post }: QnaDetailProps) {
         <DetailMain>
           <PollView postId={stablePost.post_id} isDiscuss={false} />
 
-          <ContentArea>{stablePost.contents}</ContentArea>
+          <ContentArea>
+            {attachmentUrl && (
+              <img src={attachmentUrl} alt="질문 첨부 이미지" />
+            )}
+            {stablePost.contents}
+          </ContentArea>
 
           <StatsRow>
             <span>👍 {like}</span>

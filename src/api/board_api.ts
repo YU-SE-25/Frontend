@@ -3,6 +3,7 @@ import type {
   BoardContent,
 } from "../screens/board/BoardList.tsx";
 import { api } from "./axios.ts";
+import type { AttachUrlPayload } from "./qna_api.ts";
 
 /* ========================== 게시글 DTO & 매핑 ========================== */
 
@@ -168,9 +169,16 @@ export async function likeDiscussPost(postId: number) {
 }
 
 /* 첨부파일 업로드: POST /api/dis_board/{postId}/attach */
-export async function attachDiscussFile(postId: number, formData: FormData) {
-  const res = await api.post(`/dis_board/${postId}/attach`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+export async function attachDiscussImageUrl(postId: number, imageUrl: string) {
+  const payload = {
+    post_id: postId,
+    contents: imageUrl,
+  };
+
+  const res = await api.post(`/dis_board/${postId}/attach`, payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
   return res.data;
 }
