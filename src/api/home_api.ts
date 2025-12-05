@@ -1,49 +1,33 @@
 import { api } from "./axios";
 
-// 1) 평판 랭킹
-export interface IReputationRankingItem {
-  userId: number;
-  rank: number;
-  delta: number;
-}
+// ⭐ 어제 날짜 생성
+const getYesterday = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split("T")[0];
+};
 
-// 2) 문제 조회수 랭킹
-export interface IProblemRankingItem {
-  rank: number;
-  delta: number;
-  problemId: number;
-  title: string;
-  difficulty: "EASY" | "MEDIUM" | "HARD";
-  views: number;
-  // rankDate?: string; // 안 쓸 거라 주석 처리
-}
-
-// 3) 코드 리뷰 랭킹
-export interface IReviewRankingItem {
-  id: number;
-  authorId: number;
-  rank: number;
-  delta: number;
-  vote: number;
-}
-
-export async function getReputationRanking(): Promise<
-  IReputationRankingItem[]
-> {
-  const res = await api.get("/UNIDE/rank/user/reputation");
-  return res.data;
-}
-
-export async function getProblemRanking(
-  date?: string
-): Promise<IProblemRankingItem[]> {
+// ⭐ 문제 조회수 랭킹 — date=어제로 고정
+export const getProblemRanking = async () => {
+  const date = getYesterday();
   const res = await api.get("/UNIDE/rank/problem/views", {
-    params: date ? { date } : undefined,
+    params: { date },
   });
   return res.data;
-}
+};
 
-export async function getReviewRanking(): Promise<IReviewRankingItem[]> {
-  const res = await api.get("/UNIDE/rank/reviews");
+// ⭐ 유저 평판 랭킹
+export const getReputationRanking = async () => {
+  const res = await api.get("/UNIDE/rank/user/reputation", {
+    params: { size: 10 },
+  });
   return res.data;
-}
+};
+
+// ⭐ 코드 리뷰 랭킹
+export const getReviewRanking = async () => {
+  const res = await api.get("/UNIDE/rank/reviews", {
+    params: { size: 5 },
+  });
+  return res.data;
+};
