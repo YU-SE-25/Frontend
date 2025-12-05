@@ -1,11 +1,5 @@
-import React, { useEffect, useState } from "react";
-import {
-  useParams,
-  useNavigate,
-  useLocation,
-  Outlet,
-  useOutlet,
-} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate, useLocation, Outlet } from "react-router-dom";
 
 import {
   Wrapper,
@@ -25,11 +19,11 @@ import {
   SmallButton,
 } from "../../theme/StudyGroupDetail.Style";
 
-import ProblemListTab from "./ProblemListTab";
-import ActivityTab from "./ActivityTab";
+//import ProblemListTab from "./ProblemListTab";
+//import ActivityTab from "./ActivityTab";
 import CommonModal from "./CommomModal";
 import StudyGroupManage from "./StudyGroupManage";
-import StudyGroupBoardList from "./StudyGroupBoardList";
+//import StudyGroupBoardList from "./StudyGroupBoardList";
 
 import type { StudyGroupDetail, GroupRole } from "../../api/studygroup_api";
 import {
@@ -41,7 +35,7 @@ export default function StudyGroupDetailPage() {
   const navigate = useNavigate();
   const { groupId } = useParams();
   const numericId = Number(groupId);
-  const outlet = useOutlet();
+  // const outlet = useOutlet();
 
   // 그룹 상세 데이터
   const [group, setGroup] = useState<StudyGroupDetail | null>(null);

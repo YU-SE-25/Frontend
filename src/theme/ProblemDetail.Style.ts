@@ -77,9 +77,9 @@ export const UserStatsBox = styled.div<StatusProps>`
 
   border: 2px solid
     ${(props) =>
-      props.$userStatus === "solved"
+      props.$userStatus === "SOLVED"
         ? props.theme.logoColor
-        : props.$userStatus === "attempted"
+        : props.$userStatus === "ATTEMPTED"
         ? "#ff3838"
         : "transparent"};
 

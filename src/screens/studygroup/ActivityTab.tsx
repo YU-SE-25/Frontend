@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import type { ActivityLog } from "../../api/studygroup_api";
 import { fetchActivityLogs } from "../../api/studygroup_api";

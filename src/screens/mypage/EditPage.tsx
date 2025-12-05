@@ -676,6 +676,7 @@ export default function EditPage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     const url = URL.createObjectURL(file);
 
     setForm((prev) => ({ ...prev, avatarUrl: url }));
