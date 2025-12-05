@@ -96,16 +96,35 @@ export default function ProblemList() {
       setError(null);
 
       try {
-        const real = await fetchProblems();
-        console.log("📌 문제 목록 API 응답:", real);
-        if (mounted) {
-          setProblems(real);
-        }
+        const real = await fetchProblems(); // 1) 문제 목록 가져오기
+
+        // 백엔드 상태 → 프런트 상태로 변환
+        const mapped = real.map((p) => {
+          const raw = p.userStatus as
+            | "CORRECT"
+            | "INCORRECT"
+            | "NOT_SOLVED"
+            | undefined;
+
+          const mappedStatus: UserProblemStatus =
+            raw === "CORRECT"
+              ? "SOLVED"
+              : raw === "INCORRECT"
+              ? "ATTEMPTED"
+              : "NOT_SOLVED";
+
+          return {
+            ...p,
+            userStatus: mappedStatus,
+          };
+        });
+
+        if (mounted) setProblems(mapped); // 3) 변환된 상태로 저장
       } catch (e) {
-        console.error("문제 목록 API 실패:", e);
-        if (mounted) setError("문제 목록을 불러올 수 없습니다.");
+        console.error("문제 목록 로딩 실패:", e);
+        setError("문제 목록을 불러올 수 없습니다.");
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
 
@@ -177,8 +196,8 @@ export default function ProblemList() {
     return 999;
   };
 
-  // 🔥 필터 적용
-  let filteredProblems = problems.filter((problem) => {
+  // 필터 적용
+  const filteredProblems = problems.filter((problem) => {
     // 1) 태그 필터
     if (selectedTags.length > 0) {
       if (
