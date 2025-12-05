@@ -159,7 +159,7 @@ export default function ProblemAdd() {
         alert("문제가 등록되었습니다!");
       }
 
-      navigate(`/problems/${id}`);
+      navigate(`/problem-list`);
     } catch (err) {
       console.error(err);
       setError("요청 중 오류가 발생했습니다.");
