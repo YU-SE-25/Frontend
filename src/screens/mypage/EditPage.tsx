@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import styled from "styled-components";
-import { getUserProfile, updateMyProfile } from "../../api/mypage_api";
+import {
+  getMyProfile,
+  getUserProfile,
+  updateMyProfile,
+} from "../../api/mypage_api";
 import { useAtom, useSetAtom } from "jotai";
 import { isDarkAtom, toggleThemeActionAtom } from "../../atoms";
 import { AuthAPI } from "../../api/auth_api";
@@ -413,13 +417,9 @@ export default function EditPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["userProfileEdit", username],
-    enabled: !!username,
+    queryKey: ["myProfileEdit"],
     queryFn: async () => {
-      if (!username) {
-        throw new Error("username is missing");
-      }
-      return await getUserProfile(username);
+      return await getMyProfile();
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -649,7 +649,7 @@ export default function EditPage() {
       });
 
       alert("프로필이 성공적으로 업데이트되었습니다!");
-      //window.location.reload();
+      window.location.reload();
     } catch (err) {
       console.error(err);
       alert("프로필 수정 중 오류가 발생했습니다.");

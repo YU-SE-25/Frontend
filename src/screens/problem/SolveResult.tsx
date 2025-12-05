@@ -15,6 +15,13 @@ type SolveResultProps = {
 
 type Tone = "neutral" | "success" | "error";
 
+type LiveJudgeStats = {
+  runtime: number | null;
+  memory: number | null;
+  passedTestCases: number | null;
+  totalTestCases: number | null;
+};
+
 const STATUS_LABEL: Record<SubmissionStatus, string> = {
   PENDING: "Waiting",
   GRADING: "Running",
@@ -373,6 +380,7 @@ export default function SolveResult({
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [liveStatus, setLiveStatus] = useState<SubmissionStatus | null>(null);
+  const [liveStats, setLiveStats] = useState<LiveJudgeStats | null>(null);
 
   useEffect(() => {
     if (!submissionId) return;
@@ -411,10 +419,36 @@ export default function SolveResult({
     const interval = setInterval(async () => {
       if (!alive) return;
 
-      const status = await getSubmissionStatus(submissionId);
-      setLiveStatus(status);
+      const res = (await getSubmissionStatus(submissionId)) as {
+        submissionId: number;
+        status: SubmissionStatus;
+        runtime: number | null;
+        memory: number | null;
+        passedTestCases: number | null;
+        totalTestCases: number | null;
+        compileOutput: string | null;
+        message: string | null;
+      };
 
-      if (status !== "GRADING" && status !== "PENDING") {
+      setLiveStatus(res.status);
+      setLiveStats({
+        runtime: res.runtime,
+        memory: res.memory,
+        passedTestCases: res.passedTestCases,
+        totalTestCases: res.totalTestCases,
+      });
+
+      if (res.status !== "GRADING" && res.status !== "PENDING") {
+        setSubmission((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: res.status,
+                runtime: res.runtime ?? prev.runtime,
+                memory: res.memory ?? prev.memory,
+              }
+            : prev
+        );
         clearInterval(interval);
       }
     }, 700);
@@ -430,8 +464,35 @@ export default function SolveResult({
 
   const tone = getTone(status);
 
+  const passedTests = liveStats?.passedTestCases ?? null;
+  const totalTests = liveStats?.totalTestCases ?? null;
+  const failedTests =
+    totalTests != null && passedTests != null
+      ? Math.max(totalTests - passedTests, 0)
+      : null;
+
   const progressPercent =
-    status === "PENDING" ? 15 : status === "GRADING" ? 60 : 100;
+    status === "PENDING"
+      ? 15
+      : status === "GRADING" && totalTests != null && totalTests > 0
+      ? Math.round(((passedTests ?? 0) / totalTests) * 100)
+      : status === "DRAFT"
+      ? 0
+      : 100;
+
+  const effectiveRuntime =
+    liveStats?.runtime != null
+      ? liveStats.runtime
+      : submission?.runtime != null
+      ? submission.runtime
+      : null;
+
+  const effectiveMemory =
+    liveStats?.memory != null
+      ? liveStats.memory
+      : submission?.memory != null
+      ? submission.memory
+      : null;
 
   const problemId = submission?.problemId;
   const problemTitle = submission?.problemTitle ?? "";
@@ -494,7 +555,11 @@ export default function SolveResult({
               {status === "PENDING"
                 ? "채점을 준비하고 있어요…"
                 : status === "GRADING"
-                ? "테스트를 순차적으로 실행하는 중입니다"
+                ? totalTests != null
+                  ? `테스트를 순차적으로 실행하는 중입니다 (${
+                      passedTests ?? 0
+                    }/${totalTests})`
+                  : "테스트를 순차적으로 실행하는 중입니다"
                 : status === "CA"
                 ? "모든 테스트를 통과했습니다"
                 : status === "DRAFT"
@@ -522,7 +587,9 @@ export default function SolveResult({
         <StatCard>
           <StatLabel>통과한 테스트</StatLabel>
           <StatValue>
-            {status === "PENDING" || status === "GRADING"
+            {totalTests != null
+              ? `${passedTests ?? 0} / ${totalTests}`
+              : status === "PENDING" || status === "GRADING"
               ? "집계 중"
               : status === "CA"
               ? "모든 테스트 통과"
@@ -532,7 +599,11 @@ export default function SolveResult({
         <StatCard>
           <StatLabel>실패한 테스트</StatLabel>
           <StatValue>
-            {status === "PENDING" || status === "GRADING" || status === "DRAFT"
+            {failedTests != null
+              ? `${failedTests}`
+              : status === "PENDING" ||
+                status === "GRADING" ||
+                status === "DRAFT"
               ? "집계 중"
               : status === "CA"
               ? "0"
@@ -542,8 +613,8 @@ export default function SolveResult({
         <StatCard>
           <StatLabel>실행 시간</StatLabel>
           <StatValue>
-            {submission?.runtime != null
-              ? `${submission.runtime} ms`
+            {effectiveRuntime != null
+              ? `${effectiveRuntime} ms`
               : status === "PENDING" || status === "GRADING"
               ? "측정 중"
               : "-"}
@@ -552,8 +623,8 @@ export default function SolveResult({
         <StatCard>
           <StatLabel>메모리 사용량</StatLabel>
           <StatValue>
-            {submission?.memory != null
-              ? `${submission.memory} KB`
+            {effectiveMemory != null
+              ? `${effectiveMemory} KB`
               : status === "PENDING" || status === "GRADING"
               ? "측정 중"
               : "-"}

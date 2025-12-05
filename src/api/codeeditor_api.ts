@@ -87,9 +87,17 @@ export async function submitCode(
 }
 
 // 5) 제출 상태 조회 (채점 상태 폴링)
-export async function getSubmissionStatus(
-  submissionId: number
-): Promise<SubmissionStatus> {
-  const res = await api.get(`/api/submissions/${submissionId}/status`);
+export async function getSubmissionStatus(submissionId: number): Promise<{
+  submissionId: number;
+  status: SubmissionStatus;
+  runtime: number | null;
+  memory: number | null;
+  passedTestCases: number | null;
+  totalTestCases: number | null;
+  compileOutput: string | null;
+  message: string | null;
+}> {
+  const res = await api.get(`/submissions`);
+  console.log("res", res.data);
   return res.data;
 }
