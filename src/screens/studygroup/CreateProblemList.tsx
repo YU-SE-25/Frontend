@@ -33,7 +33,7 @@ import type { SimpleProblem } from "../../api/problem_api";
   problemListId: edit 모드에서만 필요
 */
 
-export default function ProblemListModal({
+export default function CreateProblemList({
   mode,
   groupId,
   problemListId,

@@ -9,7 +9,8 @@ export interface ProblemListItemDto {
   viewCount: number;
   createdAt: string;
   createdByNickname: string;
-  userStatus: "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
+  userStatus: "CORRECT" | "INCORRECT" | "NOT_SOLVED";
+
   summary: string;
   solverCount: number;
   correctRate: number;
@@ -73,7 +74,7 @@ export interface IProblem {
   solvedCount?: number;
   successRate?: string;
 
-  userStatus?: "SOLVED" | "ATTEMPTED" | "NONE";
+  userStatus?: "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
 
   description?: string;
   inputOutputExample?: string;
@@ -89,6 +90,14 @@ export interface IProblem {
 
 // 리스트 DTO → UI 변환
 export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
+  // 백엔드(CORRECT/INCORRECT/NOT_SOLVED) → 프런트(SOLVED/ATTEMPTED/NOT_SOLVED)
+  const mappedStatus =
+    dto.userStatus === "CORRECT"
+      ? "SOLVED"
+      : dto.userStatus === "INCORRECT"
+      ? "ATTEMPTED"
+      : "NOT_SOLVED";
+
   return {
     problemId: dto.problemId,
     title: dto.title,
@@ -99,10 +108,9 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
 
     summary: dto.summary,
     solvedCount: dto.solverCount,
-
     successRate: Math.round(dto.correctRate * 100) + "%",
 
-    userStatus: dto.userStatus === "NOT_SOLVED" ? "NONE" : dto.userStatus,
+    userStatus: mappedStatus,
   };
 }
 
@@ -129,7 +137,7 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
     successRate: dto.acceptanceRate + "%",
 
     canEdit: dto.canEdit,
-    userStatus: "NONE",
+    userStatus: "NOT_SOLVED",
     allowedLanguages: dto.allowedLanguages,
   };
 }
