@@ -1,11 +1,5 @@
-import React, { useEffect, useState } from "react";
-import {
-  useParams,
-  useNavigate,
-  useLocation,
-  Outlet,
-  useOutlet,
-} from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate, Outlet } from "react-router-dom";
 
 import {
   Wrapper,
@@ -25,11 +19,8 @@ import {
   SmallButton,
 } from "../../theme/StudyGroupDetail.Style";
 
-import ProblemListTab from "./ProblemListTab";
-import ActivityTab from "./ActivityTab";
 import CommonModal from "./CommomModal";
 import StudyGroupManage from "./StudyGroupManage";
-import StudyGroupBoardList from "./StudyGroupBoardList";
 
 import type { StudyGroupDetail, GroupRole } from "../../api/studygroup_api";
 import {
@@ -41,16 +32,10 @@ export default function StudyGroupDetailPage() {
   const navigate = useNavigate();
   const { groupId } = useParams();
   const numericId = Number(groupId);
-  const outlet = useOutlet();
 
   // 그룹 상세 데이터
   const [group, setGroup] = useState<StudyGroupDetail | null>(null);
   const [role, setRole] = useState<GroupRole>("NONE");
-
-  // 탭 상태
-  const [activeTab, setActiveTab] = useState<
-    "problem" | "discussion" | "activity"
-  >("problem");
 
   // 모달 상태
   const [showManageModal, setShowManageModal] = useState(false);
@@ -68,14 +53,6 @@ export default function StudyGroupDetailPage() {
   useEffect(() => {
     loadGroupDetail();
   }, [numericId]);
-
-  // 탭 유지
-  const location = useLocation();
-  useEffect(() => {
-    if (location.search.includes("tab=discussion")) {
-      setActiveTab("discussion");
-    }
-  }, [location.search]);
 
   // 탈퇴 처리
   const handleLeaveGroup = async () => {

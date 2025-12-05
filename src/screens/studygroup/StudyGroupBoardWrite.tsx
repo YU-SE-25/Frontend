@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import {
-  useNavigate,
-  useParams,
-  useLocation,
-  useOutletContext,
-} from "react-router-dom";
+import { useNavigate, useLocation, useOutletContext } from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
 
@@ -138,7 +133,7 @@ export default function StudyGroupBoardWrite() {
   const { groupId } = useOutletContext<{ groupId: number; role: string }>();
 
   // postId는 edit일 때만 params에서 들어옴
-  const { postId } = useParams();
+  //const { postId } = useParams();
 
   const location = useLocation();
   const editPost = (location.state as { post?: EditPostState })?.post;
