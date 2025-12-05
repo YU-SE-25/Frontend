@@ -3,7 +3,6 @@ import type {
   BoardContent,
 } from "../screens/board/BoardList.tsx";
 import { api } from "./axios.ts";
-import type { AttachUrlPayload } from "./qna_api.ts";
 
 /* ========================== 게시글 DTO & 매핑 ========================== */
 
