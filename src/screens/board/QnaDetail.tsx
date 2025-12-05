@@ -13,11 +13,13 @@ import {
   updateComment as apiUpdateComment,
   deleteComment as apiDeleteComment,
   deleteqnaPost,
-  likeComment, // ✅ 댓글 좋아요 API
+  likeComment,
+  likeqnaPost, // ✅ 댓글 좋아요 API
 } from "../../api/qna_api";
 import { useQuery } from "@tanstack/react-query";
 import type { BoardComment } from "./BoardList";
 import { PollView } from "../../components/poll"; // ✅ 추가
+import { LikeCount, LikePanel } from "./BoardDetail";
 
 interface QnaDetailProps {
   post: QnaContent;
@@ -327,7 +329,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
   const nav = useNavigate();
   const postId = post.post_id;
 
-  // 1) 서버에서 최신 QnA 글 정보 & 댓글 가져오기
   const { data: postData, isFetching: isPostFetching } = useQuery<QnaContent>({
     queryKey: ["qnaPostDetail", postId],
     queryFn: () => fetchqnaPost(postId),
@@ -347,11 +348,16 @@ export default function QnaDetail({ post }: QnaDetailProps) {
     refetchOnMount: "always",
   });
 
-  // 2) 화면에 실제로 보여줄 안정된 상태
   const [stablePost, setStablePost] = useState<QnaContent>(post);
   const [localComments, setLocalComments] = useState<BoardComment[]>(
     post.comments ?? []
   );
+
+  const [like, setLike] = useState(post.like_count);
+  const [likeState, setLikeState] = useState<"up" | null>(() =>
+    post.viewer_liked ? "up" : null
+  );
+  const isLikeActive = likeState === "up";
 
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
@@ -361,26 +367,24 @@ export default function QnaDetail({ post }: QnaDetailProps) {
   const [replyParentId, setReplyParentId] = useState<number | null>(null);
   const isLoadingAll = isPostFetching || isCommentsFetching;
 
-  // 서버 글 데이터 → stablePost로 반영
   useEffect(() => {
     if (postData) {
       setStablePost(postData);
+      setLike(postData.like_count);
+      setLikeState(postData.viewer_liked ? "up" : null);
     }
   }, [postData]);
 
-  // 서버 댓글 데이터 → localComments로 반영
   useEffect(() => {
     if (commentsData) {
       setLocalComments(commentsData);
     }
   }, [commentsData]);
 
-  // postId 바뀌면 스크롤 플래그 초기화
   useEffect(() => {
     setHasScrolledForPost(false);
   }, [postId]);
 
-  // 로딩이 모두 끝난 순간, 한 번만 스크롤 맨 위로
   useEffect(() => {
     if (!hasScrolledForPost && !isPostFetching && !isCommentsFetching) {
       window.scrollTo(0, 0);
@@ -399,7 +403,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
     nav(`/problem-detail/${problemId}`);
   };
 
-  // QnA 글 수정
   const handleEditQna = () => {
     nav(`/qna/write`, {
       state: {
@@ -416,7 +419,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
     });
   };
 
-  // QnA 글 삭제
   const handleDeleteQna = async () => {
     const ok = window.confirm("정말로 게시글을 삭제하시겠습니까?");
     if (!ok) return;
@@ -424,14 +426,13 @@ export default function QnaDetail({ post }: QnaDetailProps) {
     try {
       await deleteqnaPost(stablePost.post_id);
       alert("삭제되었습니다.");
-      window.location.reload(); // 또는 nav(0);
+      window.location.reload();
     } catch (e) {
       console.error("QnA 게시글 삭제 실패:", e);
       alert("게시글 삭제 중 오류가 발생했습니다.");
     }
   };
 
-  // 댓글 수정 시작
   const handleEditComment = (comment: BoardComment) => {
     setDraft(comment.content);
     setAnonymity(comment.anonymity);
@@ -439,7 +440,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
     setReplyParentId(comment.parent_id || null);
   };
 
-  // 댓글 삭제
   const handleDeleteComment = async (commentId: number) => {
     const ok = window.confirm("삭제하시겠습니까?");
     if (!ok) return;
@@ -462,14 +462,13 @@ export default function QnaDetail({ post }: QnaDetailProps) {
       alert("댓글 삭제 중 오류가 발생했습니다.");
     }
   };
-  // ✅ 댓글 좋아요 버튼 렌더링 헬퍼
+
   const renderCommentLikeButton = (c: BoardComment) => {
     const likeCount = Number(c.like_count ?? 0);
     const isLiked = !!(c as any).viewer_liked || !!(c as any).viewerLiked;
 
     const handleClick = async () => {
       try {
-        // 응답 바디가 뭐든 상관 없이, 일단 토글 요청만 보냄
         await likeComment(c.comment_id);
 
         setLocalComments((prev) =>
@@ -515,7 +514,29 @@ export default function QnaDetail({ post }: QnaDetailProps) {
     );
   };
 
-  // 댓글 작성/수정 제출
+  const handleLikeToggle = async () => {
+    if (likeState === "up") {
+      setLikeState(null);
+      setLike((v) => v - 1);
+
+      try {
+        await likeqnaPost(stablePost.post_id);
+      } catch (e) {
+        console.error("좋아요 취소 실패:", e);
+      }
+      return;
+    }
+
+    setLikeState("up");
+    setLike((v) => v + 1);
+
+    try {
+      await likeqnaPost(stablePost.post_id);
+    } catch (e) {
+      console.error("좋아요 실패:", e);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
@@ -523,7 +544,7 @@ export default function QnaDetail({ post }: QnaDetailProps) {
 
     try {
       const targetParentId = replyParentId ?? 0;
-      // 수정 모드
+
       if (editingCommentId !== null) {
         const payload = {
           contents: text,
@@ -546,7 +567,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
         return;
       }
 
-      // 새 댓글 작성
       const payload = {
         contents: text,
         anonymity,
@@ -591,6 +611,12 @@ export default function QnaDetail({ post }: QnaDetailProps) {
             <span>
               <strong>작성일:</strong> {stablePost.create_time.slice(0, 10)}
             </span>
+            <span>
+              <strong>추천수:</strong> {like}
+            </span>
+            {isLoadingAll && (
+              <span style={{ fontSize: 12, opacity: 0.6 }}>업데이트 중…</span>
+            )}
           </MetaRow>
         </TitleBlock>
 
@@ -612,12 +638,12 @@ export default function QnaDetail({ post }: QnaDetailProps) {
 
       <DetailBody>
         <DetailMain>
-          {/* ✅ QnA도 투표가 있으면 여기 표시 (없으면 PollView가 null 반환) */}
           <PollView postId={stablePost.post_id} isDiscuss={false} />
 
           <ContentArea>{stablePost.contents}</ContentArea>
 
           <StatsRow>
+            <span>👍 {like}</span>
             <span>💬 {localComments.length}</span>
           </StatsRow>
 
@@ -793,6 +819,11 @@ export default function QnaDetail({ post }: QnaDetailProps) {
             </CommentForm>
           </CommentsSection>
         </DetailMain>
+
+        <LikePanel onClick={handleLikeToggle} $active={isLikeActive}>
+          <span style={{ fontSize: 11, lineHeight: 1 }}>▲</span>
+          <LikeCount>{like}</LikeCount>
+        </LikePanel>
       </DetailBody>
     </DetailCard>
   );
