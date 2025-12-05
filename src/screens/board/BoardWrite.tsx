@@ -5,7 +5,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
 import {
-  attachDiscussFile,
+  attachDiscussImageUrl as attachDiscussFile,
   createDiscussPost,
   updateDiscussPost,
 } from "../../api/board_api";
@@ -245,6 +245,7 @@ export default function BoardWrite({
   const initialIsAnonymous = editPost?.isAnonymous ?? false;
   const initialIsPrivate = editPost?.isPrivate ?? false;
 
+  const [imageUrl, setImageUrl] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState<CategorySelectValue>(initialCategory);
   const [title, setTitle] = useState(initialTitle);
@@ -253,7 +254,6 @@ export default function BoardWrite({
   const [error, setError] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(initialIsAnonymous);
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
   // 🔹 투표 관련 상태 (작성 화면에서 미리 입력 → 글 저장 시 함께 전송)
   const [showPollEditor, setShowPollEditor] = useState(false);
@@ -271,7 +271,8 @@ export default function BoardWrite({
     isAnonymous !== initialIsAnonymous ||
     isPrivate !== initialIsPrivate ||
     selectedCategory !== initialCategory ||
-    pollDraft !== null;
+    pollDraft !== null ||
+    imageUrl.trim().length > 0;
 
   useEffect(() => {
     if (!user) {
@@ -307,15 +308,6 @@ export default function BoardWrite({
       if (!ok) return;
     }
     navigate(-1);
-  };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    if (file && !file.type.startsWith("image/")) {
-      alert("이미지 파일만 업로드할 수 있습니다.");
-      e.target.value = ""; // 선택 초기화
-      return;
-    }
-    setAttachedFile(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -385,17 +377,14 @@ export default function BoardWrite({
         // 태그 재설정
         await updatePostTags(editPost.id, [tagId]);
 
-        if (attachedFile) {
-          const formData = new FormData();
-          formData.append("file", attachedFile);
+        // 🔥 이미지 URL 있으면 첨부 API 호출
+        if (imageUrl.trim()) {
           try {
-            await attachDiscussFile(editPost.id, formData);
+            await attachDiscussFile(editPost.id, imageUrl.trim());
           } catch (err) {
-            console.error("파일 첨부 실패:", err);
+            console.error("이미지 URL 첨부 실패:", err);
           }
         }
-
-        // (선택) 수정 모드에서도 투표를 새로 만들고 싶다면 여기서 처리 가능
 
         navigate(-1);
       } else {
@@ -408,7 +397,7 @@ export default function BoardWrite({
 
         if (!newPostId) {
           console.warn(
-            "새 게시글 ID를 찾을 수 없어 태그/투표를 설정하지 못했습니다.",
+            "새 게시글 ID를 찾을 수 없어 태그/투표/첨부를 설정하지 못했습니다.",
             res
           );
         } else {
@@ -424,13 +413,12 @@ export default function BoardWrite({
             }
           }
 
-          if (attachedFile) {
-            const formData = new FormData();
-            formData.append("file", attachedFile);
+          // 🔥 이미지 URL 있으면 첨부 API 호출
+          if (imageUrl.trim()) {
             try {
-              await attachDiscussFile(newPostId, formData);
+              await attachDiscussFile(newPostId, imageUrl.trim());
             } catch (err) {
-              console.error("파일 첨부 실패:", err);
+              console.error("이미지 URL 첨부 실패:", err);
             }
           }
         }
@@ -575,19 +563,14 @@ export default function BoardWrite({
 
         <BottomRow>
           <LeftOptions>
-            <label htmlFor="file-upload">
-              <GhostButton as="span" type="button">
-                사진 첨부
-              </GhostButton>
-            </label>
-            <input
-              id="file-upload"
-              type="file"
-              style={{ display: "none" }}
-              onChange={handleFileChange}
-              accept="image/*"
-            />
-            {attachedFile && <MuteSpan>{attachedFile.name}</MuteSpan>}
+            <FieldRow>
+              <Label>이미지 URL</Label>
+              <TextInput
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https:// 로 시작하는 이미지 주소를 입력하세요."
+              />
+            </FieldRow>
           </LeftOptions>
 
           <ButtonRow>

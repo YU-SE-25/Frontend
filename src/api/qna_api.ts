@@ -158,14 +158,24 @@ export async function likeqnaPost(postId: number) {
   const res = await api.post(`/qna_board/${postId}/like`);
   return res.data;
 }
+export interface AttachUrlPayload {
+  post_id: number;
+  contents: string; // 이미지 URL
+}
 
-export async function attachqnaFile(postId: number, formData: FormData) {
-  const res = await api.post(`/qna_board/${postId}/attach`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+export async function attachqnaFile(postId: number, imageUrl: string) {
+  const payload = {
+    post_id: postId,
+    contents: imageUrl,
+  };
+
+  const res = await api.post(`/qna_board/${postId}/attach`, payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
   return res.data;
 }
-
 /* ========================== 게시글 검색 ========================== */
 
 export interface qnaSearchParams {

@@ -381,7 +381,6 @@ export default function QnaWrite() {
 
   const [problemList, setProblemList] = useState<SimpleProblem[]>([]);
   const [problemListLoading, setProblemListLoading] = useState(false);
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [selectedProblem, setSelectedProblem] = useState<SimpleProblem | null>(
     null
   );
@@ -391,6 +390,9 @@ export default function QnaWrite() {
 
   const [problemDetail, setProblemDetail] = useState<IProblem | null>(null);
   const [problemLoading, setProblemLoading] = useState(false);
+
+  // 🔗 이미지 URL
+  const [imageUrl, setImageUrl] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -500,19 +502,6 @@ export default function QnaWrite() {
     navigate(-1);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-
-    // 이미지 MIME 타입만 허용
-    if (file && !file.type.startsWith("image/")) {
-      alert("이미지 파일만 업로드할 수 있습니다.");
-      e.target.value = ""; // 선택 초기화
-      return;
-    }
-
-    setAttachedFile(file);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProblem) {
@@ -540,13 +529,13 @@ export default function QnaWrite() {
       if (isEditMode && editPost) {
         const payloadWithId = { ...basePayload, postId: editPost.id };
         await updateqnaPost(editPost.id, payloadWithId);
-        if (attachedFile) {
-          const formData = new FormData();
-          formData.append("file", attachedFile);
+
+        // 🔥 이미지 URL 있으면 첨부
+        if (imageUrl.trim()) {
           try {
-            await attachqnaFile(editPost.id, formData);
+            await attachqnaFile(editPost.id, imageUrl.trim());
           } catch (err) {
-            console.error("QnA 파일 첨부 실패:", err);
+            console.error("QnA 이미지 URL 첨부 실패:", err);
           }
         }
 
@@ -564,15 +553,16 @@ export default function QnaWrite() {
             console.error("QnA 투표 생성 실패:", err);
           }
         }
-        if (attachedFile) {
-          const formData = new FormData();
-          formData.append("file", attachedFile);
+
+        // 🔥 새 글에서도 이미지 URL 첨부
+        if (selectedPostId && imageUrl.trim()) {
           try {
-            await attachqnaFile(selectedPostId, formData);
+            await attachqnaFile(selectedPostId, imageUrl.trim());
           } catch (err) {
-            console.error("QnA 파일 첨부 실패:", err);
+            console.error("QnA 이미지 URL 첨부 실패:", err);
           }
         }
+
         await addProblemNumber(selectedPostId, problemId);
         alert("질문이 등록되었습니다.");
 
@@ -794,19 +784,14 @@ export default function QnaWrite() {
 
             <BottomRow>
               <LeftOptions>
-                <label htmlFor="qna-file-upload">
-                  <GhostButton as="span" type="button">
-                    이미지 첨부
-                  </GhostButton>
-                </label>
-                <input
-                  id="qna-file-upload"
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
-                {attachedFile && <MuteSpan>{attachedFile.name}</MuteSpan>}
+                <FieldRow>
+                  <Label>이미지 URL</Label>
+                  <TextInput
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https:// 로 시작하는 이미지 주소를 입력하세요."
+                  />
+                </FieldRow>
               </LeftOptions>
 
               <ButtonRow>
