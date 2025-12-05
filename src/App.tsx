@@ -9,7 +9,7 @@ import { isDarkAtom, refreshTokenAtom, refreshActionAtom } from "./atoms";
 import {
   userProfileAtom,
   type RefreshResponse,
-  //type UserProfile,
+  // type UserProfile,
 } from "./atoms";
 import { api } from "./api/axios";
 

@@ -5,12 +5,10 @@ import {
   fetchUserList,
   updateUserRole,
   fetchInstructorApplications,
-  fetchInstructorApplicationDetail, // 🔥 강사 신청 목록
+  fetchInstructorApplicationDetail,
+  downloadPortfolioFile,
 } from "../../../api/manage_api";
 
-/* -----------------------------------------------------
-   styled-components
------------------------------------------------------ */
 type Role = "LEARNER" | "INSTRUCTOR" | "MANAGER";
 
 const Wrap = styled.div`
@@ -110,10 +108,6 @@ const Td = styled.td`
   color: ${({ theme }) => theme.textColor};
 `;
 
-/* -----------------------------------------------------
-   Component Logic
------------------------------------------------------ */
-
 export default function UserManagementScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -123,6 +117,9 @@ export default function UserManagementScreen() {
   const [instructorSearch, setInstructorSearch] = useState("");
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     number | null
+  >(null);
+  const [selectedApplicationDetail, setSelectedApplicationDetail] = useState<
+    any | null
   >(null);
 
   const ROLE_LABEL: Record<string, string> = {
@@ -198,6 +195,7 @@ export default function UserManagementScreen() {
   const handleInstructorSearch = (value: string) => {
     setInstructorSearch(value);
     setSelectedApplicationId(null);
+    setSelectedApplicationDetail(null);
   };
 
   const handleSelect = (userId: number) => {
@@ -208,6 +206,7 @@ export default function UserManagementScreen() {
     setSelectedApplicationId((prev) =>
       prev === applicationId ? null : applicationId
     );
+    setSelectedApplicationDetail(null);
   };
 
   const copyInfo = async () => {
@@ -220,21 +219,65 @@ export default function UserManagementScreen() {
     if (!selectedApplication) return;
 
     try {
-      // 🔥 1) 상세 정보 조회 (GET /api/admin/instructor/applications/{id})
       const detail = await fetchInstructorApplicationDetail(
         selectedApplication.applicationId
       );
 
-      // 🔥 2) 조회된 상세 정보를 클립보드에 복사
-      await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
+      setSelectedApplicationDetail(detail);
 
-      // 🔥 3) 콘솔에도 한번 찍어두면 개발할 때 보기 편함
+      await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
       console.log("Instructor application detail:", detail);
 
       alert("강사 신청 상세 정보가 클립보드에 복사되었습니다!");
     } catch (err) {
       console.error(err);
       alert("강사 신청 상세 정보를 가져오는 중 오류가 발생했습니다.");
+    }
+  };
+
+  const downloadPortfolio = async () => {
+    if (!selectedApplication) return;
+
+    try {
+      let detail = selectedApplicationDetail;
+
+      // 아직 상세정보를 안 불러왔으면 한번 가져오기
+      if (
+        !detail ||
+        detail.applicationId !== selectedApplication.applicationId
+      ) {
+        detail = await fetchInstructorApplicationDetail(
+          selectedApplication.applicationId
+        );
+        setSelectedApplicationDetail(detail);
+      }
+
+      const fileToken: string | undefined = detail?.portfolioFileUrl;
+      if (!fileToken) {
+        alert("포트폴리오 파일 정보가 없습니다.");
+        return;
+      }
+
+      // 🔥 토큰 붙는 axios 인스턴스로 blob 받아오기
+      const blob = await downloadPortfolioFile(fileToken);
+
+      // 🔥 브라우저에서 다운로드 트리거
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // 백엔드에서 원래 파일명도 줬다면 그걸 쓰고, 없으면 토큰 그대로 사용
+      const downloadName =
+        detail.portfolioOriginalName || detail.originalFileName || fileToken;
+      a.download = downloadName;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("포트폴리오 파일을 다운로드하는 중 오류가 발생했습니다.");
     }
   };
 
@@ -319,7 +362,6 @@ export default function UserManagementScreen() {
 
   return (
     <Wrap>
-      {/* 유저 목록 섹션 */}
       <SectionTitle>유저 목록</SectionTitle>
       <TopBar>
         <SearchInput
@@ -384,7 +426,6 @@ export default function UserManagementScreen() {
         </Table>
       </TableWrap>
 
-      {/* 강사 신청 목록 섹션 */}
       <SectionTitle>강사 신청 목록</SectionTitle>
       <TopBar>
         <SearchInput
@@ -398,6 +439,12 @@ export default function UserManagementScreen() {
             disabled={isDisabledInstructor}
           >
             강사 정보보기
+          </ActionButton>
+          <ActionButton
+            onClick={downloadPortfolio}
+            disabled={isDisabledInstructor}
+          >
+            포트폴리오 다운로드
           </ActionButton>
         </ButtonGroup>
       </TopBar>
