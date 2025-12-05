@@ -1,16 +1,31 @@
 import { useEffect, useState } from "react";
 import styled, { css, keyframes } from "styled-components";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { getSubmissionStatus } from "../../api/codeeditor_api";
+import {
+  getSubmissionStatus,
+  type ICodeSubmitRequest,
+  type ICodeSubmitResult,
+} from "../../api/codeeditor_api";
 import {
   fetchSubmissionDetail,
   type SubmissionDetail,
   type SubmissionStatus,
 } from "../../api/mySubmissions_api";
 
-type SolveResultProps = {
+export interface GradingResponse {
+  status: string;
+  currentTestCase?: number;
+  totalTestCases?: number;
+  passedTestCases?: number;
+  failedTestCase?: number;
+  runtime?: number;
+  memory?: number;
+}
+export type SolveResultProps = {
   onLookMyCode?: (submissionId: number) => void;
   onNavEditor?: (problemId: number, submissionId: number) => void;
+  initialResult?: GradingResponse | null;
+  initialProblemId?: number | null;
 };
 
 type Tone = "neutral" | "success" | "error";
@@ -361,6 +376,7 @@ const ActionButton = styled.button<{ variant?: "primary" | "ghost" }>`
 export default function SolveResult({
   onNavEditor,
   onLookMyCode,
+  initialResult,
 }: SolveResultProps) {
   const [sp] = useSearchParams();
   const params = useParams();
@@ -379,8 +395,20 @@ export default function SolveResult({
 
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [liveStatus, setLiveStatus] = useState<SubmissionStatus | null>(null);
-  const [liveStats, setLiveStats] = useState<LiveJudgeStats | null>(null);
+
+  const [liveStatus, setLiveStatus] = useState<SubmissionStatus | null>(
+    (initialResult?.status as SubmissionStatus) ?? null
+  );
+  const [liveStats, setLiveStats] = useState<LiveJudgeStats | null>(
+    initialResult
+      ? {
+          runtime: initialResult.runtime ?? null,
+          memory: initialResult.memory ?? null,
+          passedTestCases: initialResult.passedTestCases ?? null,
+          totalTestCases: initialResult.totalTestCases ?? null,
+        }
+      : null
+  );
 
   useEffect(() => {
     if (!submissionId) return;
@@ -390,15 +418,13 @@ export default function SolveResult({
     fetchSubmissionDetail(submissionId)
       .then((detail) => {
         if (!active) return;
-
         setSubmission(detail);
         setSubmissionError(null);
       })
       .catch(() => {
-        if (active) {
-          setSubmission(null);
-          setSubmissionError("제출 정보를 불러오지 못했습니다.");
-        }
+        if (!active) return;
+        setSubmission(null);
+        setSubmissionError("제출 정보를 불러오지 못했습니다.");
       });
 
     return () => {
@@ -407,38 +433,49 @@ export default function SolveResult({
   }, [submissionId]);
 
   useEffect(() => {
-    if (!submissionId) return;
+    if (!initialResult) return;
 
-    const baseStatus = submission?.status;
+    setLiveStatus(initialResult.status as SubmissionStatus);
+    setLiveStats({
+      runtime: initialResult.runtime ?? null,
+      memory: initialResult.memory ?? null,
+      passedTestCases: initialResult.passedTestCases ?? null,
+      totalTestCases: initialResult.totalTestCases ?? null,
+    });
+  }, [initialResult]);
+
+  useEffect(() => {
+    if (!submissionId) return;
+    if (!submission) return;
+
+    // 이미 최종 상태면 굳이 다시 안 때려도 됨
+    const baseStatus = submission.status;
     if (baseStatus && baseStatus !== "PENDING" && baseStatus !== "GRADING") {
       return;
     }
 
+    const req: ICodeSubmitRequest = {
+      problemId: submission.problemId,
+      code: submission.code ?? "",
+      language: submission.language,
+    };
+
     let alive = true;
 
-    const interval = setInterval(async () => {
-      if (!alive) return;
+    (async () => {
+      try {
+        const res: ICodeSubmitResult = await getSubmissionStatus(req);
+        if (!alive) return;
 
-      const res = (await getSubmissionStatus(submissionId)) as {
-        submissionId: number;
-        status: SubmissionStatus;
-        runtime: number | null;
-        memory: number | null;
-        passedTestCases: number | null;
-        totalTestCases: number | null;
-        compileOutput: string | null;
-        message: string | null;
-      };
+        setLiveStatus(res.status);
+        setLiveStats({
+          runtime: res.runtime,
+          memory: res.memory,
+          passedTestCases: res.passedTestCases,
+          totalTestCases: res.totalTestCases,
+        });
 
-      setLiveStatus(res.status);
-      setLiveStats({
-        runtime: res.runtime,
-        memory: res.memory,
-        passedTestCases: res.passedTestCases,
-        totalTestCases: res.totalTestCases,
-      });
-
-      if (res.status !== "GRADING" && res.status !== "PENDING") {
+        // 한 번 요청 후, 결과를 submission에도 반영
         setSubmission((prev) =>
           prev
             ? {
@@ -449,15 +486,15 @@ export default function SolveResult({
               }
             : prev
         );
-        clearInterval(interval);
+      } catch (e) {
+        console.error(e);
       }
-    }, 700);
+    })();
 
     return () => {
       alive = false;
-      clearInterval(interval);
     };
-  }, [submissionId, submission?.status]);
+  }, [submissionId, submission]);
 
   const status: SubmissionStatus =
     liveStatus ?? submission?.status ?? "PENDING";
@@ -508,7 +545,6 @@ export default function SolveResult({
       submissionId !== null &&
       onNavEditor?.(problemId, submissionId);
   };
-
   return (
     <ResultCard>
       <HeaderRow>

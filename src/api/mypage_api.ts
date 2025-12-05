@@ -165,7 +165,7 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
   return {
     userId: dto.userId,
     username: dto.nickname,
-    avatarUrl: dto.avatarUrl ?? "/images/default-avatar.png",
+    avatarUrl: dto.avatarUrl,
     bio: dto.bio ?? "",
     joinedAt: dto.joinedAt,
     solvedProblems: dto.solvedProblems ?? [],
@@ -206,7 +206,7 @@ export function getDummyUserProfile(): UserProfile {
   return {
     userId: 0,
     username: "",
-    avatarUrl: "/images/default-avatar.png",
+    avatarUrl: "",
     bio: "",
     joinedAt: "",
     solvedProblems: [],

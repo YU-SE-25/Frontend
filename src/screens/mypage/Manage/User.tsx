@@ -4,24 +4,28 @@ import {
   addToBlacklist,
   fetchUserList,
   updateUserRole,
+  fetchInstructorApplications,
+  fetchInstructorApplicationDetail, // 🔥 강사 신청 목록
 } from "../../../api/manage_api";
+
 /* -----------------------------------------------------
    styled-components
 ----------------------------------------------------- */
 type Role = "LEARNER" | "INSTRUCTOR" | "MANAGER";
+
 const Wrap = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   margin-top: 30px;
 `;
 
-// const Header = styled.h3`
-//   margin: 0;
-//   font-size: 22px;
-//   font-weight: 700;
-//   color: ${({ theme }) => theme.textColor};
-// `;
+const SectionTitle = styled.h3`
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.textColor};
+`;
 
 const TopBar = styled.div`
   display: flex;
@@ -115,10 +119,22 @@ export default function UserManagementScreen() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
+  const [instructors, setInstructors] = useState<any[]>([]);
+  const [instructorSearch, setInstructorSearch] = useState("");
+  const [selectedApplicationId, setSelectedApplicationId] = useState<
+    number | null
+  >(null);
+
   const ROLE_LABEL: Record<string, string> = {
     LEARNER: "회원",
     INSTRUCTOR: "강사",
     MANAGER: "관리자",
+  };
+
+  const STATUS_LABEL: Record<string, string> = {
+    PENDING: "대기",
+    APPROVED: "승인됨",
+    REJECTED: "반려됨",
   };
 
   const selectedUser = useMemo(
@@ -126,7 +142,13 @@ export default function UserManagementScreen() {
     [users, selectedId]
   );
 
-  // 🔥 검색 필터
+  const selectedApplication = useMemo(
+    () =>
+      instructors.find((a) => a.applicationId === selectedApplicationId) ??
+      null,
+    [instructors, selectedApplicationId]
+  );
+
   const filtered = useMemo(() => {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
@@ -138,16 +160,32 @@ export default function UserManagementScreen() {
     );
   }, [search, users]);
 
-  const isDisabled = !selectedUser;
+  const filteredInstructors = useMemo(() => {
+    if (!instructorSearch.trim()) return instructors;
+    const q = instructorSearch.toLowerCase();
 
-  // 🔥 진짜 데이터 불러오기
+    return instructors.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.email.toLowerCase().includes(q) ||
+        String(a.applicationId).toLowerCase().includes(q)
+    );
+  }, [instructorSearch, instructors]);
+
+  const isDisabledUser = !selectedUser;
+  const isDisabledInstructor = !selectedApplication;
+
   useEffect(() => {
     async function load() {
       const result = await fetchUserList();
-      console.log("fetchUserList result:", result);
-
-      // result = { currentPage, totalElements, totalPages, users: [...] }
       setUsers(result.users ?? []);
+
+      const instructorResult = await fetchInstructorApplications({
+        page: 0,
+        size: 50,
+        sort: "submittedAt,desc",
+      });
+      setInstructors(instructorResult.applications ?? []);
     }
     load();
   }, []);
@@ -157,14 +195,47 @@ export default function UserManagementScreen() {
     setSelectedId(null);
   };
 
+  const handleInstructorSearch = (value: string) => {
+    setInstructorSearch(value);
+    setSelectedApplicationId(null);
+  };
+
   const handleSelect = (userId: number) => {
     setSelectedId((prev) => (prev === userId ? null : userId));
+  };
+
+  const handleSelectApplication = (applicationId: number) => {
+    setSelectedApplicationId((prev) =>
+      prev === applicationId ? null : applicationId
+    );
   };
 
   const copyInfo = async () => {
     if (!selectedUser) return;
     await navigator.clipboard.writeText(JSON.stringify(selectedUser, null, 2));
     alert("유저 정보가 클립보드에 복사되었습니다!");
+  };
+
+  const copyInstructorInfo = async () => {
+    if (!selectedApplication) return;
+
+    try {
+      // 🔥 1) 상세 정보 조회 (GET /api/admin/instructor/applications/{id})
+      const detail = await fetchInstructorApplicationDetail(
+        selectedApplication.applicationId
+      );
+
+      // 🔥 2) 조회된 상세 정보를 클립보드에 복사
+      await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
+
+      // 🔥 3) 콘솔에도 한번 찍어두면 개발할 때 보기 편함
+      console.log("Instructor application detail:", detail);
+
+      alert("강사 신청 상세 정보가 클립보드에 복사되었습니다!");
+    } catch (err) {
+      console.error(err);
+      alert("강사 신청 상세 정보를 가져오는 중 오류가 발생했습니다.");
+    }
   };
 
   const blacklistUser = async () => {
@@ -227,10 +298,8 @@ export default function UserManagementScreen() {
     if (!next) return alert("잘못된 역할입니다.");
 
     try {
-      // 🔥 1) 서버에 역할 변경 요청
       const res = await updateUserRole(selectedUser.userId, next);
 
-      // 🔥 2) 성공하면 로컬 상태 업데이트
       setUsers((prev) =>
         prev.map((u) =>
           u.userId === selectedUser.userId ? { ...u, role: next } : u
@@ -250,6 +319,8 @@ export default function UserManagementScreen() {
 
   return (
     <Wrap>
+      {/* 유저 목록 섹션 */}
+      <SectionTitle>유저 목록</SectionTitle>
       <TopBar>
         <SearchInput
           value={search}
@@ -258,10 +329,10 @@ export default function UserManagementScreen() {
         />
 
         <ButtonGroup>
-          <ActionButton onClick={copyInfo} disabled={isDisabled}>
+          <ActionButton onClick={copyInfo} disabled={isDisabledUser}>
             유저 정보보기
           </ActionButton>
-          <ActionButton onClick={blacklistUser} disabled={isDisabled}>
+          <ActionButton onClick={blacklistUser} disabled={isDisabledUser}>
             블랙리스트
           </ActionButton>
           <ActionButton
@@ -271,7 +342,7 @@ export default function UserManagementScreen() {
           >
             유저 제거
           </ActionButton>
-          <ActionButton onClick={changeRole} disabled={isDisabled}>
+          <ActionButton onClick={changeRole} disabled={isDisabledUser}>
             역할 변경
           </ActionButton>
         </ButtonGroup>
@@ -307,6 +378,61 @@ export default function UserManagementScreen() {
                 <Td>{u.nickname}</Td>
                 <Td>{ROLE_LABEL[u.role]}</Td>
                 <Td>{u.createdAt}</Td>
+              </Tr>
+            ))}
+          </tbody>
+        </Table>
+      </TableWrap>
+
+      {/* 강사 신청 목록 섹션 */}
+      <SectionTitle>강사 신청 목록</SectionTitle>
+      <TopBar>
+        <SearchInput
+          value={instructorSearch}
+          onChange={(e) => handleInstructorSearch(e.target.value)}
+          placeholder="신청 ID / 이름 / 이메일 검색"
+        />
+        <ButtonGroup>
+          <ActionButton
+            onClick={copyInstructorInfo}
+            disabled={isDisabledInstructor}
+          >
+            강사 정보보기
+          </ActionButton>
+        </ButtonGroup>
+      </TopBar>
+
+      <TableWrap>
+        <Table>
+          <Thead>
+            <tr>
+              <Th>신청 ID</Th>
+              <Th>이름</Th>
+              <Th>이메일</Th>
+              <Th>신청 일자</Th>
+              <Th>상태</Th>
+            </tr>
+          </Thead>
+          <tbody>
+            {filteredInstructors.length === 0 && (
+              <tr>
+                <Td colSpan={5} style={{ textAlign: "center", opacity: 0.5 }}>
+                  강사 신청 내역 없음
+                </Td>
+              </tr>
+            )}
+
+            {filteredInstructors.map((a) => (
+              <Tr
+                key={a.applicationId}
+                selected={selectedApplicationId === a.applicationId}
+                onClick={() => handleSelectApplication(a.applicationId)}
+              >
+                <Td>{a.applicationId}</Td>
+                <Td>{a.name}</Td>
+                <Td>{a.email}</Td>
+                <Td>{a.submittedAt}</Td>
+                <Td>{STATUS_LABEL[a.status] ?? a.status}</Td>
               </Tr>
             ))}
           </tbody>
