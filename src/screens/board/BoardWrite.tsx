@@ -4,7 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { userProfileAtom } from "../../atoms";
-import { createDiscussPost, updateDiscussPost } from "../../api/board_api";
+import {
+  attachDiscussFile,
+  createDiscussPost,
+  updateDiscussPost,
+} from "../../api/board_api";
 import { updatePostTags } from "../../api/board_api";
 import { createPoll, type CreatePollRequest } from "../../api/poll_api";
 import { PollEditor } from "../../components/poll";
@@ -249,6 +253,7 @@ export default function BoardWrite({
   const [error, setError] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(initialIsAnonymous);
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
   // 🔹 투표 관련 상태 (작성 화면에서 미리 입력 → 글 저장 시 함께 전송)
   const [showPollEditor, setShowPollEditor] = useState(false);
@@ -302,6 +307,15 @@ export default function BoardWrite({
       if (!ok) return;
     }
     navigate(-1);
+  };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (file && !file.type.startsWith("image/")) {
+      alert("이미지 파일만 업로드할 수 있습니다.");
+      e.target.value = ""; // 선택 초기화
+      return;
+    }
+    setAttachedFile(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -371,6 +385,16 @@ export default function BoardWrite({
         // 태그 재설정
         await updatePostTags(editPost.id, [tagId]);
 
+        if (attachedFile) {
+          const formData = new FormData();
+          formData.append("file", attachedFile);
+          try {
+            await attachDiscussFile(editPost.id, formData);
+          } catch (err) {
+            console.error("파일 첨부 실패:", err);
+          }
+        }
+
         // (선택) 수정 모드에서도 투표를 새로 만들고 싶다면 여기서 처리 가능
 
         navigate(-1);
@@ -397,6 +421,16 @@ export default function BoardWrite({
               await createPoll(newPostId, pollDraft, true); // true = discuss
             } catch (err) {
               console.error("투표 생성 실패:", err);
+            }
+          }
+
+          if (attachedFile) {
+            const formData = new FormData();
+            formData.append("file", attachedFile);
+            try {
+              await attachDiscussFile(newPostId, formData);
+            } catch (err) {
+              console.error("파일 첨부 실패:", err);
             }
           }
         }
@@ -540,7 +574,22 @@ export default function BoardWrite({
         {error && <ErrorText>{error}</ErrorText>}
 
         <BottomRow>
-          <LeftOptions />
+          <LeftOptions>
+            <label htmlFor="file-upload">
+              <GhostButton as="span" type="button">
+                사진 첨부
+              </GhostButton>
+            </label>
+            <input
+              id="file-upload"
+              type="file"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+              accept="image/*"
+            />
+            {attachedFile && <MuteSpan>{attachedFile.name}</MuteSpan>}
+          </LeftOptions>
+
           <ButtonRow>
             <GhostButton type="button" onClick={handleCancel}>
               취소
