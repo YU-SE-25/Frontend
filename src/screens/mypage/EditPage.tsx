@@ -2,15 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import styled from "styled-components";
-import {
-  getMyProfile,
-  getUserProfile,
-  updateMyProfile,
-} from "../../api/mypage_api";
+import { getMyProfile, updateMyProfile } from "../../api/mypage_api";
 import { useAtom, useSetAtom } from "jotai";
-import { isDarkAtom, toggleThemeActionAtom } from "../../atoms";
+import {
+  isDarkAtom,
+  toggleThemeActionAtom,
+  userProfileAtom,
+} from "../../atoms";
 import { AuthAPI } from "../../api/auth_api";
 import { withdrawAccount } from "../../api/mypage_api";
+import type { UserProfile } from "../../atoms";
 
 const Wrapper = styled.div`
   flex: 1;
@@ -382,7 +383,7 @@ export default function EditPage() {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [withdrawPassword, setWithdrawPassword] = useState("");
   const [withdrawError, setWithdrawError] = useState("");
-
+  const setUserProfile = useSetAtom(userProfileAtom);
   const [form, setForm] = useState<EditableProfile>({
     avatarUrl: "",
     avatarImageFile: null,
@@ -648,8 +649,20 @@ export default function EditPage() {
         queryKey: ["userProfile"],
       });
 
+      setUserProfile((prev) => {
+        if (!prev) return prev;
+
+        const updated: UserProfile = {
+          ...prev,
+          nickname: form.username,
+        };
+        localStorage.setItem("userProfile", JSON.stringify(updated));
+
+        return updated;
+      });
+
       alert("프로필이 성공적으로 업데이트되었습니다!");
-      //window.location.reload();
+      window.location.reload();
     } catch (err) {
       console.error(err);
       alert("프로필 수정 중 오류가 발생했습니다.");
