@@ -179,11 +179,12 @@ export default function ProblemListTab() {
 
       {showCreateModal && (
         <CreateProblemList
-          onClose={() => setShowCreateModal(false)}
+          mode="create"
           groupId={groupId}
-          onCreated={() => {
+          onClose={() => setShowCreateModal(false)}
+          onFinished={() => {
             loadLists();
-            loadSubmissions(); // 갱신!
+            loadSubmissions();
           }}
         />
       )}
