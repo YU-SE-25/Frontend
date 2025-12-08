@@ -289,7 +289,7 @@ export async function updateProblem(
   problemId: number,
   formData: FormData
 ): Promise<number> {
-  const res = await api.put<ProblemCreateResponse>(
+  const res = await api.patch<ProblemCreateResponse>(
     `/problems/${problemId}`,
     formData
   );
