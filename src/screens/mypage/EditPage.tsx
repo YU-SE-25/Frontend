@@ -344,22 +344,6 @@ const DebugDiv = styled.div`
   height: 100vh;
 `;
 
-//탈퇴버튼
-const DangerButton = styled.button`
-  padding: 10px 18px;
-  border-radius: 12px;
-  background: #e63946; /* 빨간색 */
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-
-  &:hover {
-    filter: brightness(0.9);
-  }
-`;
-
 export type ReminderForm = {
   day: number;
   times: string[];
@@ -1111,10 +1095,7 @@ export default function EditPage() {
             </SettingItem>
           </SettingsList>
         </FieldGroup>
-        <DangerButton type="button" onClick={() => setShowWithdrawModal(true)}>
-          회원 탈퇴
-        </DangerButton>
-        <hr style={{ margin: "24px 0", opacity: 0.2 }} />
+
         <ButtonRow>
           <PrimaryButton type="button" onClick={handleSubmit}>
             저장
@@ -1123,6 +1104,7 @@ export default function EditPage() {
             변경사항 초기화
           </GhostButton>
         </ButtonRow>
+        <button onClick={() => setShowWithdrawModal(true)}>회원 탈퇴</button>
       </Form>
       {showWithdrawModal && (
         <div

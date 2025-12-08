@@ -33,6 +33,7 @@ export default function ReportModal({
 
     const fullReason = `[${reportType}] ${trimmedReason}`;
 
+    // 🔹 제목: "신고 유형 + 상세 사유" 를 합친 문자열에서 최대 10자만 사용
     const baseTitle = `[${reportType}] ${trimmedReason}`;
     const title = baseTitle.length > 10 ? baseTitle.slice(0, 10) : baseTitle;
 

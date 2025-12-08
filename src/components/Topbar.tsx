@@ -4,7 +4,6 @@ import styled, { keyframes, css } from "styled-components";
 import axios from "axios";
 import { useAtom, useSetAtom } from "jotai";
 import { isLoggedInAtom, logoutActionAtom, userProfileAtom } from "../atoms";
-import { useQueryClient } from "@tanstack/react-query";
 
 export const TOPBAR_HEIGHT = 50;
 
@@ -62,7 +61,7 @@ const Menu = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  @media (max-width: 620px) {
+  @media (max-width: 1050px) {
     display: none;
   }
 `;
@@ -214,6 +213,8 @@ const AuthLink = styled(Link)`
   }
 `;
 
+// **********************************************
+
 export default function Topbar() {
   const navigate = useNavigate();
 
@@ -228,32 +229,21 @@ export default function Topbar() {
   const [isBoardOpen, setIsBoardOpen] = useState(false);
 
   // 로그아웃
-  const queryClient = useQueryClient();   // 캐시 삭제용
-
   const handleLogout = async () => {
-  const refreshToken = localStorage.getItem("refreshToken");
+    const refreshToken = localStorage.getItem("refreshToken");
 
-  // 서버 로그아웃 요청
-  if (refreshToken) {
-    try {
-      await axios.post("/api/auth/logout", { refreshToken });
-    } catch (error) {
-      console.error(
-        "Logout API call failed, proceeding with client-side logout:",
-        error
-      );
+    if (refreshToken) {
+      try {
+        await axios.post("/api/auth/logout", { refreshToken });
+      } catch (error) {
+        console.error(
+          "Logout API call failed, proceeding with client-side logout:",
+          error
+        );
+      }
     }
-  }
-
-  //jotai 상태 초기화
-  runLogoutAction();
-
-  //react-query 캐시 전체 삭제 (중요)
-  queryClient.clear();
-
-  //UI 완전 리셋 (이거 안 하면 이전 화면이 남아있음)
-  window.location.href = "/";
-};
+    runLogoutAction();
+  };
 
   const handleSelectBoard = (path: string) => {
     setIsBoardOpen(false);

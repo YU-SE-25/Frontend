@@ -358,16 +358,8 @@ export default function BoardDetail({ post }: BoardDetailProps) {
   const nav = useNavigate();
   const postId = post.post_id;
 
-  const pathCategory = window.location.pathname.split("/")[2];
-
-  const currentCategory: BoardCategory = [
-    "daily",
-    "lecture",
-    "promotion",
-    "typo",
-  ].includes(pathCategory)
-    ? (pathCategory as BoardCategory)
-    : "daily";
+  const currentCategory =
+    (window.location.pathname.split("/")[2] as BoardCategory) ?? "daily";
 
   // 1) 서버에서 최신 글 정보 & 댓글 가져오기
   const { data: postData, isFetching: isPostFetching } = useQuery<BoardContent>(
@@ -417,6 +409,7 @@ export default function BoardDetail({ post }: BoardDetailProps) {
       setStablePost(postData);
       setLike(postData.like_count);
       setLikeState(postData.viewer_liked ? "up" : null);
+      console.log("postdata : ", postData);
     }
   }, [postData]);
 
@@ -616,13 +609,14 @@ export default function BoardDetail({ post }: BoardDetailProps) {
         <HeaderActions>
           {isOwner({
             author: stablePost.author,
-            anonymous: stablePost.anonymity,
+            anonymity: stablePost.anonymity,
           }) && (
             <EditButton onEdit={handleEditPost} onDelete={handleDeletePost} />
           )}
           <ReportButton
             targetContentId={stablePost.post_id}
             targetContentType="DIS_POST"
+            onManagerDelete={handleDeletePost}
           />
         </HeaderActions>
       </DetailHeader>
@@ -669,6 +663,9 @@ export default function BoardDetail({ post }: BoardDetailProps) {
                         <ReportButton
                           targetContentId={c.comment_id}
                           targetContentType="DIS_COMMENT"
+                          onManagerDelete={() =>
+                            handleDeleteComment(c.comment_id)
+                          }
                         />
                         {isOwner({
                           author: c.author_name,

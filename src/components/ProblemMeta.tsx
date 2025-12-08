@@ -48,7 +48,7 @@ export default function ProblemMeta({ problem }: ProblemMetaProps) {
         <MetaValue>{problem.successRate}</MetaValue>
 
         <MetaLabel>시간 제한:</MetaLabel>
-        <MetaValue>{problem.timeLimit}ms</MetaValue>
+        <MetaValue>{problem.timeLimit}초</MetaValue>
 
         <MetaLabel>메모리 제한:</MetaLabel>
         <MetaValue>{problem.memoryLimit}MB</MetaValue>

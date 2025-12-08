@@ -98,13 +98,6 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
       ? "ATTEMPTED"
       : "NOT_SOLVED";
 
-  const successRate =
-    dto.correctRate === null ||
-    dto.correctRate === undefined ||
-    isNaN(dto.correctRate)
-      ? "-"
-      : Math.round(dto.correctRate * 100) + "%";
-
   return {
     problemId: dto.problemId,
     title: dto.title,
@@ -115,7 +108,7 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
 
     summary: dto.summary,
     solvedCount: dto.solverCount,
-    successRate,
+    successRate: Math.round(dto.correctRate * 100) + "%",
 
     userStatus: mappedStatus,
   };
@@ -289,7 +282,7 @@ export async function updateProblem(
   problemId: number,
   formData: FormData
 ): Promise<number> {
-  const res = await api.patch<ProblemCreateResponse>(
+  const res = await api.put<ProblemCreateResponse>(
     `/problems/${problemId}`,
     formData
   );
