@@ -626,7 +626,7 @@ export default function QnaDetail({ post }: QnaDetailProps) {
         <HeaderActions>
           {isOwner({
             author: stablePost.author,
-            anonymity: stablePost.anonymity,
+            anonymous: stablePost.anonymity,
           }) && (
             <EditButton onEdit={handleEditQna} onDelete={handleDeleteQna} />
           )}
@@ -634,7 +634,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
           <ReportButton
             targetContentId={stablePost.post_id}
             targetContentType="QNA_POST"
-            onManagerDelete={handleDeleteQna}
           />
         </HeaderActions>
       </DetailHeader>
@@ -688,9 +687,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
                           <ReportButton
                             targetContentId={c.comment_id}
                             targetContentType="QNA_COMMENT"
-                            onManagerDelete={() =>
-                              handleDeleteComment(c.comment_id)
-                            }
                           />
                           {isOwner({
                             author: c.author_name,
@@ -750,9 +746,6 @@ export default function QnaDetail({ post }: QnaDetailProps) {
                                     <ReportButton
                                       targetContentId={c.comment_id}
                                       targetContentType="QNA_COMMENT"
-                                      onManagerDelete={() =>
-                                        handleDeleteComment(c.comment_id)
-                                      }
                                     />
                                     {isOwner({
                                       author: r.author_name,
