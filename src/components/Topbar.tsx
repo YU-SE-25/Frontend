@@ -61,7 +61,7 @@ const Menu = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  @media (max-width: 1050px) {
+  @media (max-width: 620px) {
     display: none;
   }
 `;
@@ -212,8 +212,6 @@ const AuthLink = styled(Link)`
     outline-offset: 2px;
   }
 `;
-
-// **********************************************
 
 export default function Topbar() {
   const navigate = useNavigate();
