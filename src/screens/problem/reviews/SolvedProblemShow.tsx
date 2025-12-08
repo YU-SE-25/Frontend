@@ -176,7 +176,6 @@ export default function SolvedProblemShow() {
 
         // 🔹 2) 리뷰 + 댓글 조회
         const reviewsRes = await fetchReviewsBySubmission(submissionId);
-        console.log("Fetched reviews:", reviewsRes);
 
         let reviewsWithComments: Review[] = [];
 

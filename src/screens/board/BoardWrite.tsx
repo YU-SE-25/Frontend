@@ -333,6 +333,8 @@ export default function BoardWrite({
       setIsSubmitting(true);
 
       if (isStudy) {
+        {
+          /*
         const studyPayload = {
           post_title: title.trim(),
           contents: content.trim(),
@@ -340,23 +342,24 @@ export default function BoardWrite({
           anonymity: isAnonymous,
           is_private: false,
         };
+        */
+        }
 
         if (isEditMode && editPost) {
-          console.log("스터디그룹 글 수정 payload:", {
-            id: editPost.id,
-            ...studyPayload,
-          });
+          // 수정 모드
           alert("스터디그룹 글 수정 완료! (더미)");
         } else {
-          console.log("스터디그룹 글 작성 payload:", studyPayload);
+          // 작성 모드
           alert("스터디그룹 글 작성 완료! (더미)");
         }
 
+        // 이동 처리
         if (effectiveGroupId) {
           navigate(`/studygroup/${effectiveGroupId}`);
         } else {
           navigate("/studygroup");
         }
+
         return;
       }
 

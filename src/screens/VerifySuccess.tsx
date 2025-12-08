@@ -60,11 +60,6 @@ export default function VerifySuccessPage() {
     if (!email) return; // email 없으면 실행 X (userId는 없어도 됨)
 
     const sendWelcomeEmail = async () => {
-      console.log("환영 이메일 요청 데이터:", {
-        userId: storedUserId ? Number(storedUserId) : null,
-        email,
-      });
-
       try {
         await api.post("/auth/email/send-welcome", {
           userId: storedUserId ? Number(storedUserId) : null,

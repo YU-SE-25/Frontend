@@ -409,7 +409,6 @@ export default function BoardDetail({ post }: BoardDetailProps) {
       setStablePost(postData);
       setLike(postData.like_count);
       setLikeState(postData.viewer_liked ? "up" : null);
-      console.log("postdata : ", postData);
     }
   }, [postData]);
 
