@@ -60,7 +60,5 @@ export async function fetchSharedSolutionsByProblem(
     { params }
   );
 
-  console.log("✅ shared solutions real response:", res.data);
-
   return mapSharedSolutionPageDto(res.data);
 }

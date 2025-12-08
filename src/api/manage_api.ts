@@ -176,7 +176,6 @@ export async function updateUserRole(
     `/admin/users/${userId}/role`,
     body
   );
-  console.log(res.data);
   return res.data;
 }
 

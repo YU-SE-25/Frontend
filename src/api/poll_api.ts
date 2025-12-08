@@ -78,7 +78,6 @@ export async function fetchPoll(
   const prefix = getBoardPrefix(isDiscuss);
 
   const res = await api.get<PollDetailResponse>(`${prefix}/${postId}/poll`);
-  console.log("[fetchPoll] response for post", postId, res.data);
 
   return res.data;
 }

@@ -328,7 +328,7 @@ export default function ProblemManagementScreen() {
 
       {userProfile.role === "MANAGER" && (
         <>
-          <SectionTitle>제출된 문제 관리</SectionTitle>
+          <SectionTitle>문제 추가 요청</SectionTitle>
           <TableWrap>
             <Table>
               <Thead>

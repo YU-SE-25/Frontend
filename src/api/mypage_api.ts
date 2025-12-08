@@ -250,12 +250,9 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
     return mapUserProfileDto(res.data);
   } catch (err: any) {
     const status = err?.response?.status;
-    console.log("❌ getUserProfile 에러:", err);
 
     // ✅ 400: 비공개 마이페이지 → 이름/사진만 보이고 나머지는 기본값
     if (status === 400) {
-      console.log("비공개 마이페이지(400) → 제한된 프로필로 대체");
-
       const dummy = getDummyUserProfile();
       return {
         ...dummy,
@@ -278,26 +275,19 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
 
 export async function getMyProfile(): Promise<UserProfile> {
   try {
+    // 1차 프로필 조회
     const res = await api.get<UserProfileDto>("/mypage");
     return mapUserProfileDto(res.data);
-  } catch (err: any) {
-    // 1차 시도 실패: 프로필이 없는 경우(404) → 생성 시도 후 다시 GET
-    if (err) {
-      try {
-        await api.post("/mypage/initialize");
-        const retryRes = await api.get<UserProfileDto>("/mypage");
-        console.log("user profile created & fetched:", retryRes.data);
-        return mapUserProfileDto(retryRes.data);
-      } catch (retryErr) {
-        console.log("❌ getMyProfile: 프로필 생성 또는 재조회 실패:", retryErr);
-      }
-    } else {
-      console.log("❌ getMyProfile 에러:", err);
+  } catch (err) {
+    // 프로필이 없으면 초기화 시도
+    try {
+      await api.post("/mypage/initialize");
+      const retryRes = await api.get<UserProfileDto>("/mypage");
+      return mapUserProfileDto(retryRes.data);
+    } catch {
+      // 초기화 실패 → 마지막으로 더미 프로필 반환
+      return getDummyUserProfile();
     }
-
-    // 최종 실패 시 더미 프로필 반환
-    console.log("❌ getMyProfile 에러 발생, 더미 프로필로 대체:", err);
-    return getDummyUserProfile();
   }
 }
 
