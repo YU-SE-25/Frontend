@@ -98,18 +98,11 @@ export const loginActionAtom = atom(null, (_, set, data: LoginResponse) => {
 
 // 로그아웃
 export const logoutActionAtom = atom(null, (_, set) => {
-  // Jotai 상태 전부 초기화
   set(accessTokenAtom, null);
   set(refreshTokenAtom, null);
   set(accessTokenExpiresInAtom, null);
   set(userProfileAtom, null);
-
-  // 로컬스토리지에서도 완전 삭제
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("userProfile");
 });
-
 
 // refresh
 export const refreshActionAtom = atom(null, (_, set, data: RefreshResponse) => {

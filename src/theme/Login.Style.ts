@@ -40,16 +40,16 @@ export const InputGroup = styled.div`
 `;
 //아이디, 로그인 글씨
 export const Label = styled.label`
-  width: 120px;
+  flex-shrink: 0;
+  margin-right: 15px;
   font-weight: 600;
   color: ${(props) => props.theme.textColor};
-  flex-shrink: 0;
 `;
 //텍스트 입력창
 export const StyledInput = styled.input`
-  flex: 1;
   width: 100%;
   padding: 10px;
+  /* 입력창 경계선 색상은 텍스트 색상 또는 포커스 색상 활용 */
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   border-radius: 4px;
   box-sizing: border-box;

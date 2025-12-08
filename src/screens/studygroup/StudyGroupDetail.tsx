@@ -44,6 +44,8 @@ export default function StudyGroupDetailPage() {
   // 그룹 상세 정보 불러오기
   const loadGroupDetail = async () => {
     const detail = await fetchStudyGroupDetail(numericId);
+    console.log("API에서 받은 group detail:", detail);
+    console.log("현재 로그인 사용자의 ROLE:", detail.myRole);
     setGroup(detail);
     setRole(detail.myRole);
   };
