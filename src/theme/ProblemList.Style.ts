@@ -6,19 +6,16 @@ import { TOPBAR_HEIGHT } from "../components/Topbar";
 export interface HeaderCellProps {
   width: string;
 }
+export type UserProblemStatus = "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
+
 // 푼 문제 상태 타입
-export type UserProblemStatus = "solved" | "attempted" | "none";
 export interface StatusProps {
-  userStatus: UserProblemStatus;
+  $userStatus?: "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
 }
-//Type Definitions (TypeScript)
-export interface StatusStyleProps {
-  $userStatus?: UserProblemStatus; // 'solved' | 'attempted' | 'none'
-}
-//레이아웃 및 컨트롤 스타일
-export const ProblemListWrapper = styled.div`
+//레이아웃 및 컨트롤 스타일, 스터디그룹 화면 크기용 추가
+export const ProblemListWrapper = styled.div<{ $fullWidth?: boolean }>`
   height: 100%;
-  width: 80%;
+  width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "80%")};
   margin: 0 auto;
   display: flex;
   padding-top: ${TOPBAR_HEIGHT + 10}px;
@@ -65,7 +62,7 @@ export const SearchInput = styled.input`
 export const SearchButton = styled.button`
   padding: 10px 18px;
   background-color: ${(props) => props.theme.logoColor};
-  color: ${(props) => props.theme.authHoverTextColor};
+  color: ${(props) => props.theme.bgColor};
   border: none;
   border-radius: 6px;
   font-size: 15px;
@@ -73,6 +70,7 @@ export const SearchButton = styled.button`
   transition: background-color 0.2s;
 `;
 export const SortSelect = styled.select`
+  min-width: 120px;
   padding: 10px 14px;
   border: 1px solid ${(props) => props.theme.authHoverBgColor};
   border-radius: 6px;
@@ -88,7 +86,7 @@ export const SortSelect = styled.select`
 export const AddButton = styled.button`
   padding: 10px 25px;
   background-color: ${(props) => props.theme.logoColor};
-  color: ${(props) => props.theme.authHoverTextColor};
+  color: ${(props) => props.theme.bgColor};
   border: none;
   border-radius: 5px;
   font-size: 16px;
@@ -115,9 +113,9 @@ export const HeaderCell = styled.th<HeaderCellProps>`
   padding: 12px 10px;
   text-align: left;
   font-weight: 600;
-  color: ${(props) => props.theme.textColor};
+  color: ${(props) => props.theme.bgColor};
 `;
-export const TableRow = styled.tr<StatusStyleProps>`
+export const TableRow = styled.tr<StatusProps>`
   border-bottom: 1px solid ${(props) => props.theme.authHoverBgColor};
 `;
 export const TableCell = styled.td`
@@ -156,10 +154,7 @@ export const TitleContainer = styled.div`
   width: 100%;
 `;
 
-export interface StatusProps {
-  $userStatus: "solved" | "attempted" | "none"; // `UserProblemStatus`와 동일하게 맞춤
-}
-
+//필터상태
 export const StatusIndicator = styled.span<StatusProps>`
   font-size: 17px;
   padding: 4px 8px;
@@ -171,19 +166,18 @@ export const StatusIndicator = styled.span<StatusProps>`
 
   ${({ $userStatus, theme }) => {
     switch ($userStatus) {
-      case "solved":
+      case "SOLVED":
         return `
           background: ${theme.logoColor + "30"}; 
           border: 1px solid ${theme.logoColor}; 
           color: ${theme.textColor}; 
         `;
-      case "attempted":
+      case "ATTEMPTED":
         return `
           background: #ff383830; 
           border: 1px solid #ff3838; 
           color: ${theme.textColor}; 
         `;
-      case "none":
       default:
         return ``;
     }
@@ -250,38 +244,25 @@ export const ButtonContainer = styled.div`
 `;
 //코드 바로 작성 버튼
 export const ActionInSummaryButton = styled.button`
-  padding: 6px 12px; /* SearchButton보다 살짝 작게 */
+  padding: 6px 12px;
   background-color: ${(props) => props.theme.logoColor};
-  color: ${(props) => props.theme.authHoverTextColor};
+  color: ${(props) => props.theme.bgColor};
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 20px;
-  font-weight: bold;
   transition: background-color 0.2s;
-  white-space: nowrap; /* 버튼 글자 줄바꿈 방지 */
-
-  &:hover {
-    background-color: ${(props) => props.theme.focusColor};
-  }
 `;
 //문제 상세보기 버튼
 export const DetailsButton = styled.button`
   padding: 6px 12px;
-  /* 다른 색상 사용 (예: 회색 계열) */
   background-color: ${(props) => props.theme.authHoverBgColor};
   color: ${(props) => props.theme.textColor};
-  border: 1px solid ${(props) => props.theme.authActiveBgColor};
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 20px;
-  font-weight: normal; /* 일반 굵기 */
   transition: background-color 0.2s;
-  white-space: nowrap;
-
-  &:hover {
-    background-color: ${(props) => props.theme.authActiveBgColor};
-  }
 `;
 
 //페이지네이션
@@ -289,8 +270,8 @@ export const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px; /* 버튼 사이 간격 */
-  margin-top: 30px; /* 테이블과의 간격 */
+  gap: 8px;
+  margin-top: 30px;
 `;
 
 export const PageLink = styled.span<{
@@ -333,13 +314,60 @@ export const TagDisplayContainer = styled.div`
   padding-bottom: 5px;
 `;
 // 개별 태그 Chip 스타일
-export const TagChip = styled.span`
+export const TagChip = styled.span<{ $active?: boolean }>`
   display: inline-flex;
   align-items: center;
-  background-color: ${(props) => props.theme.focusColor};
-  color: ${(props) => props.theme.bgColor};
+  background-color: ${(props) =>
+    props.$active ? props.theme.focusColor : props.theme.authHoverBgColor};
+  color: ${(props) =>
+    props.$active ? props.theme.bgColor : props.theme.textColor};
   padding: 4px 9px;
   border-radius: 13px;
   font-size: 15px;
   font-weight: 500;
+  cursor: pointer;
+`;
+
+//문제 목록 속 태그 칩
+export const ProblemTagChip = styled.span<{ $status?: string }>`
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+
+  background-color: ${({ $status }) =>
+    $status === "SOLVED"
+      ? "#4caf50"
+      : $status === "ATTEMPTED"
+      ? "#ff9800"
+      : "transparent"};
+`;
+
+// 문제 기록 상태 뱃지
+export const StatusChip = styled.span<{
+  $status?: "SOLVED" | "ATTEMPTED" | "NOT_SOLVED";
+}>`
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+
+  background-color: ${({ $status }) =>
+    $status === "SOLVED"
+      ? "#4caf50" // 초록
+      : $status === "ATTEMPTED"
+      ? "#f44336" // 빨강
+      : "gray"}; // NONE = 회색
+`;
+export const TagChipForList = styled.span`
+  padding: 4px 8px;
+  background-color: ${(props) => props.theme.authHoverBgColor};
+  color: ${(props) => props.theme.textColor};
+  border-radius: 8px;
+  font-size: 12px;
+  margin-right: 6px;
+  white-space: nowrap;
 `;

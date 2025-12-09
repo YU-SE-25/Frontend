@@ -39,23 +39,17 @@ export default function Login() {
     }
 
     try {
-      //현재는 mock API 사용
       const response = await postLogin({ email, password, keepLogin });
 
-      // Jotai 전역 상태 저장
       runLoginAction(response);
-
-      navigate(-1); // 로그인 성공 후 이전 페이지로
+      navigate(-1);
     } catch (error: any) {
-      if (axios.isAxiosError(error) && error.response) {
-        setErrorMessage(
-          error.response.data?.message || "로그인에 실패했습니다."
-        );
-      } else if (error.response) {
-        setErrorMessage(error.response.data.message);
-      } else {
-        setErrorMessage("서버와 연결할 수 없습니다. (네트워크 오류)");
-      }
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        "서버와 연결할 수 없습니다. (네트워크 오류)";
+
+      setErrorMessage(message);
     }
   };
 

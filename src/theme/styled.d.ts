@@ -1,6 +1,7 @@
 import "styled-components";
 declare module "styled-components" {
   export interface DefaultTheme {
+    mode: "light" | "dark";
     bgColor: string;
     textColor: string;
     focusColor: string;
@@ -9,5 +10,8 @@ declare module "styled-components" {
     authHoverBgColor: string;
     authHoverTextColor: string;
     authActiveBgColor: string;
+    bgCardColor: string;
+    cardColor: string;
+    muteColor: string;
   }
 }

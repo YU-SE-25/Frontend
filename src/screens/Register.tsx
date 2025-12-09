@@ -14,13 +14,20 @@ import {
   ModalContentBox,
   CloseButton,
   ModalBackdrop,
+  RoleSelectWrapper,
+  RoleOption,
 } from "../theme/Register.Style.ts";
 
-//type UserType = "student";
+import { TERMS_OF_SERVICE } from "./terms/TermsOfService";
+import { PRIVACY_POLICY } from "./terms/PrivacyPolicy";
+import { AuthAPI } from "../api/auth_api";
+import {
+  uploadPortfolio,
+  type PortfolioUploadResponse,
+} from "../api/uploadPortfolio_api";
 
 //비밀번호
 const validatePassword = (password: string) => {
-  //최소 8자, 대문자(A-Z), 소문자(a-z), 숫자(0-9) 각각 1개 이상 포함
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
   const isValid = regex.test(password);
@@ -42,6 +49,7 @@ const validatePassword = (password: string) => {
 export default function Register() {
   const navigate = useNavigate();
 
+  const [role, setRole] = useState<"LEARNER" | "INSTRUCTOR">("LEARNER");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -52,6 +60,9 @@ export default function Register() {
   const [isTermsChecked, setIsTermsChecked] = useState(false);
   const [isPrivacyChecked, setIsPrivacyChecked] = useState(false);
 
+  const [portfolioLinks, setPortfolioLinks] = useState<string[]>([]);
+  const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
+
   const isValidEmailFormat = email.includes("@") && email.includes(".");
   const passwordValidationResult = validatePassword(password);
   const passwordsMatch = password === passwordConfirm;
@@ -61,13 +72,9 @@ export default function Register() {
   const [modalContent, setModalContent] = useState<"terms" | "privacy" | null>(
     null
   );
+  const isInstructorValid =
+    role === "LEARNER" || portfolioLinks.length > 0 || portfolioFile !== null;
 
-  //뒤로가기
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
-  //가입 버튼 활성화
   const isFormValid = useMemo(() => {
     return (
       isTermsChecked &&
@@ -77,7 +84,8 @@ export default function Register() {
       passwordValidationResult.isValid &&
       isValidEmailFormat &&
       isValidPhone &&
-      isValidNicknameLength
+      isValidNicknameLength &&
+      isInstructorValid
     );
   }, [
     isTermsChecked,
@@ -88,11 +96,11 @@ export default function Register() {
     isValidEmailFormat,
     isValidPhone,
     isValidNicknameLength,
+    isInstructorValid,
   ]);
 
-  //전화번호
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const cleaned = e.target.value.replace(/[^0-9]/g, "").slice(0, 11); // 숫자 11개까지만 허용
+    const cleaned = e.target.value.replace(/[^0-9]/g, "").slice(0, 11);
 
     let formattedNumber = cleaned;
 
@@ -107,103 +115,149 @@ export default function Register() {
     setPhoneNumber(formattedNumber);
   };
 
-  //약관동의
-  const handleOpenTerms = (type: "terms" | "privacy") => {
-    setModalContent(type);
-  };
-  const handleCloseModal = () => {
-    setModalContent(null);
-  };
-
+  //api쪽
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    //백엔드쪽에서 이메일 중복체크, 닉네임 중복체크, 동일인물(이름 + 전화번호) 중복체크
-    //가입하기 누르면 링크 전송 창 띄우기
-    //가입 신청 완료 페이지 만들어서 넘어갈 것
-
-    //API 호출 및 중복 체크 시작
-    //const API_BASE = "/api/v1"; // 임시 API 베이스 주소 설정
-
-    //0. 블랙리스트 : 해당 이메일 혹은 전화번호가 등록되어 있을 경우
+    // 0. 블랙리스트 체크
     try {
-      console.log("0. 블랙리스트 체크 시작...");
-      //Api 적힌대로 함
-      // const response = await axios.post(`${API_BASE}/auth/check/blacklist`, { name, email, phone: phoneNumber });
-      if (response.data.isBlacklisted) {
+      const response = await AuthAPI.checkBlacklist(name, email, phoneNumber);
+      if (response.data.blacklisted === true) {
         alert("회원가입이 제한된 사용자입니다.");
         return;
       }
-    } catch (error) {
+    } catch {
       alert("블랙리스트 확인 중 오류가 발생했습니다.");
       return;
     }
 
-    //1.이메일 중복(/auth/check/email)
-    try {
-      console.log("1. 이메일 중복 체크 시작...");
-      // await axios.post(`${API_BASE}/auth/check/email`, { email });
-    } catch (error) {
+    // 1. 이메일 중복 체크
+    const emailCheck = await AuthAPI.checkEmail(email);
+    if (emailCheck.data.available === false) {
       alert("이미 사용 중인 이메일입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
 
-    //2.닉네임 중복(/auth/check/nickname)
-    try {
-      console.log("2. 닉네임 중복 체크 시작...");
-      // await axios.post(`${API_BASE}/auth/check/nickname`, { nickname });
-    } catch (error) {
+    // 2. 닉네임 중복 체크
+    const nickCheck = await AuthAPI.checkNickname(nickname);
+    if (nickCheck.data.available === false) {
       alert("이미 사용 중인 닉네임입니다.");
       return;
     }
-    // 3. 전화번호 중복 체크 (/auth/check/phone)
-    try {
-      console.log("3. 전화번호 중복 체크 시작...");
-      // await axios.post(`${API_BASE}/auth/check/phone`, { phone: phoneNumber });
-    } catch (error) {
+
+    // 3. 전화번호 중복 체크
+    const phoneCheck = await AuthAPI.checkPhone(phoneNumber);
+    if (phoneCheck.data.available === false) {
       alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
-
-    //4.동일 인물(/auth/check/duplicate-account)
-    try {
-      console.log("4. 동일 인물 계정 확인 시작...");
-      // await axios.post(`${API_BASE}/auth/check/duplicate-account`, { name, phoneNumber });
-    } catch (error) {
+    /*
+    // 4. 동일 인물 계정 체크
+    const dupCheck = await AuthAPI.checkDuplicateAccount(name, phoneNumber);
+    if (dupCheck.data.duplicate === true) {
       alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
       return;
     }
+      */
 
-    //최종 회원가입
+    let fileUploadResult: PortfolioUploadResponse | null = null;
+
+    // 강사일 경우 파일 업로드 먼저 수행
+    if (role === "INSTRUCTOR" && portfolioFile) {
+      try {
+        fileUploadResult = await uploadPortfolio(portfolioFile);
+        // fileUploadResult = { fileUrl, originalFileName, fileSize }
+      } catch (err) {
+        alert("포트폴리오 파일 업로드에 실패했습니다.");
+        return;
+      }
+    }
+
     const registerData = {
-      email: email,
-      password: password,
-      name: name,
-      nickname: nickname,
+      email,
+      password,
+      name,
+      nickname,
       phone: phoneNumber,
-      role: "LEARNER",
-      agreedToTerms: isTermsChecked && isPrivacyChecked,
+      role,
+      agreedTerms: ["TERMS_OF_SERVICE", "PRIVACY_POLICY"],
+
+      // 강사일 때: 파일 업로드 결과 넣기
+      portfolioFileUrl:
+        role === "INSTRUCTOR" ? fileUploadResult?.fileUrl ?? null : null,
+      originalFileName:
+        role === "INSTRUCTOR"
+          ? fileUploadResult?.originalFileName ?? null
+          : null,
+      fileSize:
+        role === "INSTRUCTOR" ? fileUploadResult?.fileSize ?? null : null,
+
+      // URL은 그대로
+      portfolioLinks: role === "INSTRUCTOR" ? portfolioLinks : [],
     };
 
+    // 5. 최종 회원가입 (/auth/register)
     try {
-      //회원가입 요청 (/auth/register)
-      console.log("5. 최종 회원가입 요청 전송...");
-      // await axios.post(`${API_BASE}/auth/register`, registrationData);
+      // register 응답 받기 (userId 꺼내야 함!)
+      const registerRes = (await AuthAPI.register(registerData)) as {
+        data: { userId: number };
+      };
+      // 회원가입 후 userId 저장 (환영 이메일 보낼 때 필요!!)
+      localStorage.setItem("regUserId", registerRes.data.userId.toString());
+      localStorage.setItem("regEmail", email);
 
-      //이메일 인증 링크 발송 (/auth/email/send-link)
-      console.log("6. 이메일 인증 링크 발송 요청...");
-      // await axios.post(`${API_BASE}/auth/email/send-link`, { email });
+      // 6. 이메일 인증 링크 발송 (/auth/email/send-link)
+      await AuthAPI.sendEmailVerify(email);
 
       navigate("/register-success");
     } catch (error) {
-      alert("서버 오류");
+      alert("서버 오류가 발생했습니다.");
     }
+  };
+
+  const handleOpenTerms = (type: "terms" | "privacy") => {
+    setModalContent(type);
+  };
+
+  const handleCloseModal = () => {
+    setModalContent(null);
   };
 
   return (
     <RegisterPageWrapper>
       <RegisterBox>
         <Title>회원가입</Title>
+
+        <Label>회원 유형 :</Label>
+        <RoleSelectWrapper>
+          <RoleOption
+            $checked={role === "LEARNER"}
+            onClick={() => setRole("LEARNER")}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="LEARNER"
+              checked={role === "LEARNER"}
+              onChange={() => setRole("LEARNER")}
+            />
+            학습자
+          </RoleOption>
+
+          <RoleOption
+            $checked={role === "INSTRUCTOR"}
+            onClick={() => setRole("INSTRUCTOR")}
+          >
+            <input
+              type="radio"
+              name="role"
+              value="INSTRUCTOR"
+              checked={role === "INSTRUCTOR"}
+              onChange={() => setRole("INSTRUCTOR")}
+            />
+            강사
+          </RoleOption>
+        </RoleSelectWrapper>
 
         <form onSubmit={handleRegister}>
           <InputGroup>
@@ -212,9 +266,7 @@ export default function Register() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-              }}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </InputGroup>
 
@@ -227,9 +279,11 @@ export default function Register() {
               placeholder="최소 8자, 대/소문자 숫자 포함"
             />
           </InputGroup>
+
           {password.length > 0 && !passwordValidationResult.isValid && (
             <ErrorMessage>비밀번호 규정을 따라주세요.</ErrorMessage>
           )}
+
           <InputGroup>
             <Label>비밀번호 확인 :</Label>
             <StyledInput
@@ -238,16 +292,18 @@ export default function Register() {
               onChange={(e) => setPasswordConfirm(e.target.value)}
             />
           </InputGroup>
+
           {!passwordsMatch && (
             <ErrorMessage>비밀번호가 일치하지 않습니다.</ErrorMessage>
           )}
+
           <InputGroup>
             <Label>전화번호 :</Label>
             <StyledInput
               type="tel"
               value={phoneNumber}
               onChange={handlePhoneChange}
-              placeholder="010-XXXX-XXXX 형식으로 자동 입력"
+              placeholder="010-XXXX-XXXX"
               maxLength={13}
             />
           </InputGroup>
@@ -260,6 +316,7 @@ export default function Register() {
               onChange={(e) => setName(e.target.value)}
             />
           </InputGroup>
+
           <InputGroup>
             <Label>닉네임 :</Label>
             <StyledInput
@@ -270,6 +327,33 @@ export default function Register() {
               placeholder="2글자 이상, 10글자 미만"
             />
           </InputGroup>
+
+          {role === "INSTRUCTOR" && (
+            <>
+              <InputGroup>
+                <Label>포트폴리오 URL :</Label>
+                <StyledInput
+                  type="text"
+                  placeholder="예: https://github.com/yourname"
+                  onChange={(e) => setPortfolioLinks([e.target.value])}
+                />
+              </InputGroup>
+
+              <InputGroup>
+                <Label>포트폴리오 파일 :</Label>
+                <StyledInput
+                  type="file"
+                  onChange={(e) =>
+                    setPortfolioFile(e.target.files?.[0] || null)
+                  }
+                />
+              </InputGroup>
+
+              <p style={{ fontSize: "14px", color: "#999" }}>
+                ※ URL 또는 파일 중 하나 이상 필수 제출
+              </p>
+            </>
+          )}
 
           <TermsGroup>
             <CheckboxLabel>
@@ -286,6 +370,7 @@ export default function Register() {
               </span>
               (필수)
             </CheckboxLabel>
+
             <CheckboxLabel>
               <input
                 type="checkbox"
@@ -307,18 +392,16 @@ export default function Register() {
           </FullWidthButton>
         </form>
       </RegisterBox>
+
       {modalContent && (
         <ModalBackdrop onClick={handleCloseModal}>
           <ModalContentBox onClick={(e) => e.stopPropagation()}>
-            {/* 모달 박스 클릭 시 배경 닫힘 방지 */}
             <CloseButton onClick={handleCloseModal}>&times;</CloseButton>
             <h3>
               {modalContent === "terms" ? "이용 약관" : "개인정보 처리방침"}
             </h3>
             <p style={{ whiteSpace: "pre-wrap" }}>
-              {modalContent === "terms"
-                ? `\n 내용 추가 예정`
-                : `\n 내용 추가 예정`}
+              {modalContent === "terms" ? TERMS_OF_SERVICE : PRIVACY_POLICY}
             </p>
           </ModalContentBox>
         </ModalBackdrop>

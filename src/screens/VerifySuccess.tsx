@@ -1,6 +1,7 @@
-import React from "react";
+import { useEffect } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import { api } from "../api/axios";
 
 const SuccessWrapper = styled.div`
   height: 100%;
@@ -11,6 +12,7 @@ const SuccessWrapper = styled.div`
   text-align: center;
   font-size: 24px;
 `;
+
 const SuccessCard = styled.div`
   width: min(90%, 800px);
   padding: 50px 30px;
@@ -23,6 +25,18 @@ const SuccessCard = styled.div`
   align-items: center;
   text-align: center;
   gap: 15px;
+  h2 {
+    color: ${(props) => props.theme.textColor};
+  }
+`;
+
+const SuccessText = styled.p`
+  font-size: 20px;
+  color: ${(props) => props.theme.textColor};
+  line-height: 1.5;
+  h2 {
+    color: ${(props) => props.theme.textColor};
+  }
 `;
 
 const LoginLink = styled(Link)`
@@ -39,17 +53,42 @@ const LoginLink = styled(Link)`
 `;
 
 export default function VerifySuccessPage() {
+  useEffect(() => {
+    const email = localStorage.getItem("regEmail");
+    const storedUserId = localStorage.getItem("regUserId"); // 있으면 사용, 없으면 null
+
+    if (!email) return; // email 없으면 실행 X (userId는 없어도 됨)
+
+    const sendWelcomeEmail = async () => {
+      try {
+        await api.post("/auth/email/send-welcome", {
+          userId: storedUserId ? Number(storedUserId) : null,
+          email,
+        });
+      } catch (err) {
+        console.error("환영 이메일 발송 실패", err);
+      } finally {
+        localStorage.removeItem("regEmail");
+        localStorage.removeItem("regUserId");
+      }
+    };
+
+    sendWelcomeEmail();
+  }, []);
+
   return (
     <SuccessWrapper>
       <SuccessCard>
         <h2>🎉 인증 완료!</h2>
-        <p style={{ fontSize: "20px", color: "#555" }}>
-          이메일 인증이 성공적으로 완료되었습니다.
-        </p>
-        <p style={{ fontSize: "20px", color: "#555" }}>환영합니다 학습자님!</p>
-        <LoginLink to="/login" style={{ marginTop: "30px" }}>
-          로그인 하러가기
-        </LoginLink>
+
+        <SuccessText>이메일 인증이 성공적으로 완료되었습니다.</SuccessText>
+        <SuccessText>
+          강사 신청의 경우, 현재 일반 회원으로 가입되었으며, 강사 신청은 관리자
+          검토 후 승인됩니다.
+        </SuccessText>
+        <SuccessText>환영합니다 학습자님!</SuccessText>
+
+        <LoginLink to="/login">로그인 하러가기</LoginLink>
       </SuccessCard>
     </SuccessWrapper>
   );

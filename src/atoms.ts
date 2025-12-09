@@ -1,68 +1,133 @@
+//상태 저장 + 로그인 유지 + 토큰 갱신 정보 관리
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
-export const isDarkAtom = atom<boolean>(true);
+const getInitialIsDark = () => {
+  if (typeof window === "undefined") return false;
+  const saved = localStorage.getItem("theme:isDark");
+  if (saved === "true") return true;
+  if (saved === "false") return false;
+  return false;
+};
 
-//사용자 프로필 정보
+export const isDarkAtom = atom<boolean>(getInitialIsDark());
+
+// 🔥 여기 다시 추가해야 함!!
+export const toggleThemeActionAtom = atom(null, (_, set) => {
+  set(isDarkAtom, (prev) => !prev);
+});
+
+// 사용자 프로필 정보
 export interface UserProfile {
   userId: number;
   nickname: string;
-  role: "ADMIN" | "INSTRUCTOR" | "LEARNER";
+  role: "MANAGER" | "INSTRUCTOR" | "LEARNER";
 }
+
+// 로그인 응답
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number; // 만료 시간 (초 단위)
+  expiresIn: number;
   user: UserProfile;
 }
-//토큰 갱신
+
+// refresh 응답
 export interface RefreshResponse {
   accessToken: string;
   expiresIn: number;
 }
 
-//테마 토글버튼
-export const toggleThemeActionAtom = atom(null, (get, set) => {
-  set(isDarkAtom, (prev) => !prev);
-});
+// 🔥 JSON.stringify 되지 않는 custom storage
+const stringStorage = {
+  getItem: (key: string) => {
+    if (typeof localStorage === "undefined") return null;
+    const value = localStorage.getItem(key);
+    return value ?? null; // 그대로 반환
+  },
+  setItem: (key: string, value: string | null) => {
+    if (typeof localStorage === "undefined") return;
+    if (value === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, value); // string 그대로 저장
+    }
+  },
+  removeItem: (key: string) => {
+    if (typeof localStorage === "undefined") return;
+    localStorage.removeItem(key);
+  },
+};
 
-export const accessTokenAtom = atom<string | null>(null);
-//만료 시간 (재발급 로직에 사용)
+// ----------------------
+// 🔥 여기에 customStorage를 적용하면
+// localStorage에 "토큰" 형태로 저장되는 문제 완전히 해결됨
+// ----------------------
+
+export const accessTokenAtom = atomWithStorage<string | null>(
+  "accessToken",
+  null,
+  stringStorage
+);
+
 export const accessTokenExpiresInAtom = atom<number | null>(null);
-// Local Storage에 영구 저장 (로그인 유지의 핵심!) 브라우저를 껐다 켜도 유지됨
+
 export const refreshTokenAtom = atomWithStorage<string | null>(
   "refreshToken",
+  null,
+  stringStorage
+);
+
+export const userProfileAtom = atomWithStorage<UserProfile | null>(
+  "userProfile",
   null
 );
-//사용자의 최소 정보
-export const userProfileAtom = atom<UserProfile | null>(null);
 
-//로그인 여부 판단: accessToken이 존재하고 userProfile이 있으면 true
+// 로그인 여부
 export const isLoggedInAtom = atom((get) => {
   return !!get(accessTokenAtom) && !!get(userProfileAtom);
 });
 
-//로그인
-export const loginActionAtom = atom(null, (get, set, data: LoginResponse) => {
+// 로그인 액션
+export const loginActionAtom = atom(null, (_, set, data: LoginResponse) => {
   set(accessTokenAtom, data.accessToken);
   set(refreshTokenAtom, data.refreshToken);
   set(accessTokenExpiresInAtom, data.expiresIn);
   set(userProfileAtom, data.user);
 });
-//로그아웃
-export const logoutActionAtom = atom(null, (get, set) => {
-  // 모든 상태를 null로 초기화합니다.
+
+// 로그아웃
+export const logoutActionAtom = atom(null, (_, set) => {
+  // Jotai 상태 전부 초기화
   set(accessTokenAtom, null);
   set(refreshTokenAtom, null);
   set(accessTokenExpiresInAtom, null);
   set(userProfileAtom, null);
+
+  // 로컬스토리지에서도 완전 삭제
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userProfile");
 });
-//토큰 갱신
-export const refreshActionAtom = atom(
-  null,
-  (get, set, data: RefreshResponse) => {
-    // Access Token과 만료 시간만 업데이트합니다.
-    set(accessTokenAtom, data.accessToken);
-    set(accessTokenExpiresInAtom, data.expiresIn);
-  }
-);
+
+
+// refresh
+export const refreshActionAtom = atom(null, (_, set, data: RefreshResponse) => {
+  set(accessTokenAtom, data.accessToken);
+  set(accessTokenExpiresInAtom, data.expiresIn);
+});
+
+// **********************************************
+isDarkAtom.debugLabel = "Is Dark Mode";
+toggleThemeActionAtom.debugLabel = "Toggle Theme Action";
+
+accessTokenAtom.debugLabel = "Access Token";
+refreshTokenAtom.debugLabel = "Refresh Token";
+accessTokenExpiresInAtom.debugLabel = "Access Token ExpiresIn";
+
+userProfileAtom.debugLabel = "User Profile";
+isLoggedInAtom.debugLabel = "Is Logged In";
+
+loginActionAtom.debugLabel = "Login Action";
+logoutActionAtom.debugLabel = "Logout Action";
+refreshActionAtom.debugLabel = "Refresh Action";

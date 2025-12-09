@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { Link } from "react-router-dom";
-import type { StatusStyleProps } from "./ProblemList.Style";
+import type { StatusProps } from "./ProblemList.Style";
 
 //페이지 전체 레이아웃
 export const ProblemWrapper = styled.div`
@@ -22,7 +22,7 @@ export const MainContent = styled.div`
   border-radius: 8px;
 `;
 
-// 2. 문제 메타 정보 섹션
+//문제 메타 정보 섹션
 export const MetaInfoSection = styled.section`
   margin-bottom: 35px;
 `;
@@ -65,7 +65,7 @@ export const MetaValue = styled.span`
   }
 `;
 //푼 문제 통계 박스
-export const UserStatsBox = styled.div<StatusStyleProps>`
+export const UserStatsBox = styled.div<StatusProps>`
   /* StatusProps 타입 필요 */
   margin-top: 15px;
   padding: 10px 15px;
@@ -77,9 +77,9 @@ export const UserStatsBox = styled.div<StatusStyleProps>`
 
   border: 2px solid
     ${(props) =>
-      props.$userStatus === "solved"
+      props.$userStatus === "SOLVED"
         ? props.theme.logoColor
-        : props.$userStatus === "attempted"
+        : props.$userStatus === "ATTEMPTED"
         ? "#ff3838"
         : "transparent"};
 
@@ -154,7 +154,14 @@ export const TagLink = styled(Link)`
   border-radius: 15px;
   font-size: 14px;
   font-weight: 500;
-  }
+  text-decoration: none;
+`;
+//태그 간격
+export const TagContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px 0;
 `;
 
 //입출력
@@ -166,7 +173,7 @@ export const ExampleContainer = styled.div`
   margin-top: 20px;
 `;
 
-// 💡 추가: 입력/출력 한 쌍을 가로로 묶는 컨테이너
+//추가: 입력/출력 한 쌍을 가로로 묶는 컨테이너
 export const ExamplePairWrapper = styled.div`
   display: flex; /* 내부 요소(입력/출력)를 가로로 배치 */
   gap: 20px; /* 입력과 출력 사이 간격 */
@@ -174,7 +181,6 @@ export const ExamplePairWrapper = styled.div`
 
 // 입력 또는 출력 예제 하나를 담는 섹션
 export const ExampleSection = styled.div`
-  /* 💡 수정: PairWrapper 안에서 절반씩 너비 차지 */
   flex: 1;
   h4 {
     font-size: 16px;
@@ -256,7 +262,7 @@ export const SolveButton = styled.button`
     background-color: ${(props) => props.theme.logoColor};
   }
 `;
-// 내 코드 보기 버튼 (보조 버튼 스타일)
+// 이외의 버튼들 (보조 버튼 스타일)
 export const ViewCodeButton = styled.button`
   padding: 10px 25px;
   background-color: ${(props) => props.theme.authHoverBgColor};
