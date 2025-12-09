@@ -19,6 +19,7 @@ import {
 import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
 import ProblemMeta from "../../components/ProblemMeta";
+import { fetchMySubmissions } from "../../api/mySubmissions_api";
 
 export default function ProblemDetail() {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function ProblemDetail() {
 
   const [problem, setProblem] = useState<IProblem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasSubmission, setHasSubmission] = useState(false);
 
   const user = useAtomValue(userProfileAtom);
   const userRole = user?.role;
@@ -75,6 +77,17 @@ export default function ProblemDetail() {
     navigate(`/problems/${user.nickname}/submitted?search=${problemId}`);
   };
 
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    fetchMySubmissions({ problemId: Number(problemId), size: 1 })
+      .then((page) => {
+        const has = page.items.length > 0;
+        setHasSubmission(has);
+      })
+      .catch(() => setHasSubmission(false));
+  }, [isLoggedIn, problemId]);
+
   if (loading) return <ProblemWrapper>로딩 중...</ProblemWrapper>;
   if (!problem)
     return <ProblemWrapper>문제를 찾을 수 없습니다.</ProblemWrapper>;
@@ -85,21 +98,23 @@ export default function ProblemDetail() {
         <ProblemMeta problem={problem} />
 
         <ActionSection>
-          <ViewCodeButton onClick={handleViewMyCode}>
-            제출한 기록 보기
-          </ViewCodeButton>
+          {hasSubmission && (
+            <ViewCodeButton onClick={handleViewMyCode}>
+              제출한 기록 보기
+            </ViewCodeButton>
+          )}
 
           <ViewCodeButton onClick={() => navigate(`/qna?id=${problemId}`)}>
             QnA
           </ViewCodeButton>
 
-          <ViewCodeButton onClick={() => navigate(`solved`)}>
+          <ViewCodeButton
+            onClick={() => navigate(`/problem-detail/${problemId}/solved`)}
+          >
             공유된 풀이 보기
           </ViewCodeButton>
 
-          {isLoggedIn && (
-            <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
-          )}
+          <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
 
           {(userRole === "MANAGER" || userRole === "INSTRUCTOR") &&
             problem.canEdit && (

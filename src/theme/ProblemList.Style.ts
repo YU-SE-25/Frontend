@@ -363,11 +363,16 @@ export const StatusChip = styled.span<{
       : "gray"}; // NONE = 회색
 `;
 export const TagChipForList = styled.span`
-  padding: 4px 8px;
-  background-color: ${(props) => props.theme.authHoverBgColor};
-  color: ${(props) => props.theme.textColor};
-  border-radius: 8px;
-  font-size: 12px;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+
+  background: ${({ theme }) => theme.focusColor};
+  color: ${({ theme }) => theme.bgColor};
+  border: none;
+
   margin-right: 6px;
-  white-space: nowrap;
+  margin-bottom: 4px;
 `;

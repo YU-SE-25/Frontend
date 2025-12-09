@@ -126,7 +126,7 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
   return {
     problemId: dto.problemId,
     title: dto.title,
-    tags: dto.tags,
+    tags: dto.tags?.map((t) => TAG_LABEL_MAP[t] ?? t),
     difficulty: dto.difficulty,
     viewCount: dto.viewCount,
     createdAt: dto.createdAt.slice(0, 10),
