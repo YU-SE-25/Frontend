@@ -241,7 +241,7 @@ export default function SolvedProblemListPage() {
                   <HeaderCell width="16%">언어</HeaderCell>
                   <HeaderCell width="10%">메모리</HeaderCell>
                   <HeaderCell width="10%">실행시간</HeaderCell>
-                  <HeaderCell width="22%">작성일</HeaderCell>
+                  <HeaderCell width="22%">제출일</HeaderCell>
                   <HeaderCell width="15%">보기</HeaderCell>
                 </tr>
               </TableHead>
