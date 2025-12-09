@@ -5,6 +5,7 @@ import axios from "axios";
 import { useAtom, useSetAtom } from "jotai";
 import { isLoggedInAtom, logoutActionAtom, userProfileAtom } from "../atoms";
 import { useQueryClient } from "@tanstack/react-query";
+import LogoImageFile from "../../res/Logo.png"; 
 
 export const TOPBAR_HEIGHT = 50;
 
@@ -265,7 +266,7 @@ export default function Topbar() {
       <TopbarContent aria-label="Top navigation">
         <Logo to="/">
           <img
-            src="../../res/Logo.png"
+            src={LogoImageFile}
             alt="Logo"
             style={{ height: "50px", verticalAlign: "middle" }}
           />

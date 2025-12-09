@@ -25,3 +25,6 @@ dist-ssr
 
 #형섭꺼
 todolist.txt
+
+# TypeScript Build Info Files
+*.tsbuildinfo
