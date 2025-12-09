@@ -319,9 +319,8 @@ export const fetchCodingHabits = async () => {
 };
 
 // 회원 탈퇴
-export const withdrawAccount = async (password: string) => {
-  const res = await api.delete("/auth/withdraw", {
-    data: { password },
-  });
+export const withdrawAccount = async (password?: string) => {
+  const body = password ? { password } : {}; // 비었으면 소셜 → {}
+  const res = await api.delete("/auth/withdraw", { data: body });
   return res.data;
 };

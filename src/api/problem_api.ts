@@ -22,6 +22,7 @@ export interface ProblemDetailDto {
   createdByNickname: string;
   title: string;
   description: string;
+  summary: string | null;
   inputOutputExample: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";
   timeLimit: number;
@@ -139,7 +140,7 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
     visibility: dto.visibility,
     hint: dto.hint,
     source: dto.source,
-    summary: dto.description.slice(0, 50) + "...",
+    summary: dto.summary ?? undefined,
     solvedCount: dto.acceptedSubmissions,
     successRate: dto.acceptanceRate + "%",
 
