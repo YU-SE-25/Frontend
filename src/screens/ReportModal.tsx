@@ -34,7 +34,7 @@ export default function ReportModal({
     const fullReason = `[${reportType}] ${trimmedReason}`;
 
     const baseTitle = `[${reportType}] ${trimmedReason}`;
-    const title = baseTitle.length > 10 ? baseTitle.slice(0, 10) : baseTitle;
+    const title = baseTitle.length > 20 ? baseTitle.slice(0, 20) : baseTitle;
 
     try {
       setLoading(true);

@@ -11,22 +11,31 @@ import {
   ProblemInfoContainer,
   ProblemSolveWrapper,
   EditorPanelContainer,
+  ActionButton,
+  ScratchInput,
 } from "../theme/ProblemSolve.Style";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { userProfileAtom } from "../atoms";
 
 // ---------------- 스타일 ----------------
-const RunInputBox = styled.textarea`
+export const RunInputBox = styled.textarea`
   width: 100%;
   height: 80px;
   margin-top: 8px;
-  margin-bottom: 15px;
   border-radius: 6px;
   padding: 8px;
-  border: 1px solid #ccc;
   resize: vertical;
+
+  background: ${({ theme }) => theme.bgColor};
+  color: ${({ theme }) => theme.textColor};
+  border: 1px solid ${({ theme }) => theme.textColor}55;
+
+  &::placeholder {
+    color: ${({ theme }) => theme.textColor}88;
+  }
 `;
+
 
 const TopRow = styled.div`
   display: flex;
@@ -155,10 +164,10 @@ export default function CodeScratchPage() {
 ${result.output}
 
 [ 표준 에러(stderr) ]
-${result.compileError ?? "(없음)"}
+${result.compileError ?? result.error ?? "(없음)"}
 
 [ 실행 시간 ]
-${result.compileTimeMs} ms
+${result.executionTimeMs ?? "(없음)"} ms
 `.trim();
   };
 
@@ -190,13 +199,32 @@ ${result.compileTimeMs} ms
     alert("불러오기 완료!");
   };
 
-  // ---------------- 제출하기 (문제풀이와 동일 로직) ----------------
+  //  제출하기 (문제풀이와 동일 로직)
   const handleSubmit = async () => {
-    if (!problem) return alert("먼저 문제를 선택하세요!");
+  if (!problem) {
+    alert("먼저 문제를 선택하세요!");
+    return;
+  }
 
-    const numericId = Number(problem.problemId);
-    if (isNaN(numericId)) return alert("문제 ID 오류로 제출 불가!");
+  if (!code.trim()) {
+    alert("코드를 입력해주세요!");
+    return;
+  }
 
+  if (!runInput.trim()) {
+    const ok = window.confirm(
+      "입력값이 비어있습니다. 입력 없이 제출할까요?"
+    );
+    if (!ok) return;
+  }
+
+  const numericId = Number(problem.problemId);
+  if (isNaN(numericId)) {
+    alert("문제 ID 오류로 제출이 불가능합니다.");
+    return;
+  }
+
+  try {
     await IDEAPI.submit({
       problemId: numericId,
       code,
@@ -204,13 +232,14 @@ ${result.compileTimeMs} ms
     });
 
     navigate(
-      "/problems/" +
-        userProfile?.nickname +
-        "/submitted?id=" +
-        numericId +
-        "&showResult=true"
+      `/problems/${userProfile?.nickname}/submitted?id=${numericId}&showResult=true`
     );
-  };
+
+  } catch (e) {
+    alert("제출 중 오류가 발생했습니다.");
+  }
+};
+
 
   // ---------------- 렌더 ----------------
 
@@ -228,19 +257,17 @@ ${result.compileTimeMs} ms
 
         {/* 문제 불러오기 */}
         <LoadBox>
-          <input
+          <ScratchInput
             type="number"
             placeholder="문제 번호 입력"
             value={problemIdInput}
             onChange={(e) => setProblemIdInput(e.target.value)}
-            style={{
-              padding: "8px",
-              width: "150px",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-            }}
           />
-          <button onClick={loadProblem}>문제 불러오기</button>
+
+          <ActionButton onClick={loadProblem} $main>
+            문제 불러오기
+          </ActionButton>
+
         </LoadBox>
 
         {/* 문제 정보 */}
