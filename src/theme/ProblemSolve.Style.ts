@@ -310,3 +310,38 @@ export const ExampleBox = styled.div`
   line-height: 1.5;
   white-space: pre-wrap;
 `;
+
+//input값 박스 틀
+export const RunInputBox = styled.textarea`
+  width: 100%;
+  height: 80px;
+  margin-top: 8px;
+  border-radius: 6px;
+  padding: 8px;
+  resize: vertical;
+
+  background: ${({ theme }) => theme.bgColor};
+  color: ${({ theme }) => theme.textColor};
+  border: 1px solid ${({ theme }) => theme.textColor}55;
+
+  &::placeholder {
+    color: ${({ theme }) => theme.textColor}88;
+  }
+`;
+
+//문제 검색(코드 스크래치 페이지)
+export const ScratchInput = styled.input`
+  padding: 8px;
+  width: 150px;
+  border-radius: 6px;
+
+  background-color: ${({ theme }) => theme.bgColor};
+  color: ${({ theme }) => theme.textColor};
+  border: 1px solid ${({ theme }) => theme.authHoverBgColor};
+
+  &::placeholder {
+    color: ${({ theme }) => theme.textColor}88;
+  }
+`;
+
+

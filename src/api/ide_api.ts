@@ -26,7 +26,8 @@ export interface RunCodeRequest {
 export interface RunCodeResponse {
   output: string; // 실행 결과
   compileError: string | null;
-  compileTimeMs: number;
+  executionTimeMs: number;
+  error: string | null;
 }
 
 // 제출하기

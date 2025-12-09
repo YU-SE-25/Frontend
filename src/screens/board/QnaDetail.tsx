@@ -744,7 +744,7 @@ export default function QnaDetail({ post }: QnaDetailProps) {
                                     · {rDate}
                                     {renderCommentLikeButton(r)}
                                     <ReportButton
-                                      targetContentId={c.comment_id}
+                                      targetContentId={r.comment_id}
                                       targetContentType="QNA_COMMENT"
                                     />
                                     {isOwner({

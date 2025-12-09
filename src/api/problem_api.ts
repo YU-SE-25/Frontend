@@ -258,6 +258,7 @@ export async function fetchSimpleProblems(): Promise<SimpleProblem[]> {
 export interface ProblemEditDetail {
   problemId: number;
   title: string;
+  summary: string;
   description: string;
   inputOutputExample: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";

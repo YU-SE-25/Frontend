@@ -1,5 +1,3 @@
-// ⚠️ ProblemSolvePage.tsx — 더 안전 버전 (주석 모두 유지)
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 
@@ -17,6 +15,7 @@ import {
   ProblemDescriptionBox,
   EditorPanelContainer,
   ExampleBox,
+  RunInputBox,
 } from "../../theme/ProblemSolve.Style";
 
 import { userProfileAtom } from "../../atoms";
@@ -117,10 +116,10 @@ export default function ProblemSolvePage() {
 ${result.output}
 
 [ 표준 에러(stderr) ]
-${result.compileError ?? "(없음)"}
+${result.compileError ?? result.error ?? "(없음)"}
 
 [ 실행 시간 ]
-${result.compileTimeMs} ms
+${result.executionTimeMs ?? "(없음)"} ms
 `.trim();
   };
 
@@ -201,20 +200,12 @@ ${result.compileTimeMs} ms
 
         <div style={{ marginTop: "25px" }}>
           <h3>실행 입력값</h3>
-          <textarea
+          <RunInputBox
             value={runInput}
             onChange={(e) => setRunInput(e.target.value)}
             placeholder="여기에 실행 input을 입력하세요"
-            style={{
-              width: "100%",
-              height: "80px",
-              marginTop: "8px",
-              borderRadius: "6px",
-              padding: "8px",
-              border: "1px solid #ccc",
-              resize: "vertical",
-            }}
           />
+
         </div>
       </ProblemInfoContainer>
 
