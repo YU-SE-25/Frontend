@@ -43,6 +43,7 @@ export default function StudyGroupBoardDetail() {
 
     (async () => {
       const detail = await getDiscussionDetail(Number(groupId), Number(postId));
+      //console.log("상세조회 응답:", detail);
       setPost(detail); // 끝!
       window.scrollTo(0, 0);
     })();

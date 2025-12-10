@@ -150,6 +150,7 @@ export async function fetchMySubmissions(options?: {
   if (sort) params.sort = sort;
 
   const res = await api.get<SubmissionPageDto>("/submissions", { params });
+  console.log("asdf", mapSubmissionPageDto(res.data));
   return mapSubmissionPageDto(res.data);
 }
 // 내 제출 상세 조회

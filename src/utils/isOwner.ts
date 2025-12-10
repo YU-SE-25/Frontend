@@ -16,7 +16,7 @@ const store = getDefaultStore();
 /**
  * 통합 isOwner 함수
  *
- * {
+ * @param params {
  *   owner?: boolean,       // 서버에서 직접 owner 여부 제공하는 케이스(코드 리뷰)
  *   anonymous?: boolean,   // 게시글 익명 여부
  *   anonymity?: boolean,   // 댓글 익명 여부

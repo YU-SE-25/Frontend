@@ -75,6 +75,7 @@ const router = createBrowserRouter([
         element: <SolvedProblemShow />,
       },
 
+      //문제분석용 임시 라우터(그대로 써도되긴함)
       {
         path: "problems/:problemId/analysis/:submissionId",
         element: <CodeAnalysis />,

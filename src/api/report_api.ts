@@ -8,116 +8,45 @@ export type ReportTargetType =
   | "REVIEW"
   | "REVIEW_COMMENT";
 
-export interface ReportRequestBody {
-  targetId: number;
-  reportType: ReportTargetType;
-  title: string;
-  reason: string;
+// 개별 신고 요청 (reason만 전송!)
+
+export async function reportDisBoardPost(postId: number, reason: string) {
+  return api.post(`/dis_board/${postId}/reports`, { reason });
 }
 
-export async function reportDisBoardPost(
-  postId: number,
-  reportType: ReportTargetType,
-  title: string,
-  reason: string
-): Promise<void> {
-  const body: ReportRequestBody = {
-    targetId: postId,
-    reportType,
-    title,
-    reason,
-  };
-
-  await api.post(`/dis_board/${postId}/reports`, body);
+export async function reportDisBoardComment(commentId: number, reason: string) {
+  return api.post(`/dis_board/comment/${commentId}/reports`, { reason });
 }
 
-export async function reportDisBoardComment(
-  commentId: number,
-  reportType: ReportTargetType,
-  title: string,
-  reason: string
-): Promise<void> {
-  const body: ReportRequestBody = {
-    targetId: commentId,
-    reportType,
-    title,
-    reason,
-  };
-
-  await api.post(`/dis_board/comment/${commentId}/reports`, body);
+export async function reportQnaPost(postId: number, reason: string) {
+  return api.post(`/qna_board/${postId}/reports`, { reason });
 }
 
-export async function reportQnaPost(
-  postId: number,
-  reportType: ReportTargetType,
-  title: string,
-  reason: string
-): Promise<void> {
-  const body: ReportRequestBody = {
-    targetId: postId,
-    reportType,
-    title,
-    reason,
-  };
-
-  await api.post(`/qna_board/${postId}/reports`, body);
+export async function reportQnaComment(commentId: number, reason: string) {
+  return api.post(`/qna_board/comment/${commentId}/reports`, { reason });
 }
 
-export async function reportQnaComment(
-  commentId: number,
-  reportType: ReportTargetType,
-  title: string,
-  reason: string
-): Promise<void> {
-  const body: ReportRequestBody = {
-    targetId: commentId,
-    reportType,
-    title,
-    reason,
-  };
-
-  await api.post(`/qna_board/comment/${commentId}/reports`, body);
-}
-
-export async function reportReview(
-  reviewId: number,
-  reportType: ReportTargetType,
-  title: string,
-  reason: string
-): Promise<void> {
-  const body: ReportRequestBody = {
-    targetId: reviewId,
-    reportType,
-    title,
-    reason,
-  };
-
-  await api.post(`/reviews/${reviewId}/reports`, body);
+export async function reportReview(reviewId: number, reason: string) {
+  return api.post(`/reviews/${reviewId}/reports`, { reason });
 }
 
 export async function reportReviewComment(
   reviewId: number,
   commentId: number,
-  reportType: ReportTargetType,
-  title: string,
   reason: string
-): Promise<void> {
-  const body: ReportRequestBody = {
-    targetId: commentId,
-    reportType,
-    title,
+) {
+  return api.post(`/reviews/${reviewId}/comments/${commentId}/reports`, {
     reason,
-  };
-
-  await api.post(`/reviews/${reviewId}/comments/${commentId}/reports`, body);
+  });
 }
+
+// 신고 통합 처리 함수
 
 export interface CreateReportParams {
   targetContentType: ReportTargetType;
   targetContentId: number;
   reason: string;
-  extraId?: number;
-  title?: string;
+  extraId?: number; // review의 경우 reviewId
 }
 
 export async function createReport({
@@ -125,72 +54,32 @@ export async function createReport({
   targetContentId,
   reason,
   extraId,
-  title,
-}: CreateReportParams): Promise<void> {
+}: CreateReportParams) {
   const trimmedReason = reason.trim();
-  const baseTitle = (title ?? "").trim() || trimmedReason || "신고";
-  const finalTitle = baseTitle.length > 10 ? baseTitle.slice(0, 10) : baseTitle;
+  if (!trimmedReason) throw new Error("신고 사유를 입력해주세요.");
 
   switch (targetContentType) {
     case "DIS_POST":
-      await reportDisBoardPost(
-        targetContentId,
-        targetContentType,
-        finalTitle,
-        trimmedReason
-      );
-      break;
+      return reportDisBoardPost(targetContentId, trimmedReason);
 
     case "DIS_COMMENT":
-      await reportDisBoardComment(
-        targetContentId,
-        targetContentType,
-        finalTitle,
-        trimmedReason
-      );
-      break;
+      return reportDisBoardComment(targetContentId, trimmedReason);
 
     case "QNA_POST":
-      await reportQnaPost(
-        targetContentId,
-        targetContentType,
-        finalTitle,
-        trimmedReason
-      );
-      break;
+      return reportQnaPost(targetContentId, trimmedReason);
 
     case "QNA_COMMENT":
-      await reportQnaComment(
-        targetContentId,
-        targetContentType,
-        finalTitle,
-        trimmedReason
-      );
-      break;
+      return reportQnaComment(targetContentId, trimmedReason);
 
     case "REVIEW":
-      await reportReview(
-        targetContentId,
-        targetContentType,
-        finalTitle,
-        trimmedReason
-      );
-      break;
+      return reportReview(targetContentId, trimmedReason);
 
     case "REVIEW_COMMENT":
-      if (!extraId) {
+      if (!extraId)
         throw new Error(
-          "REVIEW_COMMENT 신고에는 extraId(reviewId)가 필요합니다."
+          "REVIEW_COMMENT의 경우 extraId(reviewId)가 필요합니다."
         );
-      }
-      await reportReviewComment(
-        extraId,
-        targetContentId,
-        targetContentType,
-        finalTitle,
-        trimmedReason
-      );
-      break;
+      return reportReviewComment(extraId, targetContentId, trimmedReason);
 
     default:
       throw new Error(`지원하지 않는 신고 타입: ${targetContentType}`);

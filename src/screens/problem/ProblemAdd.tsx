@@ -42,7 +42,7 @@ export default function ProblemAdd() {
 
   const [form, setForm] = useState({
     title: "",
-    summary: "", 
+    summary: "",
     description: "",
     inputOutputExample: "",
     timeLimit: "",
@@ -56,9 +56,8 @@ export default function ProblemAdd() {
   const [tags, setTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [errorMessage, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  /* 태그 목록 불러오기*/
+  /** 태그 목록 불러오기 (더미 제거) */
   useEffect(() => {
     const load = async () => {
       const fetched = await fetchAvailableTags();
@@ -67,7 +66,7 @@ export default function ProblemAdd() {
     load();
   }, []);
 
-  /* 수정 모드 → 기존 내용 로드 */
+  /** 수정 모드 → 기존 내용 로드 */
   useEffect(() => {
     if (!isEdit) return;
 
@@ -92,11 +91,11 @@ export default function ProblemAdd() {
     })();
   }, [isEdit, problemId]);
 
-  /* 필수값 체크 */
+  /** 필수값 체크 */
   const isValid = useMemo(() => {
     return (
       form.title.trim() &&
-      form.summary.trim() && 
+      form.summary.trim() &&
       form.description.trim() &&
       form.inputOutputExample.trim() &&
       form.timeLimit &&
@@ -104,11 +103,10 @@ export default function ProblemAdd() {
     );
   }, [form]);
 
-  /* 제출 */
+  /** 제출 */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     if (!isValid) {
       setError("필수 항목을 모두 입력해야 합니다.");
@@ -168,8 +166,6 @@ export default function ProblemAdd() {
     } catch (err) {
       console.error(err);
       setError("요청 중 오류가 발생했습니다.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -218,15 +214,8 @@ export default function ProblemAdd() {
             >
               <StyledSelect
                 onChange={(e) => {
-                  const value = e.target.value;
-
-                  if (tags.length >= 3) {
-                    alert("태그는 최대 3개까지 선택할 수 있습니다!");
-                    return;
-                  }
-
-                  if (!tags.includes(value)) {
-                    setTags([...tags, value]);
+                  if (!tags.includes(e.target.value)) {
+                    setTags([...tags, e.target.value]);
                   }
                 }}
                 value=""
@@ -288,7 +277,6 @@ export default function ProblemAdd() {
               onChange={(e) =>
                 setForm({ ...form, inputOutputExample: e.target.value })
               }
-              placeholder="예시는 최대 2개까지 입력해주세요"
             />
           </InputGroup>
 
@@ -339,8 +327,8 @@ export default function ProblemAdd() {
 
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
 
-          <MainButton type="submit" disabled={!isValid || loading}>
-            {loading ? "처리 중..." : isEdit ? "수정하기" : "등록하기"}
+          <MainButton type="submit" disabled={!isValid}>
+            {isEdit ? "수정하기" : "등록하기"}
           </MainButton>
         </form>
       </MainContent>

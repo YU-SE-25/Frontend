@@ -133,7 +133,8 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
   const voteMutation = useMutation({
     mutationFn: (label: number) =>
       votePoll(postId, poll!.pollId, label, isDiscuss),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      console.log("[votePoll] success", res);
       queryClient.invalidateQueries({
         queryKey: ["poll", isDiscuss ? "discuss" : "qna", postId],
       });
@@ -141,7 +142,9 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
   });
 
   useEffect(() => {
-    /* poll 변경 시 별도 로그 없이 UI만 갱신 */
+    if (poll) {
+      console.log("[PollView] poll changed:", poll);
+    }
   }, [poll]);
 
   if (isLoading || isError || !poll) return null;

@@ -238,6 +238,7 @@ export default function UserManagementScreen() {
       setSelectedApplicationDetail(detail);
 
       await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
+      console.log("Instructor application detail:", detail);
 
       alert("강사 신청 상세 정보가 클립보드에 복사되었습니다!");
     } catch (err) {
