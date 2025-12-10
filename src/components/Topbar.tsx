@@ -223,17 +223,16 @@ export default function Topbar() {
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem("refreshToken");
 
-    if (refreshToken) {
-      try {
-        await axios.post("/api/auth/logout", { refreshToken });
-      } catch (err) {
-        console.error("Logout failed:", err);
-      }
-
-      runLogoutAction();
-      queryClient.clear();
-      window.location.href = "/";
+    try {
+      await axios.post("/api/auth/logout", { refreshToken });
+    } catch (err) {
+      console.error("Logout failed:", err);
     }
+
+    runLogoutAction();
+    queryClient.clear();
+
+    window.location.href = "/";
   };
 
   return (

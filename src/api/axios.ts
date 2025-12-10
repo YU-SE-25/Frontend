@@ -28,6 +28,10 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
+    if (!localStorage.getItem("refreshToken")) {
+      return Promise.reject(error);
+    }
+
     // 로그인/리프레시 요청 자체는 제외
     if (original?.url === "/auth/login") return Promise.reject(error);
     if (original?.url === "/auth/refresh") return Promise.reject(error);

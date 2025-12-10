@@ -429,6 +429,8 @@ export default function EditPage() {
   const [isChecking, setIsChecking] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
 
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
   const {
     data: user,
     isLoading,
@@ -493,6 +495,32 @@ export default function EditPage() {
     }
   }
 
+  const dayReverseMap: Record<
+    number,
+    "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
+  > = {
+    1: "MON",
+    2: "TUE",
+    3: "WED",
+    4: "THU",
+    5: "FRI",
+    6: "SAT",
+    7: "SUN",
+  };
+
+  const DAY_MAP: Record<
+    number,
+    "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
+  > = {
+    1: "MON",
+    2: "TUE",
+    3: "WED",
+    4: "THU",
+    5: "FRI",
+    6: "SAT",
+    7: "SUN",
+  };
+
   useEffect(() => {
     if (!user || didInit.current) return;
     didInit.current = true;
@@ -508,10 +536,12 @@ export default function EditPage() {
         : undefined;
 
     if (firstReminder) {
-      setReminderDayOfWeek("MON"); // TODO: day 역매핑
+      setReminderDayOfWeek(dayReverseMap[firstReminder.day]);
+
       if (firstReminder.times && firstReminder.times[0]) {
         const [hh] = firstReminder.times[0].split(":");
         const hourNum = Number(hh);
+
         if (hourNum === 0) {
           setReminderAmPm("AM");
           setReminderHour12(12);
