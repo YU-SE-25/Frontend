@@ -34,7 +34,6 @@ const TopbarContent = styled.nav`
   justify-content: space-between;
 `;
 
-// 오른쪽 영역 (테마 토글 + 인증)을 묶는 컨테이너
 const RightSection = styled.div`
   display: flex;
   align-items: center;
@@ -63,7 +62,7 @@ const Menu = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  @media (max-width: 1050px) {
+  @media (max-width: 620px) {
     display: none;
   }
 `;
@@ -81,12 +80,15 @@ const MenuLink = styled(NavLink)`
   line-height: 1;
   text-decoration: none;
   outline: none;
+
   &:hover {
     color: ${(props) => props.theme.focusColor};
   }
+
   &.active {
     text-decoration: underline;
   }
+
   &:focus-visible {
     outline: 2px solid ${(props) => props.theme.focusColor};
     outline-offset: 2px;
@@ -99,51 +101,37 @@ const BoardMenuButton = styled.button`
   font: inherit;
   line-height: 1;
   display: inline-block;
-
   background: none;
   border: none;
   padding: 0;
   color: ${(props) => props.theme.textColor};
   cursor: pointer;
-  text-decoration: none;
   outline: none;
 
   &:hover {
     color: ${(props) => props.theme.focusColor};
   }
+
   &:focus-visible {
     outline: 2px solid ${(props) => props.theme.focusColor};
     outline-offset: 2px;
   }
 `;
+
 const dropdownOpen = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 `;
 
 const dropdownClose = keyframes`
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-6px); }
 `;
-// 게시판 드롭다운 컨테이너
 
 const BoardDropdown = styled.ul<{ $open: boolean }>`
   position: absolute;
   top: 120%;
   left: -50px;
-  margin-top: 0px;
 
   background-color: ${(props) => props.theme.bgColor};
   border-radius: 0 0 10px 10px;
@@ -154,9 +142,6 @@ const BoardDropdown = styled.ul<{ $open: boolean }>`
   min-width: 140px;
   z-index: 200;
 
-  transform-origin: top;
-
-  /* 항상 렌더해두고, 열림/닫힘만 애니메이션으로 제어 */
   animation: ${({ $open }) =>
     $open
       ? css`
@@ -166,10 +151,9 @@ const BoardDropdown = styled.ul<{ $open: boolean }>`
           ${dropdownClose} 0.16s ease-in forwards
         `};
 
-  /* 닫혀 있을 때는 클릭 안 되게 */
   pointer-events: ${({ $open }) => ($open ? "auto" : "none")};
 `;
-// 드롭다운 내부 링크
+
 const BoardDropdownItem = styled(Link)`
   display: block;
   padding: 8px 14px;
@@ -197,59 +181,59 @@ const AuthLink = styled(Link)`
   text-decoration: none;
   padding: 6px 10px;
   border-radius: 10px;
-  outline: none;
   white-space: nowrap;
+
   &:hover {
     background: ${(props) => props.theme.authHoverBgColor};
     color: ${(props) => props.theme.authHoverTextColor};
     transform: scale(1.05);
   }
+
   &:active {
     background: ${(props) => props.theme.authActiveBgColor};
     color: ${(props) => props.theme.authHoverTextColor};
     transform: scale(0.95);
   }
+
   &:focus-visible {
     outline: 2px solid ${(props) => props.theme.focusColor};
     outline-offset: 2px;
   }
 `;
 
-// **********************************************
+// **************************************************************
 
 export default function Topbar() {
   const navigate = useNavigate();
-
-  // Jotai 인증 상태 및 액션 연결
   const [isLoggedIn] = useAtom(isLoggedInAtom);
   const [userProfile] = useAtom(userProfileAtom);
   const runLogoutAction = useSetAtom(logoutActionAtom);
+  const queryClient = useQueryClient();
 
-  // (미사용이긴 하지만 혹시 쓸 수도 있으니 그대로 둠)
-  const userName = userProfile?.nickname || "guest";
-  // 게시판 드롭다운 열림 상태
   const [isBoardOpen, setIsBoardOpen] = useState(false);
+  const userName = userProfile?.nickname || "guest";
 
-  // 로그아웃
+  // 게시판 메뉴 이동
+  const handleSelectBoard = (path: string) => {
+    setIsBoardOpen(false);
+    navigate(path);
+  };
+
+  // 로그아웃 처리
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem("refreshToken");
 
     if (refreshToken) {
       try {
         await axios.post("/api/auth/logout", { refreshToken });
-      } catch (error) {
-        console.error(
-          "Logout API call failed, proceeding with client-side logout:",
-          error
-        );
+      } catch (err) {
+        console.error("Logout failed:", err);
       }
-    }
-    runLogoutAction();
-  };
 
-  const handleSelectBoard = (path: string) => {
-    setIsBoardOpen(false);
-    navigate(path);
+      runLogoutAction();
+      queryClient.clear();
+      window.location.href = "/";
+    }
   };
 
   return (
@@ -272,26 +256,9 @@ export default function Topbar() {
             onMouseEnter={() => setIsBoardOpen(true)}
             onMouseLeave={() => setIsBoardOpen(false)}
           >
-            <BoardMenuButton
-              type="button"
-              aria-haspopup="true"
-              aria-expanded={isBoardOpen}
-            >
-              게시판
-            </BoardMenuButton>
+            <BoardMenuButton type="button">게시판</BoardMenuButton>
 
             <BoardDropdown $open={isBoardOpen}>
-              {/* <li>
-                <BoardDropdownItem
-                  to="/board/free"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleSelectBoard("/board/free");
-                  }}
-                >
-                  자유게시판
-                </BoardDropdownItem>
-              </li> */}
               <li>
                 <BoardDropdownItem
                   to="/board/default"
@@ -303,6 +270,7 @@ export default function Topbar() {
                   토론게시판
                 </BoardDropdownItem>
               </li>
+
               <li>
                 <BoardDropdownItem
                   to="/qna"
@@ -349,12 +317,6 @@ export default function Topbar() {
         </Menu>
 
         <RightSection>
-          {/* <ThemeToggleContainer onClick={runToggleTheme}>
-            <ToggleSwitch $isDark={isDark}>
-              <ToggleHandle $isDark={isDark} />
-            </ToggleSwitch>
-          </ThemeToggleContainer> */}
-
           <Auth>
             {isLoggedIn ? (
               <>

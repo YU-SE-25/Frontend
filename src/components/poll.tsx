@@ -133,19 +133,14 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
   const voteMutation = useMutation({
     mutationFn: (label: number) =>
       votePoll(postId, poll!.pollId, label, isDiscuss),
-    onSuccess: (res) => {
-      console.log("[votePoll] success", res);
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["poll", isDiscuss ? "discuss" : "qna", postId],
       });
     },
   });
 
-  useEffect(() => {
-    if (poll) {
-      console.log("[PollView] poll changed:", poll);
-    }
-  }, [poll]);
+  useEffect(() => {}, [poll]);
 
   if (isLoading || isError || !poll) return null;
 

@@ -342,13 +342,8 @@ export default function BoardWrite({
         };
 
         if (isEditMode && editPost) {
-          console.log("스터디그룹 글 수정 payload:", {
-            id: editPost.id,
-            ...studyPayload,
-          });
           alert("스터디그룹 글 수정 완료! (더미)");
         } else {
-          console.log("스터디그룹 글 작성 payload:", studyPayload);
           alert("스터디그룹 글 작성 완료! (더미)");
         }
 

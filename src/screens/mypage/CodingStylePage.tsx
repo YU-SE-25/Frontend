@@ -60,19 +60,16 @@ export default function CodingStylePage() {
     return (
       <Card>
         <h2>코딩 성향 분석</h2>
-        <p>아직 분석을 진행하기엔 제출 수가 부족해요 😢</p>
+        <p>아직 분석을 진행하기엔 제출 수가 부족합니다</p>
         <p>
-          최소 <strong>3회 이상</strong> 제출해야 분석할 수 있어요!
-        </p>
-        <p style={{ marginTop: "8px", opacity: 0.7 }}>
-          (현재 제출 수: {totalAttempts}회)
+          최소 <strong>10문제 이상</strong> 정답을 맞춰야만 분석할 수 있어요!
         </p>
       </Card>
     );
   }
 
   if (loading) {
-    return <Card>분석 중입니다... 🤖💭</Card>;
+    return <Card>분석 중입니다</Card>;
   }
 
   if (!data) {
