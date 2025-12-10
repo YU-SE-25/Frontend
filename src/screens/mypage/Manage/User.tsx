@@ -146,25 +146,31 @@ const Row = styled.div`
 `;
 
 // 페이지네이션 UI
-const PaginationWrap = styled.div`
+const PaginationWrapper = styled.div`
   display: flex;
-  justify-content: center;
-  margin: 16px 0 8px;
-  gap: 10px;
+  justify-content: center; /* 가운데 정렬 */
+  margin-top: 8px;
 `;
 
-const PageButton = styled.button<{ active?: boolean }>`
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
+const PaginationBar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+`;
 
-  background: ${({ theme, active }) =>
-    active ? theme.focusColor : theme.bgCardColor};
-  color: ${({ theme, active }) => (active ? theme.bgColor : theme.textColor)};
+const PageButton = styled.button<{ disabled?: boolean; active?: boolean }>`
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
+  color: ${({ theme, disabled }) =>
+    disabled ? theme.muteColor : theme.textColor};
 
   &:hover {
-    opacity: 0.8;
+    text-decoration: ${({ disabled }) => (disabled ? "none" : "underline")};
   }
 `;
 
@@ -593,33 +599,35 @@ export default function UserManagementScreen() {
           </tbody>
         </Table>
       </TableWrap>
-      <PaginationWrap>
-        <PageButton
-          onClick={() => setUserPage((p) => Math.max(0, p - 1))}
-          disabled={userPage === 0}
-        >
-          〈
-        </PageButton>
-
-        {Array.from({ length: totalUserPages }).map((_, i) => (
+      <PaginationWrapper>
+        <PaginationBar>
           <PageButton
-            key={i}
-            active={i === userPage}
-            onClick={() => setUserPage(i)}
+            onClick={() => setUserPage((p) => Math.max(0, p - 1))}
+            disabled={userPage === 0}
           >
-            {i + 1}
+            〈
           </PageButton>
-        ))}
 
-        <PageButton
-          onClick={() =>
-            setUserPage((p) => Math.min(totalUserPages - 1, p + 1))
-          }
-          disabled={userPage >= totalUserPages - 1}
-        >
-          〉
-        </PageButton>
-      </PaginationWrap>
+          {Array.from({ length: totalUserPages }).map((_, i) => (
+            <PageButton
+              key={i}
+              active={i === userPage}
+              onClick={() => setUserPage(i)}
+            >
+              {i + 1}
+            </PageButton>
+          ))}
+
+          <PageButton
+            onClick={() =>
+              setUserPage((p) => Math.min(totalUserPages - 1, p + 1))
+            }
+            disabled={userPage >= totalUserPages - 1}
+          >
+            〉
+          </PageButton>
+        </PaginationBar>
+      </PaginationWrapper>
 
       <SectionTitle>강사 신청 목록</SectionTitle>
       <TopBar>
@@ -744,33 +752,37 @@ export default function UserManagementScreen() {
           </tbody>
         </Table>
       </TableWrap>
-      <PaginationWrap>
-        <PageButton
-          onClick={() => setInstructorPage((p) => Math.max(0, p - 1))}
-          disabled={instructorPage === 0}
-        >
-          〈
-        </PageButton>
-
-        {Array.from({ length: totalInstructorPages }).map((_, i) => (
+      <PaginationWrapper>
+        <PaginationBar>
           <PageButton
-            key={i}
-            active={i === instructorPage}
-            onClick={() => setInstructorPage(i)}
+            onClick={() => setInstructorPage((p) => Math.max(0, p - 1))}
+            disabled={instructorPage === 0}
           >
-            {i + 1}
+            〈
           </PageButton>
-        ))}
 
-        <PageButton
-          onClick={() =>
-            setInstructorPage((p) => Math.min(totalInstructorPages - 1, p + 1))
-          }
-          disabled={instructorPage >= totalInstructorPages - 1}
-        >
-          〉
-        </PageButton>
-      </PaginationWrap>
+          {Array.from({ length: totalInstructorPages }).map((_, i) => (
+            <PageButton
+              key={i}
+              active={i === instructorPage}
+              onClick={() => setInstructorPage(i)}
+            >
+              {i + 1}
+            </PageButton>
+          ))}
+
+          <PageButton
+            onClick={() =>
+              setInstructorPage((p) =>
+                Math.min(totalInstructorPages - 1, p + 1)
+              )
+            }
+            disabled={instructorPage >= totalInstructorPages - 1}
+          >
+            〉
+          </PageButton>
+        </PaginationBar>
+      </PaginationWrapper>
     </Wrap>
   );
 }
