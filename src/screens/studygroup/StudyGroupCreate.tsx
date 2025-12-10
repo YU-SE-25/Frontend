@@ -63,8 +63,6 @@ export default function CreateStudyGroup({ onClose, onCreated }: Props) {
       maxMembers,
     };
 
-    console.log("payload:", payload);
-
     await createStudyGroup(payload);
 
     alert("스터디 그룹이 성공적으로 생성되었습니다!");
