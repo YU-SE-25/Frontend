@@ -145,6 +145,29 @@ const Row = styled.div`
   margin-top: 8px;
 `;
 
+// 페이지네이션 UI
+const PaginationWrap = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px;
+  gap: 10px;
+`;
+
+const PageButton = styled.button<{ active?: boolean }>`
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+
+  background: ${({ theme, active }) =>
+    active ? theme.focusColor : theme.bgCardColor};
+  color: ${({ theme, active }) => (active ? theme.bgColor : theme.textColor)};
+
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
 export default function UserManagementScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -164,6 +187,11 @@ export default function UserManagementScreen() {
     any | null
   >(null);
 
+  //페이지네이션용
+  const [userPage, setUserPage] = useState(0);
+  const [instructorPage, setInstructorPage] = useState(0);
+  const PAGE_SIZE = 10;
+
   const ROLE_LABEL: Record<string, string> = {
     LEARNER: "회원",
     INSTRUCTOR: "강사",
@@ -182,18 +210,6 @@ export default function UserManagementScreen() {
     // ISO → "2025-12-05 20:16" 로 변환
     return isoString.replace("T", " ").slice(0, 16);
   };
-
-  const selectedUser = useMemo(
-    () => users.find((u) => u.userId === selectedId) ?? null,
-    [users, selectedId]
-  );
-
-  const selectedApplication = useMemo(
-    () =>
-      instructors.find((a) => a.applicationId === selectedApplicationId) ??
-      null,
-    [instructors, selectedApplicationId]
-  );
 
   const filtered = useMemo(() => {
     if (!search.trim()) return users;
@@ -217,6 +233,35 @@ export default function UserManagementScreen() {
         String(a.applicationId).toLowerCase().includes(q)
     );
   }, [instructorSearch, instructors]);
+
+  //페이지네이션용
+  const pagedUsers = filtered.slice(
+    userPage * PAGE_SIZE,
+    (userPage + 1) * PAGE_SIZE
+  );
+
+  const totalUserPages = Math.ceil(filtered.length / PAGE_SIZE);
+
+  const pagedInstructors = filteredInstructors.slice(
+    instructorPage * PAGE_SIZE,
+    (instructorPage + 1) * PAGE_SIZE
+  );
+
+  const totalInstructorPages = Math.ceil(
+    filteredInstructors.length / PAGE_SIZE
+  );
+
+  const selectedUser = useMemo(
+    () => users.find((u) => u.userId === selectedId) ?? null,
+    [users, selectedId]
+  );
+
+  const selectedApplication = useMemo(
+    () =>
+      instructors.find((a) => a.applicationId === selectedApplicationId) ??
+      null,
+    [instructors, selectedApplicationId]
+  );
 
   const isDisabledUser = !selectedUser;
   const isDisabledInstructor = !selectedApplication;
@@ -322,7 +367,7 @@ export default function UserManagementScreen() {
       alert("포트폴리오 파일을 다운로드하는 중 오류가 발생했습니다.");
     }
   };
-
+  /*
   const openPortfolioLink = async () => {
     if (!selectedApplication) return;
 
@@ -343,6 +388,7 @@ export default function UserManagementScreen() {
 
     window.open(link, "_blank");
   };
+  */
 
   const blacklistUser = async () => {
     if (!selectedUser) return;
@@ -377,7 +423,7 @@ export default function UserManagementScreen() {
       alert("블랙리스트 추가 중 오류가 발생했습니다.");
     }
   };
-
+  /*
   const removeUser = () => {
     if (!selectedUser) return;
     if (!window.confirm("정말 제거하시겠습니까?")) return;
@@ -385,6 +431,7 @@ export default function UserManagementScreen() {
     setUsers((prev) => prev.filter((u) => u.userId !== selectedUser.userId));
     setSelectedId(null);
   };
+  */
 
   const changeRoleTo = async (nextRole: Role) => {
     if (!selectedUser) return;
@@ -496,7 +543,7 @@ export default function UserManagementScreen() {
           </Thead>
 
           <tbody>
-            {filtered.length === 0 && (
+            {pagedUsers.length === 0 && (
               <tr>
                 <Td colSpan={4} style={{ textAlign: "center", opacity: 0.5 }}>
                   검색 결과 없음
@@ -504,7 +551,7 @@ export default function UserManagementScreen() {
               </tr>
             )}
 
-            {filtered.map((u) => (
+            {pagedUsers.map((u) => (
               <>
                 <Tr
                   key={u.userId}
@@ -546,6 +593,33 @@ export default function UserManagementScreen() {
           </tbody>
         </Table>
       </TableWrap>
+      <PaginationWrap>
+        <PageButton
+          onClick={() => setUserPage((p) => Math.max(0, p - 1))}
+          disabled={userPage === 0}
+        >
+          〈
+        </PageButton>
+
+        {Array.from({ length: totalUserPages }).map((_, i) => (
+          <PageButton
+            key={i}
+            active={i === userPage}
+            onClick={() => setUserPage(i)}
+          >
+            {i + 1}
+          </PageButton>
+        ))}
+
+        <PageButton
+          onClick={() =>
+            setUserPage((p) => Math.min(totalUserPages - 1, p + 1))
+          }
+          disabled={userPage >= totalUserPages - 1}
+        >
+          〉
+        </PageButton>
+      </PaginationWrap>
 
       <SectionTitle>강사 신청 목록</SectionTitle>
       <TopBar>
@@ -590,7 +664,7 @@ export default function UserManagementScreen() {
             </tr>
           </Thead>
           <tbody>
-            {filteredInstructors.length === 0 && (
+            {pagedInstructors.length === 0 && (
               <tr>
                 <Td colSpan={5} style={{ textAlign: "center", opacity: 0.5 }}>
                   강사 신청 내역 없음
@@ -598,7 +672,7 @@ export default function UserManagementScreen() {
               </tr>
             )}
 
-            {filteredInstructors.map((a) => (
+            {pagedInstructors.map((a) => (
               <>
                 <Tr
                   key={a.applicationId}
@@ -661,14 +735,6 @@ export default function UserManagementScreen() {
                         <div style={{ margin: "12px 0" }}>
                           <strong>포트폴리오 링크:</strong>{" "}
                           {selectedApplicationDetail.portfolioLinks ?? "없음"}
-                          {selectedApplicationDetail.portfolioLinks && (
-                            <ActionButton
-                              style={{ marginLeft: "12px" }}
-                              onClick={openPortfolioLink}
-                            >
-                              링크 열기
-                            </ActionButton>
-                          )}
                         </div>
                       </InstructorDetailBox>
                     </InstructorDetailRow>
@@ -678,6 +744,33 @@ export default function UserManagementScreen() {
           </tbody>
         </Table>
       </TableWrap>
+      <PaginationWrap>
+        <PageButton
+          onClick={() => setInstructorPage((p) => Math.max(0, p - 1))}
+          disabled={instructorPage === 0}
+        >
+          〈
+        </PageButton>
+
+        {Array.from({ length: totalInstructorPages }).map((_, i) => (
+          <PageButton
+            key={i}
+            active={i === instructorPage}
+            onClick={() => setInstructorPage(i)}
+          >
+            {i + 1}
+          </PageButton>
+        ))}
+
+        <PageButton
+          onClick={() =>
+            setInstructorPage((p) => Math.min(totalInstructorPages - 1, p + 1))
+          }
+          disabled={instructorPage >= totalInstructorPages - 1}
+        >
+          〉
+        </PageButton>
+      </PaginationWrap>
     </Wrap>
   );
 }

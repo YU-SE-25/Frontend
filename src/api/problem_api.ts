@@ -299,3 +299,17 @@ export async function registerProblem(formData: FormData): Promise<number> {
   );
   return res.data.problemId;
 }
+
+//문제 삭제
+
+// 문제 삭제 API
+export interface ProblemDeleteResponse {
+  message: string;
+}
+
+export async function deleteProblem(
+  problemId: number
+): Promise<ProblemDeleteResponse> {
+  const res = await api.delete<ProblemDeleteResponse>(`/problems/${problemId}`);
+  return res.data;
+}

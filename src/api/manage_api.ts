@@ -133,10 +133,11 @@ export async function rejectProblem(
   problemId: number
 ): Promise<MessageResponseDto> {
   const res = await api.put<MessageResponseDto>(
-    `/admin/page/problems/${problemId}/reject`
+    `/problems/${problemId}/reject`
   );
   return res.data;
 }
+
 export async function fetchInstructorApplicationDetail(
   applicationId: number
 ): Promise<InstructorApplicationDetail> {
