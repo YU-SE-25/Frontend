@@ -758,24 +758,22 @@ export default function EditPage() {
 
   //탈퇴 요청
   const handleWithdraw = async () => {
-    if (!withdrawPassword.trim()) {
-      setWithdrawError("비밀번호를 입력해주세요.");
-      return;
-    }
-
     try {
-      await withdrawAccount(withdrawPassword);
+      await withdrawAccount(withdrawPassword.trim() || undefined);
 
       alert("회원 탈퇴가 완료되었습니다.");
 
-      // 토큰 제거
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
 
-      // 메인으로 보내기
       window.location.href = "/";
     } catch (err) {
-      setWithdrawError("비밀번호가 올바르지 않습니다.");
+      // 일반 로그인인데 비밀번호 틀렸을 때만 이 에러 뜸
+      if (withdrawPassword.trim()) {
+        setWithdrawError("비밀번호가 올바르지 않습니다.");
+      } else {
+        setWithdrawError("탈퇴에 실패했어요.");
+      }
     }
   };
 
@@ -1134,7 +1132,8 @@ export default function EditPage() {
           >
             <h3>정말 탈퇴하시겠어요?</h3>
             <p style={{ fontSize: "14px", opacity: 0.8 }}>
-              탈퇴를 위해 비밀번호를 입력해주세요.
+              탈퇴를 위해 비밀번호를 입력해주세요. 소셜 회원은 입력란을
+              비워두세요.
             </p>
 
             <input

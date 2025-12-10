@@ -746,9 +746,10 @@ export default function QnaDetail({ post }: QnaDetailProps) {
                                       {rAuthor}
                                     </strong>{" "}
                                     · {rDate}
+                                    {renderCommentLikeButton(r)} · {rDate}
                                     {renderCommentLikeButton(r)}
                                     <ReportButton
-                                      targetContentId={c.comment_id}
+                                      targetContentId={r.comment_id}
                                       targetContentType="QNA_COMMENT"
                                       onManagerDelete={() =>
                                         handleDeleteComment(c.comment_id)

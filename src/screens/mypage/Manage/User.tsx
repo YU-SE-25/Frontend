@@ -107,6 +107,18 @@ const Td = styled.td`
   border-top: 1px solid ${({ theme }) => theme.bgCardColor};
   color: ${({ theme }) => theme.textColor};
 `;
+//유저용 아코디언
+const UserDetailRow = styled.tr`
+  background: ${({ theme }) => theme.bgColor};
+`;
+
+const UserDetailBox = styled.td`
+  padding: 16px 20px;
+  border-top: 1px solid ${({ theme }) => theme.muteColor};
+  background: ${({ theme }) => theme.bgCardColor};
+  color: ${({ theme }) => theme.textColor};
+  font-size: 18px;
+`;
 
 export default function UserManagementScreen() {
   const [users, setUsers] = useState<any[]>([]);
@@ -281,6 +293,27 @@ export default function UserManagementScreen() {
     }
   };
 
+  const openPortfolioLink = async () => {
+    if (!selectedApplication) return;
+
+    let detail = selectedApplicationDetail;
+
+    if (!detail || detail.applicationId !== selectedApplication.applicationId) {
+      detail = await fetchInstructorApplicationDetail(
+        selectedApplication.applicationId
+      );
+      setSelectedApplicationDetail(detail);
+    }
+
+    const link = detail?.portfolioLink;
+    if (!link) {
+      alert("포트폴리오 링크가 없습니다.");
+      return;
+    }
+
+    window.open(link, "_blank");
+  };
+
   const blacklistUser = async () => {
     if (!selectedUser) return;
 
@@ -411,16 +444,47 @@ export default function UserManagementScreen() {
             )}
 
             {filtered.map((u) => (
-              <Tr
-                key={u.userId}
-                selected={selectedId === u.userId}
-                onClick={() => handleSelect(u.userId)}
-              >
-                <Td>{u.userId}</Td>
-                <Td>{u.nickname}</Td>
-                <Td>{ROLE_LABEL[u.role]}</Td>
-                <Td>{u.createdAt}</Td>
-              </Tr>
+              <>
+                <Tr
+                  key={u.userId}
+                  selected={selectedId === u.userId}
+                  onClick={() =>
+                    setSelectedId((prev) =>
+                      prev === u.userId ? null : u.userId
+                    )
+                  }
+                >
+                  <Td>{u.userId}</Td>
+                  <Td>{u.nickname}</Td>
+                  <Td>{ROLE_LABEL[u.role]}</Td>
+                  <Td>{u.createdAt}</Td>
+                </Tr>
+
+                {selectedId === u.userId && (
+                  <UserDetailRow>
+                    <UserDetailBox colSpan={4}>
+                      <div style={{ marginBottom: "8px" }}>
+                        <strong>이름:</strong> {u.name}
+                      </div>
+                      <div style={{ marginBottom: "8px" }}>
+                        <strong>이메일:</strong> {u.email}
+                      </div>
+                      <div style={{ marginBottom: "8px" }}>
+                        <strong>전화번호:</strong> {u.phone}
+                      </div>
+                      <div style={{ marginBottom: "8px" }}>
+                        <strong>닉네임:</strong> {u.nickname}
+                      </div>
+                      <div style={{ marginBottom: "8px" }}>
+                        <strong>역할:</strong> {ROLE_LABEL[u.role]}
+                      </div>
+                      <div>
+                        <strong>가입일:</strong> {u.createdAt.split("T")[0]}
+                      </div>
+                    </UserDetailBox>
+                  </UserDetailRow>
+                )}
+              </>
             ))}
           </tbody>
         </Table>
@@ -440,12 +504,24 @@ export default function UserManagementScreen() {
           >
             강사 정보보기
           </ActionButton>
-          <ActionButton
-            onClick={downloadPortfolio}
-            disabled={isDisabledInstructor}
-          >
-            포트폴리오 다운로드
-          </ActionButton>
+
+          {selectedApplicationDetail?.portfolioLink && (
+            <ActionButton
+              onClick={openPortfolioLink}
+              disabled={isDisabledInstructor}
+            >
+              포트폴리오 링크 열기
+            </ActionButton>
+          )}
+
+          {selectedApplicationDetail?.portfolioFileUrl && (
+            <ActionButton
+              onClick={downloadPortfolio}
+              disabled={isDisabledInstructor}
+            >
+              포트폴리오 파일 다운로드
+            </ActionButton>
+          )}
         </ButtonGroup>
       </TopBar>
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Outlet } from "react-router-dom";
+import { userProfileAtom } from "../../atoms";
+import { useAtom } from "jotai";
 
 import {
   Wrapper,
@@ -32,6 +34,7 @@ export default function StudyGroupDetailPage() {
   const navigate = useNavigate();
   const { groupId } = useParams();
   const numericId = Number(groupId);
+  const [userProfile] = useAtom(userProfileAtom);
 
   // 그룹 상세 데이터
   const [group, setGroup] = useState<StudyGroupDetail | null>(null);
@@ -98,7 +101,21 @@ export default function StudyGroupDetailPage() {
                 <MemberItem
                   key={m.groupMemberId}
                   isLeader={m.role?.toUpperCase() === "LEADER"}
-                  isSelf={false}
+                  isSelf={m.userName === userProfile?.nickname}
+                  onClick={() => {
+                    const target = m.userName;
+                    const myName = userProfile?.nickname;
+
+                    // 자기 자신이면 내 마이페이지 이동
+                    if (target === myName) {
+                      navigate(`/mypage/${myName}`);
+                    }
+                    // 아니면 해당 유저 마이페이지로 이동
+                    else {
+                      navigate(`/mypage/${target}`);
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
                 >
                   {m.role?.toUpperCase() === "LEADER"
                     ? `그룹장: ${m.userName}`

@@ -277,3 +277,17 @@ export const ViewCodeButton = styled.button`
     background-color: ${(props) => props.theme.authActiveBgColor};
   }
 `;
+
+//문제 상세 위쪽 버튼들
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+`;
+
+export const SmallButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+`;
+

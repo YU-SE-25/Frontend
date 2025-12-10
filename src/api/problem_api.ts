@@ -22,6 +22,7 @@ export interface ProblemDetailDto {
   createdByNickname: string;
   title: string;
   description: string;
+  summary: string | null;
   inputOutputExample: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";
   timeLimit: number;
@@ -119,7 +120,7 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
   return {
     problemId: dto.problemId,
     title: dto.title,
-    tags: dto.tags,
+    tags: dto.tags?.map((t) => TAG_LABEL_MAP[t] ?? t),
     difficulty: dto.difficulty,
     viewCount: dto.viewCount,
     createdAt: dto.createdAt.slice(0, 10),
@@ -132,7 +133,7 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
     visibility: dto.visibility,
     hint: dto.hint,
     source: dto.source,
-    summary: dto.description.slice(0, 50) + "...",
+    summary: dto.summary ?? undefined,
     solvedCount: dto.acceptedSubmissions,
     successRate: dto.acceptanceRate + "%",
 
@@ -251,6 +252,7 @@ export async function fetchSimpleProblems(): Promise<SimpleProblem[]> {
 export interface ProblemEditDetail {
   problemId: number;
   title: string;
+  summary: string;
   description: string;
   inputOutputExample: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";

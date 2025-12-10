@@ -3,6 +3,8 @@ import styled from "styled-components";
 import CodePreview from "./CodePreview";
 import { timeConverter } from "../../../utils/timeConverter";
 import { isOwner } from "../../../utils/isOwner";
+import { useNavigate } from "react-router-dom";
+
 import {
   createReview,
   createReviewComment,
@@ -254,6 +256,12 @@ export default function ReviewSection({
   const codeLines = code.split("\n");
   const getLineContent = (lineNumber: number) =>
     codeLines[lineNumber - 1] ?? "";
+
+  const navigate = useNavigate();
+  const goMypage = (username: string) => () => {
+    if (!username || username === "익명") return;
+    navigate(`/mypage/${username}`);
+  };
 
   // ======================
   // 리뷰 펼치기 + 댓글 로딩
@@ -542,7 +550,13 @@ export default function ReviewSection({
                         </CommentActionButton>
                       </>
                     )}
-                    {review.author} · {timeConverter(review.createdAt)}
+                    <span
+                      onClick={goMypage(review.author)}
+                      style={{ cursor: "pointer", fontWeight: 600 }}
+                    >
+                      {review.author}
+                    </span>
+                    {" · " + timeConverter(review.createdAt)}
                   </ReviewMeta>
                 </ReviewTopRow>
 
@@ -563,7 +577,14 @@ export default function ReviewSection({
                         {review.comments.map((c) => (
                           <CommentItem key={c.id}>
                             <CommentMeta>
-                              {c.author} · {timeConverter(c.createdAt)}
+                              <span
+                                onClick={goMypage(c.author)}
+                                style={{ cursor: "pointer", fontWeight: 600 }}
+                              >
+                                {c.author}
+                              </span>
+                              {" · " + timeConverter(c.createdAt)}
+
                               {isOwner(c) && (
                                 <>
                                   <CommentActionButton

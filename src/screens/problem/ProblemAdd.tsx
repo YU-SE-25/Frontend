@@ -42,6 +42,7 @@ export default function ProblemAdd() {
 
   const [form, setForm] = useState({
     title: "",
+    summary: "",
     description: "",
     inputOutputExample: "",
     timeLimit: "",
@@ -75,6 +76,7 @@ export default function ProblemAdd() {
 
       setForm({
         title: data.title,
+        summary: data.summary ?? "",
         description: data.description,
         inputOutputExample: data.inputOutputExample,
         difficulty: data.difficulty,
@@ -93,6 +95,7 @@ export default function ProblemAdd() {
   const isValid = useMemo(() => {
     return (
       form.title.trim() &&
+      form.summary.trim() &&
       form.description.trim() &&
       form.inputOutputExample.trim() &&
       form.timeLimit &&
@@ -116,6 +119,7 @@ export default function ProblemAdd() {
     }
     const payload = {
       title: form.title,
+      summary: form.summary,
       description: form.description,
       inputOutputExample: form.inputOutputExample,
       difficulty: form.difficulty,
@@ -247,14 +251,22 @@ export default function ProblemAdd() {
           <SectionTitle>문제 설명</SectionTitle>
 
           <InputGroup>
+            <Label>문제 요약</Label>
+            <StyledTextArea
+              value={form.summary}
+              onChange={(e) => setForm({ ...form, summary: e.target.value })}
+              placeholder="이 문제를 간단히 요약해주세요. (최대 255자)"
+              maxLength={255}
+            />
+          </InputGroup>
+
+          <InputGroup>
             <Label>설명</Label>
             <StyledTextArea
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder="문제 설명은 100자 이내로 입력해주세요." // ← 추가!
-              maxLength={100} // ← 추가!
             />
           </InputGroup>
 
