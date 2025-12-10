@@ -178,6 +178,49 @@ const DetailContent = styled.p`
   color: ${({ theme }) => theme.textColor};
 `;
 
+//유저 정보 아코디언
+const BlackUserDetailRow = styled.tr`
+  background: ${({ theme }) => theme.bgColor};
+`;
+
+const BlackUserDetailBox = styled.td`
+  padding: 16px 20px;
+  border-top: 1px solid ${({ theme }) => theme.muteColor};
+  background: ${({ theme }) => theme.bgCardColor};
+  color: ${({ theme }) => theme.textColor};
+  font-size: 16px;
+  white-space: pre-wrap;
+`;
+
+// 페이지네이션 UI
+const PaginationWrapper = styled.div`
+  display: flex;
+  justify-content: center; /* 가운데 정렬 */
+  margin-top: 8px;
+`;
+
+const PaginationBar = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+`;
+
+const PageButton = styled.button<{ disabled?: boolean; active?: boolean }>`
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
+  color: ${({ theme, disabled }) =>
+    disabled ? theme.muteColor : theme.textColor};
+
+  &:hover {
+    text-decoration: ${({ disabled }) => (disabled ? "none" : "underline")};
+  }
+`;
+
 /* -----------------------------------------------------
    Component Logic
 ----------------------------------------------------- */
@@ -197,8 +240,23 @@ export default function ReportManagementScreen() {
   const [selectedReportDetail, setSelectedReportDetail] =
     useState<AdminReportDetailDto | null>(null);
 
+  const [openBlacklistAccordionId, setOpenBlacklistAccordionId] = useState<
+    number | null
+  >(null);
+
   const isReportCategory = category === "REPORT";
   const isBlacklistCategory = category === "BLACKLIST";
+
+  //페이지네이션용
+  const [reportPage, setReportPage] = useState(0);
+  const [blacklistPage, setBlacklistPage] = useState(0);
+  const PAGE_SIZE = 10;
+
+  // 날짜 + 시간까지만 표시
+  const formatDateTime = (iso: string) => {
+    if (!iso) return "-";
+    return iso.replace("T", " ").slice(0, 16); // yyyy-MM-dd HH:mm
+  };
 
   const selectedReport = useMemo(
     () => reportList.find((r) => r.id === selectedReportId) ?? null,
@@ -320,6 +378,8 @@ export default function ReportManagementScreen() {
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
+    setReportPage(0);
+    setBlacklistPage(0);
     setSelectedReportId(null);
     setSelectedBlacklistId(null);
     setSelectedReportDetail(null);
@@ -331,11 +391,16 @@ export default function ReportManagementScreen() {
       setSelectedReportId((prev) => (prev === id ? null : id));
       setSelectedBlacklistId(null);
     } else {
-      setSelectedBlacklistId((prev) => (prev === id ? null : id));
-      setSelectedReportId(null);
-      setSelectedReportDetail(null);
-      setDetailError(null);
+      setSelectedBlacklistId(id); // 선택 표시만
     }
+  };
+
+  const toggleBlacklistAccordion = () => {
+    if (!selectedBlacklistUser) return;
+
+    setOpenBlacklistAccordionId((prev) =>
+      prev === selectedBlacklistUser.id ? null : selectedBlacklistUser.id
+    );
   };
 
   const handleResolveReport = async () => {
@@ -371,13 +436,14 @@ export default function ReportManagementScreen() {
       alert("신고 접수 중 오류가 발생했습니다.");
     }
   };
-
+  /*
   const handleCopyUserInfo = async () => {
     if (!selectedBlacklistUser) return;
     const text = JSON.stringify(selectedBlacklistUser, null, 2);
     await navigator.clipboard.writeText(text);
     alert("유저 정보가 클립보드에 복사되었습니다!");
   };
+  */
 
   const handleUnblacklist = async () => {
     if (!selectedBlacklistUser) return;
@@ -421,8 +487,22 @@ export default function ReportManagementScreen() {
     selectedReport?.content ??
     "";
 
+  //페이지네이션용
+  const pagedReports = filteredReports.slice(
+    reportPage * PAGE_SIZE,
+    (reportPage + 1) * PAGE_SIZE
+  );
+  const pagedBlacklist = filteredBlacklist.slice(
+    blacklistPage * PAGE_SIZE,
+    (blacklistPage + 1) * PAGE_SIZE
+  );
+
+  const totalReportPages = Math.ceil(filteredReports.length / PAGE_SIZE);
+  const totalBlacklistPages = Math.ceil(filteredBlacklist.length / PAGE_SIZE);
+
   return (
     <Wrap>
+      {/* 카테고리 영역 */}
       <CategoryBar>
         <CategoryButton
           $active={isReportCategory}
@@ -430,6 +510,7 @@ export default function ReportManagementScreen() {
         >
           신고 내역
         </CategoryButton>
+
         <CategoryButton
           $active={isBlacklistCategory}
           onClick={() => handleCategoryChange("BLACKLIST")}
@@ -438,6 +519,7 @@ export default function ReportManagementScreen() {
         </CategoryButton>
       </CategoryBar>
 
+      {/* 검색 + 상단 버튼 */}
       <TopBar>
         <SearchInput
           value={search}
@@ -462,11 +544,12 @@ export default function ReportManagementScreen() {
           {isBlacklistCategory && (
             <>
               <ActionButton
-                onClick={handleCopyUserInfo}
+                onClick={toggleBlacklistAccordion}
                 disabled={isInfoDisabled}
               >
                 유저 정보보기
               </ActionButton>
+
               <ActionButton
                 onClick={handleUnblacklist}
                 disabled={isUnblacklistDisabled}
@@ -494,7 +577,6 @@ export default function ReportManagementScreen() {
                 <Th>유저 아이디</Th>
                 <Th>유저 닉네임</Th>
                 <Th>유저 역할</Th>
-                <Th>가입 일자</Th>
                 <Th>블랙된 일자</Th>
               </tr>
             )}
@@ -509,7 +591,7 @@ export default function ReportManagementScreen() {
                   </Td>
                 </tr>
               ) : (
-                filteredReports.map((r) => (
+                pagedReports.map((r) => (
                   <Tr
                     key={r.id}
                     selected={selectedReportId === r.id}
@@ -534,23 +616,110 @@ export default function ReportManagementScreen() {
                   </Td>
                 </tr>
               ) : (
-                filteredBlacklist.map((u) => (
-                  <Tr
-                    key={u.id}
-                    selected={selectedBlacklistId === u.id}
-                    onClick={() => handleSelectRow(u.id)}
-                  >
-                    <Td>{u.userId}</Td>
-                    <Td>{u.nickname}</Td>
-                    <Td>{ROLE_LABEL[u.role]}</Td>
-                    <Td>{u.joinedAt}</Td>
-                    <Td>{u.blacklistedAt}</Td>
-                  </Tr>
+                pagedBlacklist.map((u) => (
+                  <>
+                    <Tr
+                      key={u.id}
+                      selected={selectedBlacklistId === u.id}
+                      onClick={() => handleSelectRow(u.id)}
+                    >
+                      <Td>{u.userId}</Td>
+                      <Td>{u.nickname}</Td>
+                      <Td>{ROLE_LABEL[u.role]}</Td>
+                      <Td>{formatDateTime(u.blacklistedAt)}</Td>
+                    </Tr>
+
+                    {openBlacklistAccordionId === u.id && (
+                      <BlackUserDetailRow>
+                        <BlackUserDetailBox colSpan={5}>
+                          <div>
+                            <strong>유저 ID:</strong> {u.userId}
+                          </div>
+                          <div>
+                            <strong>닉네임:</strong> {u.nickname}
+                          </div>
+                          <div>
+                            <strong>역할:</strong> {ROLE_LABEL[u.role]}
+                          </div>
+                          <div>
+                            <strong>블랙리스트 등록일:</strong>{" "}
+                            {u.blacklistedAt}
+                          </div>
+                        </BlackUserDetailBox>
+                      </BlackUserDetailRow>
+                    )}
+                  </>
                 ))
               ))}
           </tbody>
         </Table>
       </TableWrap>
+
+      {isReportCategory && (
+        <PaginationWrapper>
+          <PaginationBar>
+            <PageButton
+              onClick={() => setReportPage((p) => Math.max(0, p - 1))}
+              disabled={reportPage === 0}
+            >
+              〈
+            </PageButton>
+
+            {Array.from({ length: totalReportPages }).map((_, i) => (
+              <PageButton
+                key={i}
+                active={i === reportPage}
+                onClick={() => setReportPage(i)}
+              >
+                {i + 1}
+              </PageButton>
+            ))}
+
+            <PageButton
+              onClick={() =>
+                setReportPage((p) => Math.min(totalReportPages - 1, p + 1))
+              }
+              disabled={reportPage >= totalReportPages - 1}
+            >
+              〉
+            </PageButton>
+          </PaginationBar>
+        </PaginationWrapper>
+      )}
+
+      {isBlacklistCategory && (
+        <PaginationWrapper>
+          <PaginationBar>
+            <PageButton
+              onClick={() => setBlacklistPage((p) => Math.max(0, p - 1))}
+              disabled={blacklistPage === 0}
+            >
+              〈
+            </PageButton>
+
+            {Array.from({ length: totalBlacklistPages }).map((_, i) => (
+              <PageButton
+                key={i}
+                active={i === blacklistPage}
+                onClick={() => setBlacklistPage(i)}
+              >
+                {i + 1}
+              </PageButton>
+            ))}
+
+            <PageButton
+              onClick={() =>
+                setBlacklistPage((p) =>
+                  Math.min(totalBlacklistPages - 1, p + 1)
+                )
+              }
+              disabled={blacklistPage >= totalBlacklistPages - 1}
+            >
+              〉
+            </PageButton>
+          </PaginationBar>
+        </PaginationWrapper>
+      )}
 
       {isReportCategory && selectedReport && (
         <DetailPanel>

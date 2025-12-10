@@ -45,6 +45,7 @@ export default function ActivityTab() {
   useEffect(() => {
     const load = async () => {
       const data = await fetchActivityLogs(groupId);
+      console.log("Activity response:", data);
 
       const logsArray = [...(data.content ?? [])];
 

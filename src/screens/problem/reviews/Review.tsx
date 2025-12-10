@@ -435,6 +435,8 @@ export default function ReviewSection({
 
     // 2) 최신 리뷰 목록 다시 불러오기
     const res = await fetchReviewsBySubmission(submissionId);
+    // 혹시 디버깅용으로 한 번 보려면:
+    // console.log("after createReview:", res);
 
     // 3) Review[] 형태로 매핑
     const mapped: Review[] = res.reviews.map((r) => ({

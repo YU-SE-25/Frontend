@@ -22,6 +22,7 @@ export interface ProblemDetailDto {
   createdByNickname: string;
   title: string;
   description: string;
+  summary: string | null;
   inputOutputExample: string;
   difficulty: "EASY" | "MEDIUM" | "HARD";
   timeLimit: number;
@@ -98,13 +99,6 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
       ? "ATTEMPTED"
       : "NOT_SOLVED";
 
-  const successRate =
-    dto.correctRate === null ||
-    dto.correctRate === undefined ||
-    isNaN(dto.correctRate)
-      ? "-"
-      : Math.round(dto.correctRate * 100) + "%";
-
   return {
     problemId: dto.problemId,
     title: dto.title,
@@ -115,7 +109,7 @@ export function mapListDtoToProblem(dto: ProblemListItemDto): IProblem {
 
     summary: dto.summary,
     solvedCount: dto.solverCount,
-    successRate,
+    successRate: Math.round(dto.correctRate * 100) + "%",
 
     userStatus: mappedStatus,
   };
@@ -139,7 +133,7 @@ export function mapDetailDtoToProblem(dto: ProblemDetailDto): IProblem {
     visibility: dto.visibility,
     hint: dto.hint,
     source: dto.source,
-    summary: dto.description.slice(0, 50) + "...",
+    summary: dto.summary ?? undefined,
     solvedCount: dto.acceptedSubmissions,
     successRate: dto.acceptanceRate + "%",
 
@@ -290,7 +284,7 @@ export async function updateProblem(
   problemId: number,
   formData: FormData
 ): Promise<number> {
-  const res = await api.patch<ProblemCreateResponse>(
+  const res = await api.put<ProblemCreateResponse>(
     `/problems/${problemId}`,
     formData
   );
@@ -304,4 +298,18 @@ export async function registerProblem(formData: FormData): Promise<number> {
     formData
   );
   return res.data.problemId;
+}
+
+//문제 삭제
+
+// 문제 삭제 API
+export interface ProblemDeleteResponse {
+  message: string;
+}
+
+export async function deleteProblem(
+  problemId: number
+): Promise<ProblemDeleteResponse> {
+  const res = await api.delete<ProblemDeleteResponse>(`/problems/${problemId}`);
+  return res.data;
 }

@@ -9,40 +9,45 @@ interface Props {
   extraId?: number;
 }
 
+const REPORT_TYPES = ["욕설/비방", "광고/도배", "저작권 침해", "기타"] as const;
+
 export default function ReportModal({
   targetContentId,
   targetContentType,
   onClose,
   extraId,
 }: Props) {
-  const [reportType, setReportType] = useState("");
-  const [reason, setReason] = useState("");
+  const [reportType, setReportType] = useState<string>("");
+  const [customReason, setCustomReason] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const isCustom = reportType === "기타";
 
   const handleSubmit = async () => {
     if (!reportType) {
       alert("신고 유형을 선택해주세요.");
       return;
     }
-    if (!reason.trim()) {
-      alert("상세 사유를 입력해주세요.");
-      return;
+
+    let finalReason = "";
+
+    if (isCustom) {
+      if (!customReason.trim()) {
+        alert("기타 사유를 입력해주세요.");
+        return;
+      }
+      finalReason = `기타: ${customReason.trim()}`;
+    } else {
+      finalReason = reportType; // 기본 사유 그대로
     }
-
-    const trimmedReason = reason.trim();
-
-    const fullReason = `[${reportType}] ${trimmedReason}`;
-
-    const baseTitle = `[${reportType}] ${trimmedReason}`;
-    const title = baseTitle.length > 20 ? baseTitle.slice(0, 20) : baseTitle;
 
     try {
       setLoading(true);
+
       await createReport({
         targetContentType,
         targetContentId,
-        title,
-        reason: fullReason,
+        reason: finalReason,
         extraId,
       });
 
@@ -50,7 +55,7 @@ export default function ReportModal({
       onClose();
     } catch (error) {
       console.error(error);
-      alert("전송 실패. 다시 시도해주세요.");
+      alert("신고 전송 실패. 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
@@ -67,18 +72,23 @@ export default function ReportModal({
           onChange={(e) => setReportType(e.target.value)}
         >
           <option value="">선택해주세요</option>
-          <option value="욕설/비방">욕설/비방</option>
-          <option value="광고/도배">광고/도배</option>
-          <option value="저작권 침해">저작권 침해</option>
-          <option value="기타">기타</option>
+          {REPORT_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </StyledSelect>
 
-        <Label>상세 사유</Label>
-        <StyledTextarea
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="신고 사유를 입력해주세요."
-        />
+        {isCustom && (
+          <>
+            <Label>상세 사유</Label>
+            <StyledTextarea
+              value={customReason}
+              onChange={(e) => setCustomReason(e.target.value)}
+              placeholder="사유를 입력해주세요."
+            />
+          </>
+        )}
 
         <ButtonRow>
           <CancelBtn onClick={onClose} disabled={loading}>
@@ -92,7 +102,7 @@ export default function ReportModal({
     </Overlay>
   );
 }
-//css
+
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
@@ -111,7 +121,6 @@ const Modal = styled.div`
   border-radius: 14px;
   border: 1px solid ${({ theme }) => theme.textColor}33;
   box-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
-
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -120,12 +129,10 @@ const Modal = styled.div`
 const Title = styled.h3`
   margin: 0;
   font-size: 20px;
-  color: ${({ theme }) => theme.textColor};
 `;
 
 const Label = styled.label`
   font-size: 14px;
-  color: ${({ theme }) => theme.textColor};
 `;
 
 const StyledSelect = styled.select`
@@ -142,7 +149,6 @@ const StyledTextarea = styled.textarea`
   resize: none;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.textColor}44;
-
   background: ${({ theme }) => theme.bgColor};
   color: ${({ theme }) => theme.textColor};
 `;
@@ -159,10 +165,6 @@ const CancelBtn = styled.button`
   background: ${({ theme }) => theme.headerBgColor};
   color: ${({ theme }) => theme.textColor};
   border: 1px solid ${({ theme }) => theme.textColor}44;
-
-  &:hover {
-    opacity: 0.8;
-  }
 `;
 
 const SubmitBtn = styled.button`
@@ -171,8 +173,4 @@ const SubmitBtn = styled.button`
   background: ${({ theme }) => theme.focusColor};
   color: #000;
   border: none;
-
-  &:hover {
-    filter: brightness(0.93);
-  }
 `;

@@ -133,10 +133,11 @@ export async function rejectProblem(
   problemId: number
 ): Promise<MessageResponseDto> {
   const res = await api.put<MessageResponseDto>(
-    `/admin/page/problems/${problemId}/reject`
+    `/problems/${problemId}/reject`
   );
   return res.data;
 }
+
 export async function fetchInstructorApplicationDetail(
   applicationId: number
 ): Promise<InstructorApplicationDetail> {
@@ -176,6 +177,7 @@ export async function updateUserRole(
     `/admin/users/${userId}/role`,
     body
   );
+  console.log(res.data);
   return res.data;
 }
 

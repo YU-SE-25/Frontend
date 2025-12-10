@@ -19,8 +19,6 @@ import {
   BridgeSection,
 } from "../theme/Home.Style";
 
-import { useNavigate } from "react-router-dom";
-
 import {
   getProblemRanking,
   getReputationRanking,
@@ -30,14 +28,15 @@ import {
 const MAIN_TABS = {
   CODE_ANALYSIS: "CODE_ANALYSIS",
   USER_DASHBOARD: "USER_DASHBOARD",
-} as const;
+};
 
 const RANKING_TABS = {
   PROBLEM_VIEWS: "문제 조회수",
   REPUTATION: "평판",
   CODE_REVIEW: "코드 리뷰",
-} as const;
+};
 
+// ⭐ 서버 응답 타입 그대로
 type ProblemItem = {
   rank: number;
   delta: number;
@@ -63,35 +62,11 @@ type ReviewItem = {
   vote: number;
 };
 
-type ProblemRow = {
-  rank: number;
-  title: string;
-  value1: number;
-  value2: number;
-  problemId: number;
-};
-
-type BaseRow = {
-  rank: number;
-  title: string;
-  value1: number;
-  value2: number;
-};
-
-type RankingData =
-  | { category: "problem"; headers: string[]; data: ProblemRow[] }
-  | { category: "reputation"; headers: string[]; data: BaseRow[] }
-  | { category: "review"; headers: string[]; data: BaseRow[] };
-
 export default function HomePage() {
-  const navigate = useNavigate();
-
-  const [activeTab, setActiveTab] = useState<
-    (typeof MAIN_TABS)[keyof typeof MAIN_TABS]
-  >(MAIN_TABS.CODE_ANALYSIS);
-  const [activeRankingTab, setActiveRankingTab] = useState<
-    (typeof RANKING_TABS)[keyof typeof RANKING_TABS]
-  >(RANKING_TABS.PROBLEM_VIEWS);
+  const [activeTab, setActiveTab] = useState(MAIN_TABS.CODE_ANALYSIS);
+  const [activeRankingTab, setActiveRankingTab] = useState(
+    RANKING_TABS.PROBLEM_VIEWS
+  );
 
   const [problemRanking, setProblemRanking] = useState<ProblemItem[]>([]);
   const [reputationRanking, setReputationRanking] = useState<ReputationItem[]>(
@@ -99,16 +74,17 @@ export default function HomePage() {
   );
   const [reviewRanking, setReviewRanking] = useState<ReviewItem[]>([]);
 
+  // ⭐ 메인 렌더 데이터 로딩
   useEffect(() => {
     const load = async () => {
       try {
-        // 문제 조회수 랭킹 (상위 5개만)
+        // 문제 조회수 랭킹
         const problemRes = await getProblemRanking();
         setProblemRanking(problemRes.slice(0, 5));
 
-        // 평판 랭킹 (상위 5개만)
+        // 평판 랭킹
         const repRes = await getReputationRanking();
-        setReputationRanking(repRes.slice(0, 5));
+        setReputationRanking(repRes);
 
         // 리뷰 랭킹
         const reviewRes = await getReviewRanking();
@@ -158,46 +134,45 @@ export default function HomePage() {
     },
   ];
 
-  // 테이블 표현용 구조
-  const renderRankingData = (): RankingData => {
-    if (activeRankingTab === RANKING_TABS.PROBLEM_VIEWS) {
-      return {
-        category: "problem",
-        headers: ["순위", "문제 제목", "총 조회수", "주간 변화량"],
-        data: problemRanking.map((item) => ({
-          rank: item.rank,
-          title: item.title,
-          value1: item.views,
-          value2: item.delta,
-          problemId: item.problemId,
-        })),
-      };
-    }
+  // ⭐ 테이블 표현용 구조
+  const renderRankingData = () => {
+    switch (activeRankingTab) {
+      case RANKING_TABS.PROBLEM_VIEWS:
+        return {
+          headers: ["순위", "문제 제목", "총 조회수", "주간 변화량"],
+          data: problemRanking.map((item) => ({
+            rank: item.rank,
+            title: item.title,
+            value1: item.views,
+            value2: item.delta,
+          })),
+        };
 
-    if (activeRankingTab === RANKING_TABS.REPUTATION) {
-      return {
-        category: "reputation",
-        headers: ["순위", "유저명", "주간 평판 변화", "비고"],
-        data: reputationRanking.map((item) => ({
-          rank: item.ranking,
-          title: item.nickname,
-          value1: item.delta,
-          value2: item.delta,
-        })),
-      };
-    }
+      case RANKING_TABS.REPUTATION:
+        return {
+          headers: ["순위", "유저명", "주간 평판 변화", "비고"],
+          data: reputationRanking.map((item) => ({
+            rank: item.ranking,
+            title: item.nickname,
+            value1: item.delta,
+            value2: item.delta,
+          })),
+        };
 
-    // CODE_REVIEW
-    return {
-      category: "review",
-      headers: ["순위", "작성자", "투표수", "주간 변화량"],
-      data: reviewRanking.slice(0, 5).map((item) => ({
-        rank: item.ranking,
-        title: item.nickname,
-        value1: item.vote,
-        value2: item.delta,
-      })),
-    };
+      case RANKING_TABS.CODE_REVIEW:
+        return {
+          headers: ["순위", "작성자", "투표수", "주간 변화량"],
+          data: reviewRanking.slice(0, 5).map((item) => ({
+            rank: item.ranking,
+            title: item.nickname,
+            value1: item.vote,
+            value2: item.delta,
+          })),
+        };
+
+      default:
+        return { headers: [], data: [] };
+    }
   };
 
   const currentRankingData = renderRankingData();
@@ -287,53 +262,13 @@ export default function HomePage() {
                     순위가 없습니다
                   </td>
                 </tr>
-              ) : currentRankingData.category === "problem" ? (
-                currentRankingData.data.map((row, index) => (
-                  <tr key={index}>
-                    <td>{row.rank}</td>
-                    <td>
-                      <span
-                        style={{
-                          cursor: "pointer",
-                          textDecoration: "none",
-                        }}
-                        onClick={() =>
-                          navigate(`/problem-detail/${row.problemId}`)
-                        }
-                      >
-                        {row.title}
-                      </span>
-                    </td>
-                    <td>{row.value1}</td>
-                    <td>{row.value2}</td>
-                  </tr>
-                ))
-              ) : currentRankingData.category === "reputation" ? (
-                currentRankingData.data.map((row, index) => (
-                  <tr key={index}>
-                    <td>{row.rank}</td>
-                    <td>
-                      <span
-                        style={{
-                          cursor: "pointer",
-                          textDecoration: "none",
-                        }}
-                        onClick={() => navigate(`/mypage/${row.title}`)}
-                      >
-                        {row.title}
-                      </span>
-                    </td>
-                    <td>{row.value1}</td>
-                    <td>{row.value2}</td>
-                  </tr>
-                ))
               ) : (
-                currentRankingData.data.map((row, index) => (
+                currentRankingData.data.map((item, index) => (
                   <tr key={index}>
-                    <td>{row.rank}</td>
-                    <td>{row.title}</td>
-                    <td>{row.value1}</td>
-                    <td>{row.value2}</td>
+                    <td>{item.rank}</td>
+                    <td>{item.title}</td>
+                    <td>{item.value1}</td>
+                    <td>{item.value2}</td>
                   </tr>
                 ))
               )}
