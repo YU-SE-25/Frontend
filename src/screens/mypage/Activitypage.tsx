@@ -11,7 +11,7 @@ type Submission = {
   problemId: number;
   verdict: "AC" | "WA" | "TLE" | "MLE" | "RE";
   runtimeMs?: number;
-  lang?: string;
+  language: string;
   submittedAt: string;
 };
 
@@ -344,7 +344,17 @@ export default function ActivityPage() {
   });
 
   const solvedIds = user?.solvedProblems ?? [];
-  const submissions: Submission[] = user?.recentSubmissions ?? [];
+  const submissions: Submission[] = (user?.recentSubmissions ?? []).map(
+    (s) => ({
+      submissionId: s.submissionId,
+      problemId: s.problemId,
+      verdict: s.verdict,
+      runtimeMs: s.runtimeMs,
+      language: s.language,
+      submittedAt: s.submittedAt,
+    })
+  );
+
   const stat = user?.stats;
   const goal = user?.goals;
   const reminders = user?.reminders;
@@ -499,11 +509,15 @@ export default function ActivityPage() {
         ) : (
           <List>
             {submissions.slice(0, 5).map((s) => (
-              <Item key={s.id} onClick={() => goDetail(s.problemId)}>
+              <Item
+                key={s.submissionId}
+                onClick={() => goSubmissionDetail(s.problemId, s.submissionId)}
+              >
                 <SubmissionInfo>
-                  <Strong>#{s.problemId}</Strong> · {s.lang ?? "—"} ·{" "}
+                  <Strong>#{s.problemId}</Strong> · {s.language} ·{" "}
                   {new Date(s.submittedAt).toLocaleString()}
                 </SubmissionInfo>
+
                 <Pill
                   tone={
                     s.verdict === "AC"

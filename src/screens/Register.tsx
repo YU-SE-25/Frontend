@@ -165,7 +165,6 @@ export default function Register() {
     // 강사일 경우 파일 업로드 먼저 수행
     if (role === "INSTRUCTOR" && portfolioFile) {
       try {
-        console.log("파일 업로드 수행 시작...");
         fileUploadResult = await uploadPortfolio(portfolioFile);
         // fileUploadResult = { fileUrl, originalFileName, fileSize }
       } catch (err) {
@@ -199,8 +198,6 @@ export default function Register() {
 
     // 5. 최종 회원가입 (/auth/register)
     try {
-      console.log("5. 최종 회원가입 요청 전송...");
-
       // register 응답 받기 (userId 꺼내야 함!)
       const registerRes = (await AuthAPI.register(registerData)) as {
         data: { userId: number };
@@ -210,7 +207,6 @@ export default function Register() {
       localStorage.setItem("regEmail", email);
 
       // 6. 이메일 인증 링크 발송 (/auth/email/send-link)
-      console.log("6. 이메일 인증 링크 발송 요청...");
       await AuthAPI.sendEmailVerify(email);
 
       navigate("/register-success");

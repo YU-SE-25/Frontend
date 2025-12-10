@@ -56,8 +56,9 @@ export default function ProblemAdd() {
   const [tags, setTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [errorMessage, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  /** 태그 목록 불러오기 (더미 제거) */
+  /** 태그 목록 불러오기 */
   useEffect(() => {
     const load = async () => {
       const fetched = await fetchAvailableTags();
@@ -107,16 +108,20 @@ export default function ProblemAdd() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     if (!isValid) {
       setError("필수 항목을 모두 입력해야 합니다.");
+      setLoading(false);
       return;
     }
 
     if (!isEdit && !fileRef.current?.files?.[0]) {
       setError("테스트케이스 파일은 필수입니다.");
+      setLoading(false);
       return;
     }
+
     const payload = {
       title: form.title,
       summary: form.summary,
@@ -133,16 +138,16 @@ export default function ProblemAdd() {
 
     const formData = new FormData();
 
-    // 'data' 파트
     formData.append(
       "data",
       new Blob([JSON.stringify(payload)], { type: "application/json" })
     );
 
-    // 파일
     const selectedFile = fileRef.current?.files?.[0];
+
     if (selectedFile && selectedFile.size > 1 * 1024 * 1024) {
       alert("파일 크기가 너무 큽니다.");
+      setLoading(false);
       return;
     }
 
@@ -171,8 +176,14 @@ export default function ProblemAdd() {
     } catch (err) {
       console.error(err);
       setError("요청 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  // ----------------------------
+  // ⬆️ 여기까지 handleSubmit 함수
+  // ----------------------------
 
   return (
     <RegisterWrapper>
@@ -182,6 +193,8 @@ export default function ProblemAdd() {
         </TitleRow>
 
         <form onSubmit={handleSubmit}>
+          {/* --- 이하 동일, 전부 살림! --- */}
+
           <SectionTitle>기본 정보</SectionTitle>
 
           <InputGroup>
@@ -219,8 +232,15 @@ export default function ProblemAdd() {
             >
               <StyledSelect
                 onChange={(e) => {
-                  if (!tags.includes(e.target.value)) {
-                    setTags([...tags, e.target.value]);
+                  const value = e.target.value;
+
+                  if (tags.length >= 3) {
+                    alert("태그는 최대 3개까지 선택할 수 있습니다!");
+                    return;
+                  }
+
+                  if (!tags.includes(value)) {
+                    setTags([...tags, value]);
                   }
                 }}
                 value=""
@@ -332,8 +352,8 @@ export default function ProblemAdd() {
 
           {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
 
-          <MainButton type="submit" disabled={!isValid}>
-            {isEdit ? "수정하기" : "등록하기"}
+          <MainButton type="submit" disabled={!isValid || loading}>
+            {loading ? "처리 중..." : isEdit ? "수정하기" : "등록하기"}
           </MainButton>
         </form>
       </MainContent>
