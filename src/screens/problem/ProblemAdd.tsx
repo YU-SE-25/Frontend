@@ -141,6 +141,11 @@ export default function ProblemAdd() {
 
     // 파일
     const selectedFile = fileRef.current?.files?.[0];
+    if (selectedFile && selectedFile.size > 1 * 1024 * 1024) {
+      alert("파일 크기가 너무 큽니다.");
+      return;
+    }
+
     if (selectedFile) {
       formData.append("testcaseFile", selectedFile);
     }
