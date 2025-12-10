@@ -91,14 +91,18 @@ const Th = styled.th`
   color: ${({ theme }) => theme.textColor};
 `;
 
-const Tr = styled.tr<{ selected?: boolean }>`
-  cursor: pointer;
+const Tr = styled.tr<{ selected?: boolean; noHover?: boolean }>`
+  cursor: ${({ noHover }) => (noHover ? "default" : "pointer")};
   background: ${({ selected, theme }) =>
     selected ? theme.focusColor + "33" : theme.bgColor};
 
   &:hover {
-    background: ${({ selected, theme }) =>
-      selected ? theme.focusColor + "33" : theme.bgCardColor};
+    background: ${({ noHover, selected, theme }) =>
+      noHover
+        ? theme.bgColor
+        : selected
+        ? theme.focusColor + "33"
+        : theme.bgCardColor};
   }
 `;
 
@@ -120,10 +124,36 @@ const UserDetailBox = styled.td`
   font-size: 18px;
 `;
 
+//강사 포토폴리오용
+const InstructorDetailRow = styled.tr`
+  background: ${({ theme }) => theme.bgColor};
+`;
+
+const InstructorDetailBox = styled.td`
+  padding: 16px 20px;
+  border-top: 1px solid ${({ theme }) => theme.muteColor};
+  background: ${({ theme }) => theme.bgCardColor};
+  color: ${({ theme }) => theme.textColor};
+  font-size: 18px;
+`;
+
+//탑바 나누는 class
+const Row = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+`;
+
 export default function UserManagementScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [openedUserAccordionId, setOpenedUserAccordionId] = useState<
+    number | null
+  >(null);
+  const [openedInstructorAccordionId, setOpenedInstructorAccordionId] =
+    useState<number | null>(null);
 
   const [instructors, setInstructors] = useState<any[]>([]);
   const [instructorSearch, setInstructorSearch] = useState("");
@@ -144,6 +174,13 @@ export default function UserManagementScreen() {
     PENDING: "대기",
     APPROVED: "승인됨",
     REJECTED: "반려됨",
+  };
+
+  //날짜 포멧
+  const formatDate = (isoString: string) => {
+    if (!isoString) return "-";
+    // ISO → "2025-12-05 20:16" 로 변환
+    return isoString.replace("T", " ").slice(0, 16);
   };
 
   const selectedUser = useMemo(
@@ -210,10 +247,6 @@ export default function UserManagementScreen() {
     setSelectedApplicationDetail(null);
   };
 
-  const handleSelect = (userId: number) => {
-    setSelectedId((prev) => (prev === userId ? null : userId));
-  };
-
   const handleSelectApplication = (applicationId: number) => {
     setSelectedApplicationId((prev) =>
       prev === applicationId ? null : applicationId
@@ -221,30 +254,27 @@ export default function UserManagementScreen() {
     setSelectedApplicationDetail(null);
   };
 
-  const copyInfo = async () => {
+  const toggleUserAccordion = () => {
     if (!selectedUser) return;
-    await navigator.clipboard.writeText(JSON.stringify(selectedUser, null, 2));
-    alert("유저 정보가 클립보드에 복사되었습니다!");
+
+    setOpenedUserAccordionId((prev) =>
+      prev === selectedUser.userId ? null : selectedUser.userId
+    );
   };
 
-  const copyInstructorInfo = async () => {
-    if (!selectedApplication) return;
+  const toggleInstructorAccordion = async () => {
+    if (!selectedApplicationId) return;
 
-    try {
-      const detail = await fetchInstructorApplicationDetail(
-        selectedApplication.applicationId
-      );
+    let detail = selectedApplicationDetail;
 
+    if (!detail || detail.applicationId !== selectedApplicationId) {
+      detail = await fetchInstructorApplicationDetail(selectedApplicationId);
       setSelectedApplicationDetail(detail);
-
-      await navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
-      console.log("Instructor application detail:", detail);
-
-      alert("강사 신청 상세 정보가 클립보드에 복사되었습니다!");
-    } catch (err) {
-      console.error(err);
-      alert("강사 신청 상세 정보를 가져오는 중 오류가 발생했습니다.");
     }
+
+    setOpenedInstructorAccordionId((prev) =>
+      prev === selectedApplicationId ? null : selectedApplicationId
+    );
   };
 
   const downloadPortfolio = async () => {
@@ -356,71 +386,102 @@ export default function UserManagementScreen() {
     setSelectedId(null);
   };
 
-  const changeRole = async () => {
+  const changeRoleTo = async (nextRole: Role) => {
     if (!selectedUser) return;
-
-    const input = window.prompt(
-      "역할을 입력하세요: 회원 / 강사 / 관리자",
-      ROLE_LABEL[selectedUser.role]
-    );
-
-    if (!input) return;
-
-    let next: Role | null = null;
-    if (input === "회원") next = "LEARNER";
-    if (input === "강사") next = "INSTRUCTOR";
-    if (input === "관리자") next = "MANAGER";
-
-    if (!next) return alert("잘못된 역할입니다.");
+    if (!window.confirm(`역할을 '${ROLE_LABEL[nextRole]}'로 변경할까요?`))
+      return;
 
     try {
-      const res = await updateUserRole(selectedUser.userId, next);
+      await updateUserRole(selectedUser.userId, nextRole);
 
       setUsers((prev) =>
         prev.map((u) =>
-          u.userId === selectedUser.userId ? { ...u, role: next } : u
+          u.userId === selectedUser.userId ? { ...u, role: nextRole } : u
         )
       );
 
-      alert(
-        `역할이 '${ROLE_LABEL[res.oldRole]}' → '${
-          ROLE_LABEL[res.newRole]
-        }'로 변경되었습니다.`
+      alert(`역할이 '${ROLE_LABEL[nextRole]}'로 변경되었습니다.`);
+    } catch {
+      alert("역할 변경 오류 발생");
+    }
+  };
+
+  //강사 승인
+  const approveInstructor = async (applicationId: number) => {
+    if (!window.confirm("승인하시겠습니까?")) return;
+
+    try {
+      // 강사 승인 → 역할 변경 API 사용
+      await updateUserRole(selectedApplication!.userId, "INSTRUCTOR");
+
+      alert("강사 자격으로 승인되었습니다.");
+
+      // 목록에서 제거
+      setInstructors((prev) =>
+        prev.filter((a) => a.applicationId !== applicationId)
       );
+
+      setOpenedInstructorAccordionId(null);
     } catch (err) {
       console.error(err);
-      alert("역할 변경 중 오류가 발생했습니다.");
+      alert("승인 중 오류가 발생했습니다.");
     }
+  };
+
+  //강사 거절
+  const rejectInstructor = async (applicationId: number) => {
+    if (!window.confirm("거절하시겠습니까?")) return;
+
+    alert("강사 신청이 거절되었습니다.");
+
+    // 그냥 목록 삭제만 하면 됨
+    setInstructors((prev) =>
+      prev.filter((a) => a.applicationId !== applicationId)
+    );
+
+    setOpenedInstructorAccordionId(null);
   };
 
   return (
     <Wrap>
       <SectionTitle>유저 목록</SectionTitle>
       <TopBar>
-        <SearchInput
-          value={search}
-          onChange={(e) => handleChange(e.target.value)}
-          placeholder="아이디 / 닉네임 검색"
-        />
+        <Row>
+          <SearchInput
+            value={search}
+            onChange={(e) => handleChange(e.target.value)}
+            placeholder="아이디 / 닉네임 검색"
+          />
 
-        <ButtonGroup>
-          <ActionButton onClick={copyInfo} disabled={isDisabledUser}>
-            유저 정보보기
-          </ActionButton>
-          <ActionButton onClick={blacklistUser} disabled={isDisabledUser}>
-            블랙리스트
-          </ActionButton>
-          <ActionButton
-            onClick={removeUser}
-            disabled={true}
-            title="추후 구현 예정..."
-          >
-            유저 제거
-          </ActionButton>
-          <ActionButton onClick={changeRole} disabled={isDisabledUser}>
-            역할 변경
-          </ActionButton>
-        </ButtonGroup>
+          <ButtonGroup>
+            <ActionButton
+              onClick={toggleUserAccordion}
+              disabled={isDisabledUser}
+            >
+              유저 정보보기
+            </ActionButton>
+            <ActionButton onClick={blacklistUser} disabled={isDisabledUser}>
+              블랙리스트
+            </ActionButton>
+            <ActionButton disabled title="추후 구현 예정...">
+              유저 제거
+            </ActionButton>
+          </ButtonGroup>
+        </Row>
+        <Row>
+          <span style={{ fontWeight: 600 }}>역할 변경:</span>
+          <ButtonGroup>
+            <ActionButton onClick={() => changeRoleTo("LEARNER")}>
+              회원
+            </ActionButton>
+            <ActionButton onClick={() => changeRoleTo("INSTRUCTOR")}>
+              강사
+            </ActionButton>
+            <ActionButton onClick={() => changeRoleTo("MANAGER")}>
+              관리자
+            </ActionButton>
+          </ButtonGroup>
+        </Row>
       </TopBar>
 
       <TableWrap>
@@ -448,19 +509,15 @@ export default function UserManagementScreen() {
                 <Tr
                   key={u.userId}
                   selected={selectedId === u.userId}
-                  onClick={() =>
-                    setSelectedId((prev) =>
-                      prev === u.userId ? null : u.userId
-                    )
-                  }
+                  onClick={() => setSelectedId(u.userId)}
                 >
                   <Td>{u.userId}</Td>
                   <Td>{u.nickname}</Td>
                   <Td>{ROLE_LABEL[u.role]}</Td>
-                  <Td>{u.createdAt}</Td>
+                  <Td>{formatDate(u.createdAt)}</Td>
                 </Tr>
 
-                {selectedId === u.userId && (
+                {openedUserAccordionId === u.userId && (
                   <UserDetailRow>
                     <UserDetailBox colSpan={4}>
                       <div style={{ marginBottom: "8px" }}>
@@ -479,7 +536,7 @@ export default function UserManagementScreen() {
                         <strong>역할:</strong> {ROLE_LABEL[u.role]}
                       </div>
                       <div>
-                        <strong>가입일:</strong> {u.createdAt.split("T")[0]}
+                        <strong>가입일:</strong> {formatDate(u.createdAt)}
                       </div>
                     </UserDetailBox>
                   </UserDetailRow>
@@ -499,29 +556,25 @@ export default function UserManagementScreen() {
         />
         <ButtonGroup>
           <ActionButton
-            onClick={copyInstructorInfo}
+            onClick={toggleInstructorAccordion}
             disabled={isDisabledInstructor}
           >
             강사 정보보기
           </ActionButton>
 
-          {selectedApplicationDetail?.portfolioLink && (
-            <ActionButton
-              onClick={openPortfolioLink}
-              disabled={isDisabledInstructor}
-            >
-              포트폴리오 링크 열기
-            </ActionButton>
-          )}
+          <ActionButton
+            onClick={() => approveInstructor(selectedApplicationId!)}
+            disabled={isDisabledInstructor}
+          >
+            강사 승인
+          </ActionButton>
 
-          {selectedApplicationDetail?.portfolioFileUrl && (
-            <ActionButton
-              onClick={downloadPortfolio}
-              disabled={isDisabledInstructor}
-            >
-              포트폴리오 파일 다운로드
-            </ActionButton>
-          )}
+          <ActionButton
+            onClick={() => rejectInstructor(selectedApplicationId!)}
+            disabled={isDisabledInstructor}
+          >
+            강사 거절
+          </ActionButton>
         </ButtonGroup>
       </TopBar>
 
@@ -546,17 +599,81 @@ export default function UserManagementScreen() {
             )}
 
             {filteredInstructors.map((a) => (
-              <Tr
-                key={a.applicationId}
-                selected={selectedApplicationId === a.applicationId}
-                onClick={() => handleSelectApplication(a.applicationId)}
-              >
-                <Td>{a.applicationId}</Td>
-                <Td>{a.name}</Td>
-                <Td>{a.email}</Td>
-                <Td>{a.submittedAt}</Td>
-                <Td>{STATUS_LABEL[a.status] ?? a.status}</Td>
-              </Tr>
+              <>
+                <Tr
+                  key={a.applicationId}
+                  selected={selectedApplicationId === a.applicationId}
+                  onClick={() => handleSelectApplication(a.applicationId)}
+                >
+                  <Td>{a.applicationId}</Td>
+                  <Td>{a.name}</Td>
+                  <Td>{a.email}</Td>
+                  <Td>{formatDate(a.submittedAt)}</Td>
+                  <Td>{STATUS_LABEL[a.status] ?? a.status}</Td>
+                </Tr>
+
+                {openedInstructorAccordionId === a.applicationId &&
+                  selectedApplicationDetail && (
+                    <InstructorDetailRow>
+                      <InstructorDetailBox colSpan={5}>
+                        <div style={{ marginBottom: "8px" }}>
+                          <strong>신청 ID:</strong>{" "}
+                          {selectedApplicationDetail.applicationId}
+                        </div>
+                        <div style={{ marginBottom: "8px" }}>
+                          <strong>유저 ID:</strong>{" "}
+                          {selectedApplicationDetail.userId}
+                        </div>
+                        <div style={{ marginBottom: "8px" }}>
+                          <strong>이름:</strong>{" "}
+                          {selectedApplicationDetail.name}
+                        </div>
+                        <div style={{ marginBottom: "8px" }}>
+                          <strong>이메일:</strong>{" "}
+                          {selectedApplicationDetail.email}
+                        </div>
+                        <div style={{ marginBottom: "8px" }}>
+                          <strong>전화번호:</strong>{" "}
+                          {selectedApplicationDetail.phone}
+                        </div>
+                        <div style={{ marginBottom: "8px" }}>
+                          <strong>신청 일자:</strong>{" "}
+                          {formatDate(selectedApplicationDetail.submittedAt)}
+                        </div>
+                        <div style={{ marginBottom: "8px" }}>
+                          <strong>상태:</strong>{" "}
+                          {selectedApplicationDetail.status}
+                        </div>
+
+                        <div style={{ margin: "12px 0" }}>
+                          <strong>포트폴리오 파일:</strong>{" "}
+                          {selectedApplicationDetail.portfolioFileUrl ?? "없음"}
+                          {selectedApplicationDetail.portfolioFileUrl && (
+                            <ActionButton
+                              style={{ marginLeft: "12px" }}
+                              onClick={downloadPortfolio}
+                            >
+                              파일 다운로드
+                            </ActionButton>
+                          )}
+                        </div>
+
+                        <div style={{ margin: "12px 0" }}>
+                          <strong>포트폴리오 링크:</strong>{" "}
+                          {selectedApplicationDetail.portfolioLinks ?? "없음"}
+                          {selectedApplicationDetail.portfolioLinks && (
+                            <ActionButton
+                              style={{ marginLeft: "12px" }}
+                              onClick={openPortfolioLink}
+                            >
+                              링크 열기
+                            </ActionButton>
+                          )}
+                        </div>
+                      </InstructorDetailBox>
+                    </InstructorDetailRow>
+                  )}
+              </>
             ))}
           </tbody>
         </Table>
