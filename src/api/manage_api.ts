@@ -297,3 +297,10 @@ export async function downloadPortfolioFile(fileName: string): Promise<Blob> {
   });
   return res.data;
 }
+//강사 이메일 발송
+export async function sendApproveInstructorEmail(userId: number) {
+  const res = await api.post("/admin/approve-instructor-email", {
+    userId,
+  });
+  return res.data;
+}
