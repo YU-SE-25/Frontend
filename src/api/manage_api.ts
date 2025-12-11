@@ -291,8 +291,26 @@ export async function removeFromBlacklist(
   );
   return res.data;
 }
-export async function downloadPortfolioFile(fileName: string): Promise<Blob> {
-  const res = await api.get(`/files/${fileName}`, {
+
+//강사 포토폴리오 다운로드
+export async function downloadPortfolioFile(fileKey: string): Promise<Blob> {
+  const res = await api.get(`/admin/instructor/download/portfolio/${fileKey}`, {
+    responseType: "blob",
+  });
+  return res.data;
+}
+
+//강사 이메일 발송
+export async function sendApproveInstructorEmail(userId: number) {
+  const res = await api.post("/admin/approve-instructor-email", {
+    userId,
+  });
+  return res.data;
+}
+
+//테스트케이스 다운로드
+export async function downloadTestcaseFile(problemId: number): Promise<Blob> {
+  const res = await api.get(`/problems/${problemId}/testcase/download`, {
     responseType: "blob",
   });
   return res.data;

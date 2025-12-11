@@ -320,7 +320,9 @@ export default function Topbar() {
             {isLoggedIn ? (
               <>
                 <AuthLink
-                  to={`/mypage/${encodeURIComponent(userName)}?tab=activity`}
+                  to={`/mypage/${encodeURIComponent(
+                    userProfile?.nickname ?? ""
+                  )}?tab=activity`}
                 >
                   마이페이지
                 </AuthLink>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import styled from "styled-components";
 import { getMyProfile, updateMyProfile } from "../../api/mypage_api";
@@ -388,6 +388,7 @@ const ALL_LANGS = ["Python", "Java", "C++", "JavaScript"];
 
 export default function EditPage() {
   const { username } = useParams<{ username: string }>();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDark] = useAtom(isDarkAtom);
   const runToggleTheme = useSetAtom(toggleThemeActionAtom);
@@ -692,7 +693,10 @@ export default function EditPage() {
       await updateMyProfile(fd);
 
       await queryClient.invalidateQueries({
-        queryKey: ["userProfile"],
+        queryKey: ["userProfileActivity"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["userProfileActivity", form.username],
       });
 
       setUserProfile((prev) => {
@@ -708,7 +712,12 @@ export default function EditPage() {
       });
 
       alert("프로필이 성공적으로 업데이트되었습니다!");
-      window.location.reload();
+      navigate(`/mypage/${encodeURIComponent(form.username)}?tab=activity`, {
+        replace: true,
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 0);
     } catch (err) {
       console.error(err);
       alert("프로필 수정 중 오류가 발생했습니다.");
