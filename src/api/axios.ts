@@ -28,12 +28,7 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
-    // refreshToken 없으면 그냥 오류 반환 → 로그인 필요
-    if (!localStorage.getItem("refreshToken")) {
-      return Promise.reject(error);
-    }
-
-    // 로그인/refresh API는 refresh 로직에서 제외
+    // 로그인/리프레시 요청 자체는 제외
     if (original?.url === "/auth/login") return Promise.reject(error);
     if (original?.url === "/auth/refresh") return Promise.reject(error);
 

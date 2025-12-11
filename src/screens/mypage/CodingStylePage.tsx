@@ -7,10 +7,21 @@ const Card = styled.div`
   border: 1px solid ${({ theme }) => `${theme.textColor}20`};
   border-radius: 16px;
   padding: 24px 28px;
+  padding: 24px 28px;
   background: ${({ theme }) => theme.headerBgColor};
 
   width: 100%;
+
+  width: 100%;
   max-width: 800px;
+  min-width: 400px;
+  margin: 40px auto;
+
+  line-height: 1.6;
+
+  & > * + * {
+    margin-top: 8px;
+  }
   min-width: 400px;
   margin: 40px auto;
 
@@ -35,6 +46,7 @@ export default function CodingStylePage() {
 
   // 1) 정답이 10개 이상인지 여부만 판단
   useEffect(() => {
+    fetchMySubmissions({ size: 9999 });
     fetchMySubmissions({ size: 9999 })
       .then((res) => {
         const correct = res.items.filter((sub) => sub.status === "CA").length;
