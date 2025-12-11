@@ -6,10 +6,19 @@ import { fetchMySubmissions } from "../../api/mySubmissions_api";
 const Card = styled.div`
   border: 1px solid ${({ theme }) => `${theme.textColor}20`};
   border-radius: 16px;
-  padding: 20px;
+  padding: 24px 28px;
   background: ${({ theme }) => theme.headerBgColor};
+
+  width: 100%;
   max-width: 800px;
-  margin: 0 auto;
+  min-width: 400px;
+  margin: 40px auto;
+
+  line-height: 1.6;
+
+  & > * + * {
+    margin-top: 8px;
+  }
 `;
 
 interface CodingHabitsResponse {
@@ -20,66 +29,60 @@ interface CodingHabitsResponse {
 }
 
 export default function CodingStylePage() {
-  const [totalAttempts, setTotalAttempts] = useState<number>(0);
+  const [correctCount, setCorrectCount] = useState<number>(0);
   const [data, setData] = useState<CodingHabitsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const canAnalyze = totalAttempts >= 3;
-
-  // 1) 전체 제출 기록 불러오기 (조건 판단용)
+  // 1) 정답 수 불러오기
   useEffect(() => {
-    fetchMySubmissions()
+    fetchMySubmissions({ size: 9999 })
       .then((res) => {
-        setTotalAttempts(res.totalElements);
+        const count = res.items.filter((sub) => sub.status === "CA").length;
+        setCorrectCount(count);
       })
-      .catch((err) => {
-        console.error("제출 기록 불러오기 오류:", err);
-        setTotalAttempts(0);
-      });
+      .catch(() => setCorrectCount(0));
   }, []);
 
-  // 2) 조건 만족 시에만 AI 분석 호출
+  // 2) 정답 수 상관없이 계속 분석 API 호출
   useEffect(() => {
-    if (!canAnalyze) {
-      setLoading(false);
-      return;
-    }
-
+    setLoading(true);
     api
       .get("/analysis/habits")
       .then((res) => setData(res.data))
-      .catch((err) => console.error("성향 분석 호출 오류:", err))
+      .catch((err) => console.error("성향 분석 오류:", err))
       .finally(() => setLoading(false));
-  }, [canAnalyze]);
+  }, []);
 
-  if (loading && totalAttempts === 0) {
-    return <Card>제출 기록 불러오는 중...</Card>;
-  }
-
-  if (!canAnalyze) {
+  if (correctCount < 10) {
+    const need = 10 - correctCount;
     return (
       <Card>
         <h2>코딩 성향 분석</h2>
-        <p>아직 분석을 진행하기엔 제출 수가 부족합니다</p>
         <p>
-          최소 <strong>10문제 이상</strong> 정답을 맞춰야만 분석할 수 있어요!
+          분석을 위해 <strong>정답 10개</strong>가 필요해요.
         </p>
+        <p>현재 정답 수: {correctCount}개</p>
+        <p>남은 문제 수: {need}개</p>
       </Card>
     );
   }
 
-  if (loading) {
-    return <Card>분석 중입니다</Card>;
+  //정답 10개 이상 → 항상 결과 UI + 다음 남은 문제 표시
+  const nextGoal = Math.ceil(correctCount / 10) * 10;
+  const remaining = nextGoal - correctCount;
+
+  if (loading && !data) {
+    return <Card>분석 중입니다...</Card>;
   }
 
   if (!data) {
     return <Card>분석 결과를 불러오지 못했습니다.</Card>;
   }
 
-  // 실제 분석 결과 UI
   return (
     <Card>
       <h2>코딩 성향 분석</h2>
+
       <p>{data.summary}</p>
 
       <h3>강점</h3>
@@ -102,6 +105,17 @@ export default function CodingStylePage() {
           <li key={sg}>{sg}</li>
         ))}
       </ul>
+
+      {/* 다음 분석까지 남은 문제 수 */}
+      {remaining > 0 ? (
+        <p style={{ marginTop: "20px", opacity: 0.8 }}>
+          다음 분석까지 <strong>{remaining}개</strong> 남았습니다.
+        </p>
+      ) : (
+        <p style={{ marginTop: "20px", opacity: 0.8 }}>
+          🎉 새로운 분석이 가능합니다!
+        </p>
+      )}
     </Card>
   );
 }
