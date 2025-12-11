@@ -211,7 +211,7 @@ export default function Topbar() {
   const queryClient = useQueryClient();
 
   const [isBoardOpen, setIsBoardOpen] = useState(false);
-  const userName = userProfile?.nickname || "guest";
+  //const userName = userProfile?.nickname || "guest";
 
   // 게시판 메뉴 이동
   const handleSelectBoard = (path: string) => {

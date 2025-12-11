@@ -221,7 +221,7 @@ export function PollEditor({
   const [isPrivate, setIsPrivate] = useState(initialValue?.is_private ?? false);
 
   // ⭐ 복수 선택 기능 제거 — 항상 false
-  const allowsMulti = false;
+  //const allowsMulti = false;
 
   const createMutation = useMutation({
     mutationFn: (payload: CreatePollRequest) =>
