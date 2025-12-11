@@ -452,14 +452,21 @@ export default function ProblemManagementScreen() {
     if (!selectedProblem) return;
 
     try {
-      const blob = await downloadTestcaseFile(selectedProblem.problemId);
+      const response = await downloadTestcaseFile(selectedProblem.problemId);
 
+      // 백엔드가 설정한 파일명 가져오기
+      const disposition = response.headers["content-disposition"];
+      let filename = `testcase_${selectedProblem.problemId}`;
+
+      if (disposition) {
+        const match = disposition.match(/filename="?(.+)"?/);
+        if (match) filename = match[1];
+      }
+
+      const blob = response.data;
       const url = window.URL.createObjectURL(blob);
+
       const a = document.createElement("a");
-
-      // 기본 파일명
-      const filename = `testcase_${selectedProblem.problemId}.zip`;
-
       a.href = url;
       a.download = filename;
       a.click();

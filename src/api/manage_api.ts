@@ -309,9 +309,7 @@ export async function sendApproveInstructorEmail(userId: number) {
 }
 
 //테스트케이스 다운로드
-export async function downloadTestcaseFile(problemId: number): Promise<Blob> {
-  const res = await api.get(`/problems/${problemId}/testcase/download`, {
+export const downloadTestcaseFile = (id: number) =>
+  api.get(`/problems/${id}/testcase/download`, {
     responseType: "blob",
   });
-  return res.data;
-}
