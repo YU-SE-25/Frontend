@@ -29,23 +29,22 @@ interface CodingHabitsResponse {
 }
 
 export default function CodingStylePage() {
-  const [correctCount, setCorrectCount] = useState<number>(0);
+  const [canAnalyze, setCanAnalyze] = useState<boolean>(false);
   const [data, setData] = useState<CodingHabitsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 1) 정답 수 불러오기
+  // 1) 정답이 10개 이상인지 여부만 판단
   useEffect(() => {
     fetchMySubmissions({ size: 9999 })
       .then((res) => {
-        const count = res.items.filter((sub) => sub.status === "CA").length;
-        setCorrectCount(count);
+        const correct = res.items.filter((sub) => sub.status === "CA").length;
+        setCanAnalyze(correct >= 10);
       })
-      .catch(() => setCorrectCount(0));
+      .catch(() => setCanAnalyze(false));
   }, []);
 
-  // 2) 정답 수 상관없이 계속 분석 API 호출
+  // 2) 분석 API는 정답 수 상관없이 실행 (백엔드에서 최신 분석 반환)
   useEffect(() => {
-    setLoading(true);
     api
       .get("/analysis/habits")
       .then((res) => setData(res.data))
@@ -53,24 +52,18 @@ export default function CodingStylePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (correctCount < 10) {
-    const need = 10 - correctCount;
+  // 10개 미만이면 -> 숫자 없이 안내만
+  if (!canAnalyze) {
     return (
       <Card>
         <h2>코딩 성향 분석</h2>
-        <p>
-          분석을 위해 <strong>정답 10개</strong>가 필요해요.
-        </p>
-        <p>현재 정답 수: {correctCount}개</p>
-        <p>남은 문제 수: {need}개</p>
+        <p>분석을 이용하려면 일정 기준을 만족해야 합니다.</p>
+        <p style={{ opacity: 0.7 }}>(분석은 10회 단위로 새롭게 제공됩니다.)</p>
       </Card>
     );
   }
 
-  //정답 10개 이상 → 항상 결과 UI + 다음 남은 문제 표시
-  const nextGoal = Math.ceil(correctCount / 10) * 10;
-  const remaining = nextGoal - correctCount;
-
+  // 10개 이상 → 분석 결과 UI
   if (loading && !data) {
     return <Card>분석 중입니다...</Card>;
   }
@@ -106,16 +99,9 @@ export default function CodingStylePage() {
         ))}
       </ul>
 
-      {/* 다음 분석까지 남은 문제 수 */}
-      {remaining > 0 ? (
-        <p style={{ marginTop: "20px", opacity: 0.8 }}>
-          다음 분석까지 <strong>{remaining}개</strong> 남았습니다.
-        </p>
-      ) : (
-        <p style={{ marginTop: "20px", opacity: 0.8 }}>
-          🎉 새로운 분석이 가능합니다!
-        </p>
-      )}
+      <p style={{ marginTop: "20px", opacity: 0.7 }}>
+        (분석은 10회 단위로 자동 업데이트됩니다.)
+      </p>
     </Card>
   );
 }

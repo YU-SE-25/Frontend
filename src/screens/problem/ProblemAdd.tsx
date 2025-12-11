@@ -328,7 +328,7 @@ export default function ProblemAdd() {
           </InputGroup>
 
           <InputGroup>
-            <Label>테스트케이스 파일 {isEdit ? "(선택)" : "(필수)"}</Label>
+            <Label>테스트케이스 파일 (필수)</Label>
             <StyledInput type="file" ref={fileRef} />
           </InputGroup>
 
