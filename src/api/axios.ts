@@ -28,59 +28,46 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config;
 
-    if (!localStorage.getItem("refreshToken")) {
-      return Promise.reject(error);
-    }
-
     // 로그인/리프레시 요청 자체는 제외
     if (original?.url === "/auth/login") return Promise.reject(error);
     if (original?.url === "/auth/refresh") return Promise.reject(error);
 
-    // 401이고, 아직 재시도 안했으면
+    // AccessToken 만료 → refresh 시도
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
-      // refreshToken 가져오기
-      let refreshToken = store.get(refreshTokenAtom);
-      if (!refreshToken) {
-        refreshToken = localStorage.getItem("refreshToken") || null;
+      const refreshToken = store.get(refreshTokenAtom);
+      if (!localStorage.getItem("refreshToken")) {
+        if (error.response?.status === 401) {
+          forceLogout();
+          return;
+        }
+        return Promise.reject(error);
       }
 
-      if (!refreshToken) return Promise.reject(error);
+      if (!refreshToken) {
+        forceLogout();
+        return;
+      }
 
       try {
-        // 새로운 accessToken 발급
         const refreshResponse = await AuthAPI.refresh(refreshToken);
 
-        // jotai 업데이트
+        // jotai state + localStorage 갱신
         store.set(refreshActionAtom, refreshResponse);
         localStorage.setItem("accessToken", refreshResponse.accessToken);
-
-        // 🔥 핵심: 절대경로 URL → 상대경로로 변환 (프록시 깨짐 방지)
-        const relativeUrl = original.url.replace(/^https?:\/\/[^/]+/, "");
 
         // 원래 요청 재시도
         return api({
           ...original,
-          url: relativeUrl, // 수정된 URL
-          baseURL: "/api",
           headers: {
             ...original.headers,
             Authorization: `Bearer ${refreshResponse.accessToken}`,
           },
         });
       } catch (e) {
-        // refresh 실패 → 강제 로그아웃 (단, 회원가입 과정은 제외)
-        const path = window.location.pathname;
-        const isRegisterFlow =
-          path.startsWith("/register") ||
-          path === "/register-success" ||
-          path === "/auth/verify-success";
-
-        if (!isRegisterFlow) {
-          localStorage.clear();
-          window.location.href = "/login";
-        }
+        // refresh 실패 → 완전 강제 로그아웃
+        forceLogout();
         return;
       }
     }
@@ -88,3 +75,16 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// 로그아웃 함수
+function forceLogout() {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("userProfile");
+
+  // jotai 초기화
+  store.set(refreshActionAtom, null);
+  store.set(refreshTokenAtom, null);
+
+  window.location.href = "/login";
+}

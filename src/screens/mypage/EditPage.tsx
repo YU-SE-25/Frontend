@@ -430,7 +430,7 @@ export default function EditPage() {
   const [isChecking, setIsChecking] = useState(false);
   const [valid, setValid] = useState<boolean | null>(null);
 
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  //const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const {
     data: user,
@@ -508,7 +508,7 @@ export default function EditPage() {
     6: "SAT",
     7: "SUN",
   };
-
+  /*
   const DAY_MAP: Record<
     number,
     "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
@@ -521,7 +521,7 @@ export default function EditPage() {
     6: "SAT",
     7: "SUN",
   };
-
+*/
   useEffect(() => {
     if (!user || didInit.current) return;
     didInit.current = true;

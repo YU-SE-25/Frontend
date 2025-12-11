@@ -43,10 +43,14 @@ const PollOptionRow = styled.button<{ $selected: boolean }>`
   color: ${({ theme }) => theme.textColor};
 
   border-radius: 6px;
+
   border: 1px solid
     ${({ theme, $selected }) =>
       $selected ? theme.focusColor ?? "#4f46e5" : theme.textColor ?? "#ddd"};
-  background: ${({ theme }) => theme.bgColor};
+
+  background: ${({ theme, $selected }) =>
+    $selected ? theme.logoColor : theme.bgColor};
+
   cursor: pointer;
 `;
 
@@ -117,7 +121,6 @@ type PollViewProps = {
 
 export function PollView({ postId, isDiscuss }: PollViewProps) {
   const queryClient = useQueryClient();
-  const [selected, setSelected] = useState<number | null>(null);
 
   const {
     data: poll,
@@ -140,31 +143,35 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
     },
   });
 
-  useEffect(() => {}, [poll]);
-
   if (isLoading || isError || !poll) return null;
 
+  // ⭐ 서버 옵션 중 이미 투표한 옵션 찾아서 selected로 표시
+  const votedOption = poll.options.find(
+    (opt) => (opt as any).voted || (opt as any).viewerVoted
+  );
+  const alreadySelected = votedOption ? Number(votedOption.label) : null;
+
   const handleVote = (label: number) => {
-    setSelected(label);
-    if (!poll.alreadyVoted) {
-      voteMutation.mutate(label);
-    }
+    if (poll.alreadyVoted) return; // ⭐ 이미 투표했으면 클릭 막기
+    voteMutation.mutate(label);
   };
 
   return (
     <PollBox style={{ marginBottom: 16 }}>
       <PollTitle>{poll.question || "투표"}</PollTitle>
       <PollQuestion>{poll.message}</PollQuestion>
+
       <PollOptionList>
         {poll.options.map((opt) => {
           const numericLabel = Number(opt.label);
+
           return (
             <PollOptionRow
               key={opt.optionId}
               type="button"
               onClick={() => handleVote(numericLabel)}
               disabled={poll.alreadyVoted || voteMutation.isPending}
-              $selected={selected === numericLabel}
+              $selected={alreadySelected === numericLabel} // ⭐ 표시 OK
             >
               <span>{opt.content}</span>
               <SmallText>{opt.voteCount}표</SmallText>
@@ -172,13 +179,16 @@ export function PollView({ postId, isDiscuss }: PollViewProps) {
           );
         })}
       </PollOptionList>
+
       <SmallText>
         총 {poll.totalVotes}표 ·{" "}
-        {poll.alreadyVoted ? "이미 투표했습니다" : "클릭해서 투표하세요"}
+        {poll.alreadyVoted ? "투표 완료" : "클릭해서 투표하세요"}
       </SmallText>
     </PollBox>
   );
 }
+
+// 투표 작성창
 
 // 투표 작성창
 
@@ -209,9 +219,9 @@ export function PollEditor({
   const [option3, setOption3] = useState(initialValue?.option3 ?? "");
   const [option4, setOption4] = useState(initialValue?.option4 ?? "");
   const [isPrivate, setIsPrivate] = useState(initialValue?.is_private ?? false);
-  const [allowsMulti, setAllowsMulti] = useState(
-    initialValue?.allows_multi ?? false
-  );
+
+  // ⭐ 복수 선택 기능 제거 — 항상 false
+  //const allowsMulti = false;
 
   const createMutation = useMutation({
     mutationFn: (payload: CreatePollRequest) =>
@@ -226,7 +236,7 @@ export function PollEditor({
     question,
     end_time: endTime,
     is_private: isPrivate,
-    allows_multi: allowsMulti,
+    allows_multi: false, // ⭐ 항상 단일 선택
     option1,
     option2,
     option3: option3 || undefined,
@@ -253,7 +263,6 @@ export function PollEditor({
     option3,
     option4,
     isPrivate,
-    allowsMulti,
     onChangeDraft,
   ]);
 
@@ -273,6 +282,7 @@ export function PollEditor({
           placeholder="예: 이 문제 풀이 형식 투표"
         />
       </Row>
+
       <Row>
         <Label>질문</Label>
         <TextArea
@@ -281,6 +291,7 @@ export function PollEditor({
           placeholder="질문 내용을 입력하세요"
         />
       </Row>
+
       <Row>
         <Label>마감 시간</Label>
         <Input
@@ -289,6 +300,7 @@ export function PollEditor({
           onChange={(e) => setEndTime(e.target.value)}
         />
       </Row>
+
       <Row>
         <Label>옵션 1</Label>
         <Input
@@ -297,6 +309,7 @@ export function PollEditor({
           placeholder="옵션 1"
         />
       </Row>
+
       <Row>
         <Label>옵션 2</Label>
         <Input
@@ -305,6 +318,7 @@ export function PollEditor({
           placeholder="옵션 2"
         />
       </Row>
+
       <Row>
         <Label>옵션 3 (선택)</Label>
         <Input
@@ -313,6 +327,7 @@ export function PollEditor({
           placeholder="옵션 3"
         />
       </Row>
+
       <Row>
         <Label>옵션 4 (선택)</Label>
         <Input
@@ -321,6 +336,7 @@ export function PollEditor({
           placeholder="옵션 4"
         />
       </Row>
+
       <Row>
         <Label>
           <input
@@ -330,14 +346,18 @@ export function PollEditor({
           />{" "}
           비공개 투표
         </Label>
+
+        {/* ⭐ 복수 선택 허용 UI 유지(주석만), 실제론 동작 안함 */}
+        {/*
         <Label>
           <input
             type="checkbox"
-            checked={allowsMulti}
-            onChange={(e) => setAllowsMulti(e.target.checked)}
+            checked={false}
+            disabled
           />{" "}
-          복수 선택 허용
+          복수 선택 허용 (현재 비활성화됨)
         </Label>
+        */}
       </Row>
 
       {mode === "immediate" && (

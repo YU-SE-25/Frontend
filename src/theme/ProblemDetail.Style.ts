@@ -236,11 +236,19 @@ export const HintSpoiler = styled.div`
 `;
 
 // 액션 버튼 영역
-export const ActionSection = styled.section`
+export const ActionSection = styled.div`
   display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
+  justify-content: space-between;
+  margin: 16px 0;
+  flex-wrap: wrap;
+
+  .left,
+  .right {
+    display: flex;
+    gap: 10px;
+  }
 `;
+
 // 문제 풀기 버튼
 export const SolveButton = styled.button`
   padding: 10px 25px;
@@ -265,16 +273,17 @@ export const SolveButton = styled.button`
 // 이외의 버튼들 (보조 버튼 스타일)
 export const ViewCodeButton = styled.button`
   padding: 10px 25px;
-  background-color: ${(props) => props.theme.authHoverBgColor};
-  color: ${(props) => props.theme.textColor};
-  border: 1px solid ${(props) => props.theme.authActiveBgColor};
   border-radius: 5px;
+
+  background-color: ${({ theme }) => theme.authHoverBgColor};
+  color: ${({ theme }) => theme.authHoverTextColor};
+
+  border: none;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
 
   &:hover {
-    background-color: ${(props) => props.theme.authActiveBgColor};
+    background-color: ${({ theme }) => theme.authHoverBgColor};
   }
 `;
 
@@ -290,4 +299,3 @@ export const SmallButtonGroup = styled.div`
   gap: 10px;
   margin-top: 5px;
 `;
-

@@ -11,6 +11,34 @@ import {
 import ProblemListModal from "./CreateProblemList";
 import type { AssignedProblemList } from "../../api/studygroup_api";
 
+// 🌟 공통 버튼 스타일
+const buttonStyleBase = {
+  padding: "6px 14px",
+  borderRadius: "6px",
+  border: "none",
+  fontSize: "14px",
+  cursor: "pointer",
+  color: "white",
+};
+
+const editBtnStyle = {
+  ...buttonStyleBase,
+  backgroundColor: "#4CAF50",
+};
+
+const deleteBtnStyle = {
+  ...buttonStyleBase,
+  backgroundColor: "#E74C3C",
+  marginLeft: "8px",
+};
+
+const closeBtnStyle = {
+  ...buttonStyleBase,
+  backgroundColor: "#95A5A6",
+  marginTop: "20px",
+  width: "100%",
+};
+
 export default function ProblemListManageModal({
   groupId,
   onClose,
@@ -44,19 +72,31 @@ export default function ProblemListManageModal({
 
         {lists.length === 0 && <p>등록된 문제 리스트가 없습니다.</p>}
 
-        {lists.map((list: any) => (
+        {lists.map((list) => (
           <div
             key={list.problemListId}
-            style={{ padding: "12px 0", borderBottom: "1px solid #ccc" }}
+            style={{
+              padding: "12px 0",
+              borderBottom: "1px solid #ddd",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
           >
             <b>{list.listTitle}</b>
             <div>마감일: {list.dueDate}</div>
-            <div style={{ marginTop: 8 }}>
-              <button onClick={() => setSelectedListId(list.problemListId)}>
+
+            {/* 버튼 정렬 */}
+            <div style={{ display: "flex", marginTop: 8 }}>
+              <button
+                style={editBtnStyle}
+                onClick={() => setSelectedListId(list.problemListId)}
+              >
                 수정
               </button>
+
               <button
-                style={{ marginLeft: 8, color: "red" }}
+                style={deleteBtnStyle}
                 onClick={() => handleDelete(list.problemListId)}
               >
                 삭제
@@ -65,7 +105,8 @@ export default function ProblemListManageModal({
           </div>
         ))}
 
-        <button style={{ marginTop: 20 }} onClick={onClose}>
+        {/* 닫기 버튼 */}
+        <button style={closeBtnStyle} onClick={onClose}>
           닫기
         </button>
 

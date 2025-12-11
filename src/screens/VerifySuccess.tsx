@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { api } from "../api/axios";
@@ -34,9 +34,6 @@ const SuccessText = styled.p`
   font-size: 20px;
   color: ${(props) => props.theme.textColor};
   line-height: 1.5;
-  h2 {
-    color: ${(props) => props.theme.textColor};
-  }
 `;
 
 const LoginLink = styled(Link)`
@@ -53,14 +50,32 @@ const LoginLink = styled(Link)`
 `;
 
 export default function VerifySuccessPage() {
+  const hasSentRef = useRef(false);
+
   useEffect(() => {
     const email = localStorage.getItem("regEmail");
-    const storedUserId = localStorage.getItem("regUserId"); // 있으면 사용, 없으면 null
+    const storedUserId = localStorage.getItem("regUserId");
 
-    if (!email) return; // email 없으면 실행 X (userId는 없어도 됨)
+    // ✅ StrictMode에서 useEffect 두 번 도는 거 방지
+    if (hasSentRef.current) {
+      return;
+    }
+    hasSentRef.current = true;
+
+    if (!email) {
+      // 혹시 값 없으면 그냥 로컬 정리만 하고 끝
+      localStorage.removeItem("regEmail");
+      localStorage.removeItem("regUserId");
+      return;
+    }
 
     const sendWelcomeEmail = async () => {
       try {
+        console.log("[VerifySuccess] 환영 이메일 API 호출", {
+          email,
+          storedUserId,
+        });
+
         await api.post("/auth/email/send-welcome", {
           userId: storedUserId ? Number(storedUserId) : null,
           email,

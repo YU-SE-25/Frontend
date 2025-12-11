@@ -105,10 +105,15 @@ export const logoutActionAtom = atom(null, (_, set) => {
 });
 
 // refresh
-export const refreshActionAtom = atom(null, (_, set, data: RefreshResponse) => {
-  set(accessTokenAtom, data.accessToken);
-  set(accessTokenExpiresInAtom, data.expiresIn);
-});
+export const refreshActionAtom = atom(
+  null,
+  (_, set, data: RefreshResponse | null) => {
+    if (!data) return;
+
+    set(accessTokenAtom, data.accessToken);
+    set(accessTokenExpiresInAtom, data.expiresIn);
+  }
+);
 
 // **********************************************
 isDarkAtom.debugLabel = "Is Dark Mode";
