@@ -635,7 +635,7 @@ export default function ProblemManagementScreen() {
       {userProfile.role === "MANAGER" && (
         <>
           <SectionHeader onClick={() => setOpenPendingSection((prev) => !prev)}>
-            {openPendingSection} 제출된 문제 관리
+            {openPendingSection} 승인 대기중인 문제
           </SectionHeader>
           {openPendingSection && (
             <>

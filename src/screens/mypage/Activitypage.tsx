@@ -324,7 +324,7 @@ export default function ActivityPage() {
   const { username } = useParams<{ username: string }>();
   const nav = useNavigate();
   const myProfile = useAtomValue(userProfileAtom);
-  const isMyPage = !!myProfile && myProfile.nickname === username;
+
   // 🔹 1) 훅은 무조건 위에서 다 호출
   const {
     data: user,
@@ -342,6 +342,7 @@ export default function ActivityPage() {
     },
     staleTime: 5 * 60 * 1000,
   });
+  const isMyPage = !!myProfile && myProfile.userId === user?.userId;
 
   const solvedIds = user?.solvedProblems ?? [];
   const submissions: Submission[] = (user?.recentSubmissions ?? []).map(
