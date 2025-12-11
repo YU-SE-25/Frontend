@@ -85,13 +85,14 @@ const ActionButton = styled.button<{ disabled?: boolean }>`
     opacity: ${({ disabled }) => (disabled ? 0.4 : 0.8)};
   }
 `;
-
+/*
 const SectionTitle = styled.h3`
   margin: 10px 0 4px;
   font-size: 15px;
   font-weight: 600;
   color: ${({ theme }) => theme.textColor};
 `;
+*/
 
 const TableWrap = styled.div`
   border: 1px solid ${({ theme }) => theme.bgCardColor};

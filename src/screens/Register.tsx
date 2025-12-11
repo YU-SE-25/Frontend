@@ -63,6 +63,8 @@ export default function Register() {
   const [portfolioLinks, setPortfolioLinks] = useState<string[]>([]);
   const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const isValidEmailFormat = email.includes("@") && email.includes(".");
   const passwordValidationResult = validatePassword(password);
   const passwordsMatch = password === passwordConfirm;
@@ -118,57 +120,56 @@ export default function Register() {
   //api쪽
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     // 0. 블랙리스트 체크
     try {
       const response = await AuthAPI.checkBlacklist(name, email, phoneNumber);
       if (response.data.blacklisted === true) {
         alert("회원가입이 제한된 사용자입니다.");
+        setIsSubmitting(false);
         return;
       }
     } catch {
       alert("블랙리스트 확인 중 오류가 발생했습니다.");
+      setIsSubmitting(false);
       return;
     }
 
     // 1. 이메일 중복 체크
     const emailCheck = await AuthAPI.checkEmail(email);
-    if (emailCheck.data.available === false) {
+    if (!emailCheck.data.available) {
       alert("이미 사용 중인 이메일입니다. 1인 1계정만 생성 가능합니다.");
+      setIsSubmitting(false);
       return;
     }
 
     // 2. 닉네임 중복 체크
     const nickCheck = await AuthAPI.checkNickname(nickname);
-    if (nickCheck.data.available === false) {
+    if (!nickCheck.data.available) {
       alert("이미 사용 중인 닉네임입니다.");
+      setIsSubmitting(false);
       return;
     }
 
     // 3. 전화번호 중복 체크
     const phoneCheck = await AuthAPI.checkPhone(phoneNumber);
-    if (phoneCheck.data.available === false) {
+    if (!phoneCheck.data.available) {
       alert("이미 등록된 전화번호입니다. 1인 1계정만 생성 가능합니다.");
+      setIsSubmitting(false);
       return;
     }
-    /*
-    // 4. 동일 인물 계정 체크
-    const dupCheck = await AuthAPI.checkDuplicateAccount(name, phoneNumber);
-    if (dupCheck.data.duplicate === true) {
-      alert("이미 계정이 존재합니다. 1인 1계정만 생성 가능합니다.");
-      return;
-    }
-      */
 
     let fileUploadResult: PortfolioUploadResponse | null = null;
 
-    // 강사일 경우 파일 업로드 먼저 수행
+    // 4. 파일 업로드
     if (role === "INSTRUCTOR" && portfolioFile) {
       try {
         fileUploadResult = await uploadPortfolio(portfolioFile);
-        // fileUploadResult = { fileUrl, originalFileName, fileSize }
-      } catch (err) {
+      } catch {
         alert("포트폴리오 파일 업로드에 실패했습니다.");
+        setIsSubmitting(false);
         return;
       }
     }
@@ -181,8 +182,6 @@ export default function Register() {
       phone: phoneNumber,
       role,
       agreedTerms: ["TERMS_OF_SERVICE", "PRIVACY_POLICY"],
-
-      // 강사일 때: 파일 업로드 결과 넣기
       portfolioFileUrl:
         role === "INSTRUCTOR" ? fileUploadResult?.fileUrl ?? null : null,
       originalFileName:
@@ -191,27 +190,25 @@ export default function Register() {
           : null,
       fileSize:
         role === "INSTRUCTOR" ? fileUploadResult?.fileSize ?? null : null,
-
-      // URL은 그대로
       portfolioLinks: role === "INSTRUCTOR" ? portfolioLinks : [],
     };
 
-    // 5. 최종 회원가입 (/auth/register)
+    // 5. 최종 회원가입
     try {
-      // register 응답 받기 (userId 꺼내야 함!)
       const registerRes = (await AuthAPI.register(registerData)) as {
         data: { userId: number };
       };
-      // 회원가입 후 userId 저장 (환영 이메일 보낼 때 필요!!)
+
       localStorage.setItem("regUserId", registerRes.data.userId.toString());
       localStorage.setItem("regEmail", email);
 
-      // 6. 이메일 인증 링크 발송 (/auth/email/send-link)
       await AuthAPI.sendEmailVerify(email);
 
       navigate("/register-success");
-    } catch (error) {
+    } catch {
       alert("서버 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -387,8 +384,12 @@ export default function Register() {
             </CheckboxLabel>
           </TermsGroup>
 
-          <FullWidthButton type="submit" $main disabled={!isFormValid}>
-            가입하기
+          <FullWidthButton
+            type="submit"
+            $main
+            disabled={!isFormValid || isSubmitting}
+          >
+            {isSubmitting ? "가입 중..." : "가입하기"}
           </FullWidthButton>
         </form>
       </RegisterBox>

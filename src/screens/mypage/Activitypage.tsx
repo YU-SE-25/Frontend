@@ -7,7 +7,7 @@ import { useAtomValue } from "jotai";
 import { userProfileAtom } from "../../atoms";
 
 type Submission = {
-  id: number;
+  submissionId: number;
   problemId: number;
   verdict: "AC" | "WA" | "TLE" | "MLE" | "RE";
   runtimeMs?: number;
@@ -420,6 +420,12 @@ export default function ActivityPage() {
     nav(`/problems/${user.username}/submitted?showResult=false`);
   const goAll = () => nav("/problem-list");
   const goDetail = (problemId: number) => nav(`/problem-detail/${problemId}`);
+
+  //최근 제출 클릭 시 코드 분석(제출 상세) 페이지로 이동
+  const goSubmissionDetail = (problemId: number) => {
+    nav(`/problem-detail/${problemId}`);
+  };
+
   return (
     <Page>
       <StatGrid>
@@ -512,7 +518,7 @@ export default function ActivityPage() {
             {submissions.slice(0, 5).map((s) => (
               <Item
                 key={s.submissionId}
-                onClick={() => goSubmissionDetail(s.problemId, s.submissionId)}
+                onClick={() => goSubmissionDetail(s.problemId)}
               >
                 <SubmissionInfo>
                   <Strong>#{s.problemId}</Strong> · {s.language} ·{" "}

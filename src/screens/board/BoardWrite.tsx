@@ -333,6 +333,7 @@ export default function BoardWrite({
       setIsSubmitting(true);
 
       if (isStudy) {
+        /*
         const studyPayload = {
           post_title: title.trim(),
           contents: content.trim(),
@@ -340,6 +341,7 @@ export default function BoardWrite({
           anonymity: isAnonymous,
           is_private: false,
         };
+        */
 
         if (isEditMode && editPost) {
           alert("스터디그룹 글 수정 완료! (더미)");

@@ -98,32 +98,36 @@ export default function ProblemDetail() {
         <ProblemMeta problem={problem} />
 
         <ActionSection>
-          {hasSubmission && (
-            <ViewCodeButton onClick={handleViewMyCode}>
-              제출한 기록 보기
-            </ViewCodeButton>
-          )}
-
-          <ViewCodeButton onClick={() => navigate(`/qna?id=${problemId}`)}>
-            QnA
-          </ViewCodeButton>
-
-          <ViewCodeButton
-            onClick={() => navigate(`/problem-detail/${problemId}/solved`)}
-          >
-            공유된 풀이 보기
-          </ViewCodeButton>
-
-          <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
-
-          {(userRole === "MANAGER" || userRole === "INSTRUCTOR") &&
-            problem.canEdit && (
-              <ViewCodeButton
-                onClick={() => navigate(`/problem-edit/${problemId}`)}
-              >
-                문제 수정
+          <div className="left">
+            {hasSubmission && (
+              <ViewCodeButton onClick={handleViewMyCode}>
+                제출한 기록 보기
               </ViewCodeButton>
             )}
+
+            <ViewCodeButton onClick={() => navigate(`/qna?id=${problemId}`)}>
+              QnA
+            </ViewCodeButton>
+
+            <ViewCodeButton
+              onClick={() => navigate(`/problem-detail/${problemId}/solved`)}
+            >
+              공유된 풀이 보기
+            </ViewCodeButton>
+          </div>
+
+          <div className="right">
+            <SolveButton onClick={handleSolveProblem}>문제 풀기</SolveButton>
+
+            {(userRole === "MANAGER" || userRole === "INSTRUCTOR") &&
+              problem.canEdit && (
+                <ViewCodeButton
+                  onClick={() => navigate(`/problem-edit/${problemId}`)}
+                >
+                  문제 수정
+                </ViewCodeButton>
+              )}
+          </div>
         </ActionSection>
 
         <DescriptionSection>
