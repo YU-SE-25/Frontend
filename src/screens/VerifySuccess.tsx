@@ -25,6 +25,7 @@ const SuccessCard = styled.div`
   align-items: center;
   text-align: center;
   gap: 15px;
+
   h2 {
     color: ${(props) => props.theme.textColor};
   }
@@ -56,14 +57,10 @@ export default function VerifySuccessPage() {
     const email = localStorage.getItem("regEmail");
     const storedUserId = localStorage.getItem("regUserId");
 
-    // ✅ StrictMode에서 useEffect 두 번 도는 거 방지
-    if (hasSentRef.current) {
-      return;
-    }
+    if (hasSentRef.current) return;
     hasSentRef.current = true;
 
     if (!email) {
-      // 혹시 값 없으면 그냥 로컬 정리만 하고 끝
       localStorage.removeItem("regEmail");
       localStorage.removeItem("regUserId");
       return;
@@ -71,17 +68,12 @@ export default function VerifySuccessPage() {
 
     const sendWelcomeEmail = async () => {
       try {
-        console.log("[VerifySuccess] 환영 이메일 API 호출", {
-          email,
-          storedUserId,
-        });
-
         await api.post("/auth/email/send-welcome", {
           userId: storedUserId ? Number(storedUserId) : null,
           email,
         });
       } catch (err) {
-        console.error("환영 이메일 발송 실패", err);
+        // 실패해도 조용히 넘어감
       } finally {
         localStorage.removeItem("regEmail");
         localStorage.removeItem("regUserId");

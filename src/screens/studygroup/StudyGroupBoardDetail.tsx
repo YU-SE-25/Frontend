@@ -153,9 +153,9 @@ export default function StudyGroupBoardDetail() {
           </TitleBlock>
 
           <HeaderActions>
-            {user?.userId === post.authorId && (
+            {user?.userId === post.authorId ? (
               <>
-                <button
+                <TextButton
                   onClick={() =>
                     nav(`/studygroup/${groupId}/discussion/${postId}/edit`, {
                       state: { post },
@@ -163,19 +163,25 @@ export default function StudyGroupBoardDetail() {
                   }
                 >
                   수정
-                </button>
+                </TextButton>
 
-                <button onClick={handleDeletePost} style={{ color: "#f55" }}>
-                  삭제
-                </button>
+                <Divider>|</Divider>
+
+                <TextButton onClick={handleDeletePost}>삭제</TextButton>
+
+                <CloseButton
+                  onClick={() => nav(`/studygroup/${groupId}/discussion`)}
+                >
+                  닫기
+                </CloseButton>
               </>
+            ) : (
+              <CloseButton
+                onClick={() => nav(`/studygroup/${groupId}/discussion`)}
+              >
+                닫기
+              </CloseButton>
             )}
-
-            <CloseButton
-              onClick={() => nav(`/studygroup/${groupId}?tab=discussion`)}
-            >
-              닫기
-            </CloseButton>
           </HeaderActions>
         </DetailHeader>
 
@@ -211,21 +217,23 @@ export default function StudyGroupBoardDetail() {
                         </CommentActionButton>
                         {user?.nickname === c.author && (
                           <>
-                            <CommentActionButton
+                            <TextButton
                               onClick={() => {
                                 setEditingId(c.commentId);
                                 setDraft(c.contents);
                               }}
                             >
                               수정
-                            </CommentActionButton>
+                            </TextButton>
 
-                            <CommentActionButton
-                              $danger
+                            <Divider>|</Divider>
+
+                            <TextButton
                               onClick={() => handleDeleteComment(c.commentId)}
+                              style={{ color: "#ff4d4f" }} // 삭제는 약하게 빨간 느낌
                             >
                               삭제
-                            </CommentActionButton>
+                            </TextButton>
                           </>
                         )}
                       </CommentMeta>
@@ -581,4 +589,24 @@ const EmptyText = styled.p`
   font-size: 13px;
   color: ${({ theme }) => theme.textColor}70;
   text-align: left;
+`;
+
+const TextButton = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  cursor: pointer;
+  color: ${({ theme }) => theme.textColor}99; /* 은은한 색 */
+
+  &:hover {
+    color: ${({ theme }) => theme.textColor};
+    text-decoration: underline;
+  }
+`;
+
+const Divider = styled.span`
+  margin: 0 8px;
+  color: ${({ theme }) => theme.textColor}40;
 `;
