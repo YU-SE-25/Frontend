@@ -371,6 +371,7 @@ export default function ProblemAdd() {
                 <br />
                 양식을 지키지 않으면 자동 테스트 생성이 불가능하여 문제 제출이
                 실패합니다.
+                <br />꼭 txt 파일만 제출해주세요!
               </TCInfo>
 
               <TestcaseContent>
