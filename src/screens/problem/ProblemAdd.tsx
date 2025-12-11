@@ -57,6 +57,7 @@ export default function ProblemAdd() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [errorMessage, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showTcInfo, setShowTcInfo] = useState(false);
 
   /** 태그 목록 불러오기 */
   useEffect(() => {
@@ -329,6 +330,9 @@ export default function ProblemAdd() {
 
           <InputGroup>
             <Label>테스트케이스 파일 (필수)</Label>
+
+            <HelpButton onClick={() => setShowTcInfo(true)}>?</HelpButton>
+
             <StyledInput type="file" ref={fileRef} />
           </InputGroup>
 
@@ -356,7 +360,122 @@ export default function ProblemAdd() {
             {loading ? "처리 중..." : isEdit ? "수정하기" : "등록하기"}
           </MainButton>
         </form>
+        {showTcInfo && (
+          <TCOverlay>
+            <TCModal>
+              <TCTitle>테스트케이스 입력 양식 안내</TCTitle>
+
+              <TCInfo>
+                반드시 아래 예시처럼 <strong>Input → 값 → Output → 값</strong>{" "}
+                순서를 정확히 지켜서 작성해야 합니다.
+                <br />
+                양식을 지키지 않으면 자동 테스트 생성이 불가능하여 문제 제출이
+                실패합니다.
+              </TCInfo>
+
+              <TestcaseContent>
+                {`Input
+2 1
+Output
+1
+Input
+23 10
+Output
+13
+Input
+41 16
+Output
+25
+Input
+64 57
+Output
+7`}
+              </TestcaseContent>
+
+              <TCButton onClick={() => setShowTcInfo(false)}>닫기</TCButton>
+            </TCModal>
+          </TCOverlay>
+        )}
       </MainContent>
     </RegisterWrapper>
   );
 }
+
+import styled from "styled-components";
+
+//테스트케이스 참고용
+
+const TestcaseContent = styled.pre`
+  margin-top: 14px;
+  padding: 16px;
+  background: ${({ theme }) => theme.bgColor};
+  border-radius: 8px;
+  font-size: 16px;
+  color: ${({ theme }) => theme.textColor};
+  white-space: pre-wrap;
+  line-height: 1.7;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const TCOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+`;
+
+const TCModal = styled.div`
+  width: 740px;
+  max-width: 90%;
+  background: ${({ theme }) => theme.bgColor};
+  border: 1px solid ${({ theme }) => theme.textColor}33;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+`;
+
+const TCTitle = styled.h3`
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: ${({ theme }) => theme.textColor};
+`;
+
+const TCInfo = styled.p`
+  font-size: 20px;
+  color: ${({ theme }) => theme.textColor}cc;
+  line-height: 1.5;
+`;
+
+const TCButton = styled.button`
+  margin-top: 16px;
+  float: right;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: ${({ theme }) => theme.focusColor};
+  border: none;
+  cursor: pointer;
+`;
+const HelpButton = styled.button`
+  margin-left: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid ${({ theme }) => theme.textColor}55;
+  background: ${({ theme }) => theme.bgColor};
+  color: ${({ theme }) => theme.textColor};
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+
+  &:hover {
+    background: ${({ theme }) => theme.focusColor};
+    color: #000;
+  }
+`;

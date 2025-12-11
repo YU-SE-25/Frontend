@@ -25,6 +25,7 @@ const SuccessCard = styled.div`
   align-items: center;
   text-align: center;
   gap: 15px;
+
   h2 {
     color: ${(props) => props.theme.textColor};
   }
@@ -81,7 +82,7 @@ export default function VerifySuccessPage() {
           email,
         });
       } catch (err) {
-        console.error("환영 이메일 발송 실패", err);
+        // 실패해도 조용히 넘어감
       } finally {
         localStorage.removeItem("regEmail");
         localStorage.removeItem("regUserId");
