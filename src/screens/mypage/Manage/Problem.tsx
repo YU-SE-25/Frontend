@@ -7,6 +7,7 @@ import {
   fetchMyProblems,
   fetchPendingProblemList,
   rejectProblem,
+  downloadTestcaseFile,
 } from "../../../api/manage_api";
 import type { ProblemListItem as ProblemItem } from "../../../api/manage_api";
 import {
@@ -446,11 +447,27 @@ export default function ProblemManagementScreen() {
     }
   };
 
-  const handleDownloadTestcase = () => {
+  const handleDownloadTestcase = async () => {
     if (!selectedProblem) return;
-    alert(
-      `테스트 케이스 다운로드(추후 구현 예정)\n문제: ${selectedProblem.title}`
-    );
+
+    try {
+      const blob = await downloadTestcaseFile(selectedProblem.problemId);
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      // 기본 파일명
+      const filename = `testcase_${selectedProblem.problemId}.zip`;
+
+      a.href = url;
+      a.download = filename;
+      a.click();
+
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    } catch (err) {
+      console.error(err);
+      alert("테스트 케이스 다운로드에 실패했습니다.");
+    }
   };
 
   // 문제 승인 (제출된 문제 관리에서만)
@@ -602,11 +619,11 @@ export default function ProblemManagementScreen() {
           </ActionButton>
           <ActionButton
             onClick={handleDownloadTestcase}
-            disabled={true}
-            title="다운 오류"
+            disabled={!selectedProblem}
           >
             테스트 케이스 다운로드
           </ActionButton>
+
           <ActionButton
             onClick={handleRegisterProblem}
             disabled={!canManageSelected}
@@ -635,7 +652,7 @@ export default function ProblemManagementScreen() {
       {userProfile.role === "MANAGER" && (
         <>
           <SectionHeader onClick={() => setOpenPendingSection((prev) => !prev)}>
-            {openPendingSection} 제출된 문제 관리
+            {openPendingSection} 승인 대기중인 문제
           </SectionHeader>
           {openPendingSection && (
             <>

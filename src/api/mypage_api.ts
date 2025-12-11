@@ -246,13 +246,14 @@ export function getDummyUserProfile(): UserProfile {
 
 export async function getUserProfile(nickname: string): Promise<UserProfile> {
   try {
-    const res = await api.get<UserProfileDto>(`/mypage/${nickname}`);
+    const safe = encodeURIComponent(nickname);
+    const res = await api.get<UserProfileDto>(`/mypage/${safe}`);
     return mapUserProfileDto(res.data);
   } catch (err: any) {
     const status = err?.response?.status;
 
-    // ✅ 400: 비공개 마이페이지 → 이름/사진만 보이고 나머지는 기본값
-    if (status === 400) {
+    if (status === 403) {
+      // 403이 진짜 비공개인 경우에만 처리
       const dummy = getDummyUserProfile();
       return {
         ...dummy,
@@ -261,8 +262,7 @@ export async function getUserProfile(nickname: string): Promise<UserProfile> {
       };
     }
 
-    // ✅ 그 외 에러: 알림 + isPublic false
-    alert("이름에 불러오는데 실패했습니다");
+    alert("이름을 불러오는데 실패했습니다");
 
     const dummy = getDummyUserProfile();
     return {

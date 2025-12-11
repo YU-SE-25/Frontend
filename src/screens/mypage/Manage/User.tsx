@@ -7,6 +7,7 @@ import {
   fetchInstructorApplications,
   fetchInstructorApplicationDetail,
   downloadPortfolioFile,
+  sendApproveInstructorEmail,
 } from "../../../api/manage_api";
 
 type Role = "LEARNER" | "INSTRUCTOR" | "MANAGER";
@@ -464,12 +465,24 @@ export default function UserManagementScreen() {
     if (!window.confirm("승인하시겠습니까?")) return;
 
     try {
-      // 강사 승인 → 역할 변경 API 사용
-      await updateUserRole(selectedApplication!.userId, "INSTRUCTOR");
+      // 1) 상세 정보가 없으면 불러오기 (userId 필요!)
+      let detail = selectedApplicationDetail;
+      if (!detail || detail.applicationId !== applicationId) {
+        detail = await fetchInstructorApplicationDetail(applicationId);
+        setSelectedApplicationDetail(detail);
+      }
 
-      alert("강사 자격으로 승인되었습니다.");
+      const userId = detail.userId;
 
-      // 목록에서 제거
+      // 2) 역할 변경
+      await updateUserRole(userId, "INSTRUCTOR");
+
+      // 3) 이메일 발송
+      await sendApproveInstructorEmail(userId);
+
+      alert("강사 승인 + 이메일 발송 완료!");
+
+      // 4) 목록에서 제거
       setInstructors((prev) =>
         prev.filter((a) => a.applicationId !== applicationId)
       );
