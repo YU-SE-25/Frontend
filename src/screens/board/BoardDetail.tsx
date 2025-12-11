@@ -538,7 +538,7 @@ export default function BoardDetail({ post }: BoardDetailProps) {
       // ✏️ 수정 모드
       if (editingCommentId !== null) {
         const payload = {
-          content: text, // 백엔드가 content(단수)를 받는다고 가정
+          contents: text, // 백엔드가 content(단수)를 받는다고 가정
           anonymity,
           is_private: stablePost.is_private ?? false,
         };
